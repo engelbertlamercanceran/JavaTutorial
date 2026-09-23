@@ -1,0 +1,4447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+<title>HACKO: Loop Labyrinth</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+:root {
+    --cyan: #45f3ff;
+    --aqua: #26d9c7;
+    --lime: #8dff72;
+    --amber: #ffd447;
+    --orange: #ff8a3d;
+    --red: #ff416c;
+    --violet: #ad72ff;
+    --pink: #ff69ca;
+
+    --ink: #081426;
+    --panel: #102542;
+    --panel-light: #173755;
+    --tile: #1c4560;
+    --tile-alt: #163a55;
+    --wall: #193653;
+    --wall-light: #2f6d89;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    color: #eefaff;
+    font-family: Rajdhani, sans-serif;
+}
+
+body {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+
+    background:
+        radial-gradient(
+            circle at 16% 12%,
+            #1f5674 0,
+            transparent 32%
+        ),
+        radial-gradient(
+            circle at 84% 18%,
+            #50367a 0,
+            transparent 28%
+        ),
+        linear-gradient(
+            145deg,
+            #07172c,
+            #0d2943 45%,
+            #07111f
+        );
+}
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+
+    padding: 12px 20px;
+
+    border-bottom: 2px solid var(--cyan);
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(5, 16, 31, 0.98),
+            rgba(15, 42, 66, 0.98),
+            rgba(14, 19, 46, 0.98)
+        );
+
+    box-shadow:
+        0 0 26px #45f3ff44,
+        inset 0 -1px 0 #ffffff1a;
+
+    z-index: 10;
+}
+
+.brand {
+    font-family: Orbitron, sans-serif;
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+
+    color: var(--cyan);
+
+    text-shadow:
+        0 0 8px #45f3ffaa,
+        0 0 20px #45f3ff66;
+}
+
+.brand small {
+    display: block;
+
+    margin-top: 2px;
+
+    font-size: 0.58rem;
+    letter-spacing: 0.23em;
+
+    color: #ffffff;
+}
+
+.stats {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.chip {
+    min-width: 92px;
+
+    padding: 7px 12px;
+
+    border: 1px solid #3c7899;
+    border-radius: 999px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #12324f,
+            #091b31
+        );
+
+    box-shadow:
+        inset 0 1px 0 #ffffff12,
+        0 4px 12px #0005;
+
+    text-align: center;
+
+    font-family: Orbitron, sans-serif;
+    font-size: 0.76rem;
+}
+
+.chip b {
+    color: var(--lime);
+    text-shadow: 0 0 8px #8dff7266;
+}
+
+button {
+    border: 0;
+    border-radius: 10px;
+
+    padding: 10px 14px;
+
+    cursor: pointer;
+
+    color: #051018;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--cyan),
+            #55ffcc
+        );
+
+    box-shadow:
+        0 5px 15px #0005,
+        inset 0 1px 0 #ffffff66;
+
+    font: 700 0.82rem Orbitron, sans-serif;
+
+    transition:
+        transform 0.2s,
+        filter 0.2s,
+        box-shadow 0.2s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.12);
+
+    box-shadow:
+        0 8px 20px #0007,
+        0 0 15px #45f3ff55;
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button.secondary {
+    color: #ffffff;
+
+    border: 1px solid #4a86aa;
+
+    background:
+        linear-gradient(
+            135deg,
+            #214d70,
+            #142d4c
+        );
+}
+
+button.danger {
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            135deg,
+            #ff416c,
+            #ff8a3d
+        );
+}
+
+main {
+    min-height: 0;
+
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 310px;
+    gap: 14px;
+
+    padding: 14px;
+}
+
+.game-shell {
+    position: relative;
+    min-height: 0;
+
+    border: 3px solid #3ed7e5;
+    border-radius: 20px;
+
+    overflow: hidden;
+
+    background: #071322;
+
+    box-shadow:
+        0 0 0 4px #102b43,
+        0 0 40px #45f3ff3d,
+        inset 0 0 40px #0009;
+}
+
+.game-shell::before {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    pointer-events: none;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            #ffffff07,
+            transparent
+        );
+
+    z-index: 2;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    image-rendering: pixelated;
+}
+
+.side {
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.panel {
+    padding: 14px;
+
+    border: 1px solid #3983a3;
+    border-radius: 16px;
+
+    background:
+        linear-gradient(
+            160deg,
+            #163653,
+            #0b1d35 70%
+        );
+
+    box-shadow:
+        inset 0 0 25px #45f3ff10,
+        0 8px 22px #02081288;
+}
+
+.panel h3 {
+    margin: 0 0 8px;
+
+    color: var(--cyan);
+
+    font-family: Orbitron, sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+}
+
+.mission {
+    font-size: 1rem;
+    line-height: 1.38;
+
+    color: #d8f4ff;
+}
+
+.legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+
+    font-size: 0.84rem;
+}
+
+.legend span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+
+    display: inline-block;
+
+    border: 1px solid #ffffff66;
+    border-radius: 3px;
+
+    box-shadow: 0 0 8px currentColor;
+}
+
+.log {
+    flex: 1;
+    min-height: 100px;
+
+    overflow: auto;
+
+    font-size: 0.9rem;
+}
+
+.log-entry {
+    padding: 7px 0;
+
+    border-bottom: 1px solid #ffffff12;
+}
+
+.log-entry strong {
+    color: var(--amber);
+}
+
+footer {
+    padding: 8px 16px;
+
+    border-top: 1px solid #28617c;
+
+    background:
+        linear-gradient(
+            90deg,
+            #071427,
+            #102c43,
+            #071427
+        );
+
+    text-align: center;
+
+    font-size: 0.87rem;
+    color: #c4e3ef;
+}
+
+.kbd {
+    display: inline-block;
+
+    padding: 2px 7px;
+
+    border: 1px solid #4b83a3;
+    border-radius: 5px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #224c6e,
+            #132c49
+        );
+
+    color: #ffffff;
+
+    font-family: Orbitron, sans-serif;
+    font-size: 0.7rem;
+
+    box-shadow:
+        inset 0 1px 0 #ffffff22,
+        0 2px 4px #0006;
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    padding: 18px;
+
+    background: rgba(1, 5, 10, 0.84);
+    backdrop-filter: blur(7px);
+
+    z-index: 50;
+}
+
+.overlay.show {
+    display: flex;
+}
+
+.modal {
+    width: min(850px, 96vw);
+    max-height: 92vh;
+
+    overflow: auto;
+
+    padding: 24px;
+
+    border: 2px solid var(--cyan);
+    border-radius: 18px;
+
+    background:
+        radial-gradient(
+            circle at top left,
+            #204c6f,
+            transparent 38%
+        ),
+        linear-gradient(
+            145deg,
+            #102b45,
+            #07111f 65%
+        );
+
+    box-shadow:
+        0 0 70px #45f3ff66,
+        inset 0 0 30px #45f3ff0d;
+}
+
+.modal h2 {
+    margin: 0 0 12px;
+
+    color: var(--cyan);
+
+    text-align: center;
+    font-family: Orbitron, sans-serif;
+
+    text-shadow: 0 0 14px #45f3ff77;
+}
+
+.challenge-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.prompt,
+.editor {
+    padding: 16px;
+
+    border: 1px solid #315f7e;
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #0b2035,
+            #06111d
+        );
+}
+
+.prompt code {
+    color: var(--amber);
+}
+
+textarea {
+    width: 100%;
+    min-height: 210px;
+
+    resize: vertical;
+
+    padding: 14px;
+
+    border: 1px solid #3b83a5;
+    border-radius: 10px;
+
+    outline: none;
+
+    background: #02070d;
+    color: #9dffc9;
+
+    font: 15px/1.5 Consolas, monospace;
+}
+
+textarea:focus {
+    border-color: var(--cyan);
+
+    box-shadow: 0 0 18px #45f3ff33;
+}
+
+.feedback {
+    min-height: 42px;
+
+    margin-top: 10px;
+    padding: 10px;
+
+    border-radius: 9px;
+
+    background: #081421;
+}
+
+.feedback.good {
+    border: 1px solid var(--lime);
+    color: var(--lime);
+}
+
+.feedback.bad {
+    border: 1px solid var(--red);
+    color: #ff9ab0;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    margin-top: 16px;
+}
+
+.level-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.level-card {
+    padding: 14px;
+
+    border: 1px solid #347597;
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            160deg,
+            #153a56,
+            #091a2e
+        );
+
+    text-align: center;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s,
+        border-color 0.2s,
+        box-shadow 0.2s;
+}
+
+.level-card:hover:not(.locked) {
+    transform: translateY(-3px);
+
+    border-color: var(--cyan);
+
+    box-shadow: 0 8px 20px #0007;
+}
+
+.level-card.locked {
+    opacity: 0.38;
+    cursor: not-allowed;
+}
+
+.level-card.complete {
+    border-color: var(--lime);
+}
+
+.level-card b {
+    display: block;
+
+    color: var(--cyan);
+
+    font-family: Orbitron, sans-serif;
+    font-size: 1.25rem;
+}
+
+.level-card small {
+    color: #c5dce8;
+}
+
+@media (max-width: 900px) {
+    main {
+        grid-template-columns: 1fr;
+    }
+
+    .side {
+        display: none;
+    }
+
+    .challenge-grid {
+        grid-template-columns: 1fr;
+    }
+
+    header {
+        padding: 9px;
+    }
+
+    .stats {
+        gap: 6px;
+    }
+
+    .chip {
+        min-width: auto;
+
+        padding: 6px 9px;
+
+        font-size: 0.66rem;
+    }
+}
+</style>
+<script src="shared/audio.js" data-track="labyrinth"></script>
+<script src="shared/storage.js"></script>
+</head>
+
+<body>
+
+<header>
+    <div class="brand">
+        HACKO
+        <small>LOOP LABYRINTH</small>
+    </div>
+
+    <div class="stats">
+        <div class="chip">
+            LEVEL
+            <b id="levelLabel">1/10</b>
+        </div>
+
+        <div class="chip">
+            HP
+            <b id="hpLabel">100</b>
+        </div>
+
+        <div class="chip">
+            CORES
+            <b id="coreLabel">0/0</b>
+        </div>
+
+        <div class="chip">
+            MOVES
+            <b id="loopLabel">0</b>
+        </div>
+    </div>
+
+    <div>
+        <button
+            class="secondary"
+            onclick="openLevelSelect()"
+        >
+            LEVELS
+        </button>
+
+        <button
+            class="danger"
+            onclick="restartLevel()"
+        >
+            RESTART
+        </button>
+    </div>
+</header>
+
+<main>
+    <section class="game-shell">
+        <canvas
+            id="game"
+            width="1050"
+            height="650"
+        ></canvas>
+    </section>
+
+    <aside class="side">
+        <div class="panel">
+            <h3>CURRENT MISSION</h3>
+
+            <div
+                id="missionText"
+                class="mission"
+            ></div>
+        </div>
+
+        <div class="panel">
+            <h3>LABYRINTH LEGEND</h3>
+
+            <div class="legend">
+                <span>
+                    <i
+                        class="dot"
+                        style="background:#45f3ff"
+                    ></i>
+                    Hacko
+                </span>
+
+                <span>
+                    <i
+                        class="dot"
+                        style="background:#8dff72"
+                    ></i>
+                    Data core
+                </span>
+
+                <span>
+                    <i
+                        class="dot"
+                        style="background:#ffd447"
+                    ></i>
+                    Loop gate
+                </span>
+
+                <span>
+                    <i
+                        class="dot"
+                        style="background:#ff416c"
+                    ></i>
+                    Spider / bug
+                </span>
+
+                <span>
+                    <i
+                        class="dot"
+                        style="background:#ad72ff"
+                    ></i>
+                    Spikes
+                </span>
+
+                <span>
+                    <i
+                        class="dot"
+                        style="background:#7cff4f"
+                    ></i>
+                    Toxic pool
+                </span>
+
+                <span>
+                    <i
+                        class="dot"
+                        style="background:#d9e8f2"
+                    ></i>
+                    Blade
+                </span>
+
+                <span>
+                    <i
+                        class="dot"
+                        style="background:#ff69ca"
+                    ></i>
+                    Pressure plate
+                </span>
+
+                <span>
+                    <i
+                        class="dot"
+                        style="background:#ffffff"
+                    ></i>
+                    Exit
+                </span>
+            </div>
+        </div>
+
+        <div class="panel log">
+            <h3>SYSTEM LOG</h3>
+            <div id="log"></div>
+        </div>
+    </aside>
+</main>
+
+<footer>
+    <span class="kbd">WASD</span> /
+    <span class="kbd">ARROWS</span>
+    move
+
+    &nbsp;
+
+    <span class="kbd">E</span>
+    use gate
+
+    &nbsp;
+
+    <span class="kbd">R</span>
+    restart
+
+    &nbsp;
+
+    Collect all cores, solve the loop gate, avoid hazards,
+    then reach the exit.
+</footer>
+
+<div
+    id="challengeOverlay"
+    class="overlay"
+>
+    <div class="modal">
+        <h2 id="challengeTitle">
+            LOOP TERMINAL
+        </h2>
+
+        <div class="challenge-grid">
+            <div class="prompt">
+                <div id="challengePrompt"></div>
+
+                <p>
+                    <strong>Expected result:</strong>
+                </p>
+
+                <pre id="expectedOutput"></pre>
+
+                <p
+                    id="challengeHint"
+                    style="color:#9cc8dc"
+                ></p>
+            </div>
+
+            <div class="editor">
+                <textarea
+                    id="answerInput"
+                    spellcheck="false"
+                ></textarea>
+
+                <div
+                    id="feedback"
+                    class="feedback"
+                >
+                    Enter your answer, then run the loop.
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button onclick="submitAnswer()">
+                RUN LOOP
+            </button>
+
+            <button
+                class="secondary"
+                onclick="useHint()"
+            >
+                SHOW HINT
+            </button>
+
+            <button
+                class="danger"
+                onclick="closeChallenge()"
+            >
+                CANCEL
+            </button>
+        </div>
+    </div>
+</div>
+
+<div
+    id="messageOverlay"
+    class="overlay"
+>
+    <div
+        class="modal"
+        style="max-width:620px;text-align:center"
+    >
+        <h2 id="messageTitle"></h2>
+
+        <p
+            id="messageBody"
+            style="font-size:1.15rem"
+        ></p>
+
+        <div class="modal-actions">
+            <button id="messagePrimary"></button>
+
+            <button
+                class="secondary"
+                onclick="openLevelSelect()"
+            >
+                LEVEL SELECT
+            </button>
+        </div>
+    </div>
+</div>
+
+<div
+    id="levelOverlay"
+    class="overlay"
+>
+    <div class="modal">
+        <h2>MISSION SELECT</h2>
+
+        <div
+            id="levelGrid"
+            class="level-grid"
+        ></div>
+
+        <div class="modal-actions">
+            <button
+                class="secondary"
+                onclick="closeLevelSelect()"
+            >
+                CLOSE
+            </button>
+
+            <button
+                class="danger"
+                onclick="resetProgress()"
+            >
+                RESET PROGRESS
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas =
+    document.getElementById('game')
+
+const ctx =
+    canvas.getContext('2d')
+
+const TILE = 50
+const COLS = 21
+const ROWS = 13
+
+const hackoImage = new Image()
+
+let hackoImageReady = false
+
+hackoImage.src = 'hacko.png'
+
+hackoImage.onload = () => {
+    hackoImageReady = true
+}
+
+hackoImage.onerror = () => {
+    console.warn(
+        'hacko.png was not found. Using fallback Hacko.'
+    )
+}
+
+const dirs = {
+    ArrowUp: [0, -1],
+    w: [0, -1],
+    W: [0, -1],
+
+    ArrowDown: [0, 1],
+    s: [0, 1],
+    S: [0, 1],
+
+    ArrowLeft: [-1, 0],
+    a: [-1, 0],
+    A: [-1, 0],
+
+    ArrowRight: [1, 0],
+    d: [1, 0],
+    D: [1, 0]
+}
+
+const progress = JSON.parse(
+    localStorage.getItem(
+        'hackoLoopProgress'
+    ) ||
+    JSON.stringify({
+        unlocked: 1,
+        completed: [],
+        totalLoops: 0
+    })
+)
+
+let levelIndex = 0
+let state = null
+let challengeGate = null
+let paused = false
+let lastMove = 0
+let particles = []
+
+const challenges = [
+    {
+        kind: 'for',
+        title: 'Boot Sequence',
+
+        prompt:
+            'Write a <code>for</code> loop that prints ' +
+            '<code>HACKO</code> exactly 3 times.',
+
+        output:
+            'HACKO\nHACKO\nHACKO',
+
+        starter:
+`for (int i = 0; i < ___; i++) {
+    // print HACKO here
+}`,
+
+        tokens: [
+            'for', 'int', 'i<3', 'i++',
+            'system.out.println', 'hacko'
+        ],
+
+        hints: [
+            'A loop needs three things: where to start, when to stop, and how to move.',
+            'Declare the counter with a type, stop before it reaches 3, and step up by one each pass.',
+            'Example that prints twice: for (int n = 0; n < 2; n++) { System.out.println("HI"); }'
+        ]
+    },
+
+    {
+        kind: 'while',
+        title: 'Energy Charge',
+
+        prompt:
+            'Write a <code>while</code> loop that prints ' +
+            'the numbers 1 through 4.',
+
+        output:
+            '1\n2\n3\n4',
+
+        starter:
+`int energy = ___;
+
+while (energy ___) {
+    // print it, then move the counter
+}`,
+
+        tokens: [
+            'int', 'while', '<=4', 'system.out.println', '++'
+        ],
+
+        hints: [
+            'A while loop only checks a condition - you set up and move the counter yourself.',
+            'Start the counter at the first number you want printed, and keep going while it has not passed the last one.',
+            'Forgetting to change the counter inside the loop is what makes a loop run forever.'
+        ]
+    },
+
+    {
+        kind: 'for',
+        title: 'Bridge Builder',
+
+        prompt:
+            'Use a <code>for</code> loop to add 5 bridge tiles. ' +
+            'The loop must run 5 times.',
+
+        output:
+            'tile 1 ... tile 5',
+
+        starter:
+`for (int tile = ___; tile ___; tile++) {
+    // lay one tile per pass
+}`,
+
+        tokens: [
+            'for', 'tile', '<=5', 'tile++', 'buildbridge'
+        ],
+
+        hints: [
+            'The tiles are numbered from 1, not from 0.',
+            'To include the last number, the stop test has to allow it - think about < against <=.',
+            'Call buildBridge and hand it the tile number you are currently on.'
+        ]
+    },
+
+    {
+        kind: 'while',
+        title: 'Firewall Drain',
+
+        prompt:
+            'Create a <code>while</code> loop that reduces ' +
+            '<code>firewall</code> from 4 to 0.',
+
+        output:
+            '4 - 3 - 2 - 1 - 0',
+
+        starter:
+`int firewall = ___;
+
+while (firewall ___) {
+    // drain it by one
+}`,
+
+        tokens: [
+            'firewall=4', 'while', '>0', 'firewall--'
+        ],
+
+        hints: [
+            'This loop counts down instead of up.',
+            'Keep draining while there is still something left to drain.',
+            'Two minus signs together subtract one, the mirror of two plus signs.'
+        ]
+    },
+
+    {
+        kind: 'for',
+        title: 'Even Pulse',
+
+        prompt:
+            'Use a <code>for</code> loop to print even numbers ' +
+            'from 2 to 10.',
+
+        output:
+            '2 4 6 8 10',
+
+        starter:
+`for (int n = ___; n ___; n ___) {
+    // print n
+}`,
+
+        tokens: [
+            'for', 'n=2', '<=10', '+=2', 'system.out.println'
+        ],
+
+        hints: [
+            'A loop does not have to move one step at a time.',
+            'Start on the first even number, and make each step skip the odd one.',
+            'Example stepping by three: for (int k = 3; k <= 9; k += 3)'
+        ]
+    },
+
+    {
+        kind: 'while',
+        title: 'Sentinel Scan',
+
+        prompt:
+            'Write a <code>while</code> loop that scans until ' +
+            '<code>sector</code> reaches 6.',
+
+        output:
+            'Scan sectors 1-6',
+
+        starter:
+`int sector = ___;
+
+while (sector ___) {
+    // scan this sector, then advance
+}`,
+
+        tokens: [
+            'sector=1', 'while', '<=6', 'scan', 'sector++'
+        ],
+
+        hints: [
+            'Sector 6 must be scanned too, not stopped at.',
+            'Call scan with the current sector before moving on.',
+            'If the counter never changes, the same sector is scanned forever.'
+        ]
+    },
+
+    {
+        kind: 'for',
+        title: 'Nested Grid',
+
+        prompt:
+            'Write nested <code>for</code> loops for a ' +
+            '3 &times; 3 security grid.',
+
+        output:
+            '9 cells checked',
+
+        starter:
+`for (int row = 0; row < ___; row++) {
+    // a second loop belongs in here
+}`,
+
+        tokens: [
+            'for', 'row', '<3', 'row++', 'col', 'col++', 'check'
+        ],
+
+        minFor: 2,
+
+        hints: [
+            'Nine cells from two loops of three - one loop has to live inside the other.',
+            'The outer loop walks the rows; for every single row the inner loop walks all the columns.',
+            'Call check with both positions, so it knows which cell it is looking at.'
+        ]
+    },
+
+    {
+        kind: 'while',
+        title: 'Dual Countdown',
+
+        prompt:
+            'Use a <code>while</code> loop to count timer ' +
+            'down from 8 by 2 until it reaches 0.',
+
+        output:
+            '8 6 4 2 0',
+
+        starter:
+`int timer = ___;
+
+while (timer ___) {
+    // print it, then drop by two
+}`,
+
+        tokens: [
+            'timer=8', 'while', '>=0', 'system.out.println', '-=2'
+        ],
+
+        hints: [
+            'Zero has to be printed, so the loop cannot stop the moment it arrives.',
+            'This counts down in steps of two rather than one.',
+            'Just as += adds and assigns, there is a matching operator that subtracts.'
+        ]
+    },
+
+    {
+        kind: 'for',
+        title: 'Pattern Key',
+
+        prompt:
+            'Use a <code>for</code> loop to build the string ' +
+            '<code>LOOPLOOPLOOP</code>.',
+
+        output:
+            'LOOPLOOPLOOP',
+
+        starter:
+`String key = ___;
+
+for (int i = 0; i < ___; i++) {
+    // add to the key each pass
+}`,
+
+        tokens: [
+            'key=""', 'for', 'i<3', 'i++', 'key+=', 'loop'
+        ],
+
+        hints: [
+            'The answer is one word repeated, so start from nothing and keep adding.',
+            'An empty pair of quotes is a real String - it just has no characters yet.',
+            'The same += that adds numbers joins text onto the end of a String.'
+        ]
+    },
+
+    {
+        kind: 'mixed',
+        title: 'Core Override',
+
+        prompt:
+            'Use a <code>for</code> loop and a ' +
+            '<code>while</code> loop. The for loop collects ' +
+            '5 keys and the while loop spends all 5 keys.',
+
+        output:
+            '5 keys collected, then 0 keys remain',
+
+        starter:
+`int keys = 0;
+
+// a for loop that collects 5 keys
+
+// a while loop that spends every key`,
+
+        tokens: [
+            'keys=0', 'for', 'i<5', 'keys++',
+            'while', 'keys>0', 'keys--'
+        ],
+
+        minFor: 1,
+        minWhile: 1,
+
+        hints: [
+            'Two loops, one after the other - collect everything first, then spend it.',
+            'A for loop suits a known number of passes; a while loop suits draining until empty.',
+            'The second loop runs as long as anything is left, and removes one each time.'
+        ]
+    }
+]
+
+const rawLevels = [
+    [
+        '#####################',
+        '#S..C.....#....G....E#',
+        '#.#####.#.#.#######.##',
+        '#.....#.#.#.......#..#',
+        '#####.#.#.#######.##.#',
+        '#...#.#.#.....#......#',
+        '#.#.#.#.#####.#.######',
+        '#.#...#.....#.#......#',
+        '#.#########.#.######.#',
+        '#.........#.#........#',
+        '#.#######.#.##########',
+        '#.........C..........#',
+        '#####################'
+    ],
+
+    [
+        '#####################',
+        '#S....#...C...#....E##',
+        '#.##T.#.#####.#.##...#',
+        '#....##.....#.#.###..#',
+        '####....###.#.#...#..#',
+        '#..G.##.#...#T#.#.#.##',
+        '#.#..##.#.###.#.#.#..#',
+        '#.#.....#.....#.#.##.#',
+        '#.#####.#######.#....#',
+        '#.....#...C.....####.#',
+        '###.#.#########......#',
+        '#...#...............##',
+        '#####################'
+    ],
+
+    [
+        '#####################',
+        '#S..C....#......G...E#',
+        '#.#####..#.#########.#',
+        '#.....#..#....T......#',
+        '#####.#.######.#####.#',
+        '#...#.#......#.....#.#',
+        '#.#.#.######.#####.#.#',
+        '#.#...#....#.....#.#.#',
+        '#.#####.##.#####.#.#.#',
+        '#.....#..#...C...#...#',
+        '#.###.##.###########.#',
+        '#.....T..............#',
+        '#####################'
+    ],
+
+    [
+        '#####################',
+        '#S..#..C..#...G.....E#',
+        '#.#.#.###.#.#######.##',
+        '#.#...#...#.....T....#',
+        '#.#####.#######.####.#',
+        '#.....#.......#.#....#',
+        '#####.#######.#.#.####',
+        '#...#.....C.#.#.#....#',
+        '#.#.#####.#.#.#.####.#',
+        '#.#.....#.#...#......#',
+        '#.#####.#.##########.#',
+        '#..T....#............#',
+        '#####################'
+    ],
+
+    [
+        '#####################',
+        '#S.C....#.....#....GE#',
+        '#.#######.###.#.####.#',
+        '#.....T...#...#......#',
+        '#####.#####.########.#',
+        '#...#.....#......C...#',
+        '#.#.#####.##########.#',
+        '#.#.....#.......T....#',
+        '#.#####.#######.####.#',
+        '#.....#.....#...#....#',
+        '#.###.#####.#.###.####',
+        '#...C...............##',
+        '#####################'
+    ],
+
+    [
+        '#####################',
+        '#S...C#.....G.......E#',
+        '#.###.#.###########.##',
+        '#...#.#.....T.....#..#',
+        '###.#.#####.#####.##.#',
+        '#...#.....#.#...#....#',
+        '#.#######.#.#.#.######',
+        '#.....C.#.#...#......#',
+        '#####.#.#.##########.#',
+        '#..T..#.#......C.....#',
+        '#.#####.############.#',
+        '#...................##',
+        '#####################'
+    ],
+
+    [
+        '#####################',
+        '#S.C..#....G........E#',
+        '#.##T.#.############.#',
+        '#....##.......C......#',
+        '####.#######.#######.#',
+        '#....#.....#.#.....#.#',
+        '#.####.###.#.#.###.#.#',
+        '#......#T#.#...#...#.#',
+        '########.#.#####.###.#',
+        '#...C....#.....#.....#',
+        '#.############.#####.#',
+        '#....................#',
+        '#####################'
+    ],
+
+    [
+        '#####################',
+        '#S...C...#...G......E#',
+        '#.#####T.#.#########.#',
+        '#.....#..#.....C.....#',
+        '#####.#.#######.######',
+        '#...#.#.....#...#...##',
+        '#.#.#.#####.#.#.###.#',
+        '#.#...#...#.#.#T....#',
+        '#.#####.#.#.#.#######',
+        '#.....#.#...#.....C..#',
+        '#.###.#.###########.##',
+        '#...T...............##',
+        '#####################'
+    ],
+
+    [
+        '#####################',
+        '#S.C....#....G......E#',
+        '#.#######.##########.#',
+        '#...T.....#....C.....#',
+        '###.#######.########.#',
+        '#...#.....#.#......#.#',
+        '#.###.###.#.#.####.#.#',
+        '#.....#T#.#...#....#.#',
+        '#######.#.#####.####.#',
+        '#..C....#.....#......#',
+        '#.#############.###.##',
+        '#........T..........##',
+        '#####################'
+    ],
+
+    [
+        '#####################',
+        '#S.C..#....G........E#',
+        '#.##T.#.############.#',
+        '#....##....C.........#',
+        '####.#######.#######.#',
+        '#....#..T..#.#.....#.#',
+        '#.####.###.#.#.###.#.#',
+        '#...C..#.#.#...#...#.#',
+        '######.#.#.#####.###.#',
+        '#......#.#.....#..C..#',
+        '#.######.#####.#####.#',
+        '#...T................#',
+        '#####################'
+    ]
+]
+
+/* Pads short rows and trims long ones to COLS.
+ *
+ * Trimming used to happen silently, which hid a real bug:
+ * one maze row was written 23 characters wide and the slice
+ * deleted a walkable floor tile off the end, so the level
+ * rendered differently from how it was authored. Anything
+ * other than padding wall is now reported instead of being
+ * thrown away quietly. Run tools/check-mazes.js to verify
+ * every maze is still solvable after editing one.
+ */
+function cleanMap(map) {
+    return map.map((row, y) => {
+
+        if (row.length > COLS) {
+
+            const dropped = row.slice(COLS)
+
+            if (/[^#]/.test(dropped)) {
+                console.warn(
+                    `[LoopLabyrinth] map row ${y} is ${row.length} chars; ` +
+                    `dropping "${dropped}" removes playable tiles`
+                )
+            }
+        }
+
+        return (
+            row +
+            '#####################'
+        )
+            .slice(0, COLS)
+            .split('')
+    })
+}
+
+function tileKey(x, y) {
+    return `${x},${y}`
+}
+
+function buildLevel(index) {
+    const grid = cleanMap(
+        rawLevels[index]
+    )
+
+    let start = {
+        x: 1,
+        y: 1
+    }
+
+    let exit = {
+        x: COLS - 2,
+        y: 1
+    }
+
+    const cores = []
+    const gates = []
+    const traps = []
+
+    for (
+        let y = 0;
+        y < ROWS;
+        y++
+    ) {
+        for (
+            let x = 0;
+            x < COLS;
+            x++
+        ) {
+            const cell =
+                grid[y][x]
+
+            if (cell === 'S') {
+                start = {
+                    x,
+                    y
+                }
+
+                grid[y][x] = '.'
+            }
+
+            if (cell === 'E') {
+                exit = {
+                    x,
+                    y
+                }
+
+                grid[y][x] = '.'
+            }
+
+            if (cell === 'C') {
+                cores.push({
+                    x,
+                    y,
+                    taken: false
+                })
+
+                grid[y][x] = '.'
+            }
+
+            if (cell === 'G') {
+                gates.push({
+                    x,
+                    y,
+                    open: false,
+                    challenge: index
+                })
+
+                grid[y][x] = '.'
+            }
+
+            if (cell === 'T') {
+                traps.push({
+                    x,
+                    y,
+                    phase:
+                        Math.random() * 10
+                })
+
+                grid[y][x] = '.'
+            }
+        }
+    }
+
+    const floors = []
+
+    for (
+        let y = 1;
+        y < ROWS - 1;
+        y++
+    ) {
+        for (
+            let x = 1;
+            x < COLS - 1;
+            x++
+        ) {
+            if (
+                grid[y][x] === '.'
+            ) {
+                floors.push({
+                    x,
+                    y
+                })
+            }
+        }
+    }
+
+    const reserved =
+        new Set()
+
+    function reserve(position) {
+        reserved.add(
+            tileKey(
+                position.x,
+                position.y
+            )
+        )
+    }
+
+    reserve(start)
+    reserve(exit)
+
+    cores.forEach(reserve)
+    gates.forEach(reserve)
+    traps.forEach(reserve)
+
+    const difficulty = {
+        enemyCount:
+            Math.min(
+                1 +
+                Math.floor(index * 0.7),
+                7
+            ),
+
+        enemyMoveEvery:
+            index < 2
+                ? 3
+                : index < 5
+                    ? 2
+                    : 1,
+
+        enemyDamage:
+            6 + index * 2,
+
+        chaseRange:
+            4 + index,
+
+        extraMoveEvery:
+            index >= 8
+                ? 3
+                : 0
+    }
+
+    const enemyCount =
+        difficulty.enemyCount
+
+    const enemies = []
+
+    const enemyFloors =
+        floors.filter(position => {
+            const distance =
+                Math.abs(
+                    position.x -
+                    start.x
+                ) +
+                Math.abs(
+                    position.y -
+                    start.y
+                )
+
+            return (
+                !reserved.has(
+                    tileKey(
+                        position.x,
+                        position.y
+                    )
+                ) &&
+                distance >= 5
+            )
+        })
+
+    for (
+        let enemyIndex = 0;
+        enemyIndex < enemyCount;
+        enemyIndex++
+    ) {
+        if (
+            enemyFloors.length === 0
+        ) {
+            break
+        }
+
+        const floorIndex =
+            (
+                enemyIndex * 17 +
+                index * 23 +
+                11
+            ) %
+            enemyFloors.length
+
+        const position =
+            enemyFloors.splice(
+                floorIndex,
+                1
+            )[0]
+
+        reserve(position)
+
+        enemies.push({
+            x: position.x,
+            y: position.y,
+            homeX: position.x,
+            homeY: position.y,
+            type:
+                enemyIndex % 3
+        })
+    }
+
+    const obstacleTypes = [
+        'acid',
+        'blade',
+        'plate'
+    ]
+
+    const obstacleCount =
+        Math.min(
+            2 +
+            Math.floor(index / 2),
+            6
+        )
+
+    const obstacleFloors =
+        floors.filter(position => {
+            const distance =
+                Math.abs(
+                    position.x -
+                    start.x
+                ) +
+                Math.abs(
+                    position.y -
+                    start.y
+                )
+
+            return (
+                !reserved.has(
+                    tileKey(
+                        position.x,
+                        position.y
+                    )
+                ) &&
+                distance >= 3
+            )
+        })
+
+    const obstacles = []
+
+    for (
+        let obstacleIndex = 0;
+        obstacleIndex <
+        obstacleCount;
+        obstacleIndex++
+    ) {
+        if (
+            obstacleFloors.length === 0
+        ) {
+            break
+        }
+
+        const floorIndex =
+            (
+                index * 13 +
+                obstacleIndex * 19 +
+                7
+            ) %
+            obstacleFloors.length
+
+        const position =
+            obstacleFloors.splice(
+                floorIndex,
+                1
+            )[0]
+
+        const type =
+            obstacleTypes[
+                (
+                    index +
+                    obstacleIndex
+                ) %
+                obstacleTypes.length
+            ]
+
+        reserve(position)
+
+        obstacles.push({
+            x: position.x,
+            y: position.y,
+            type,
+            phase:
+                index +
+                obstacleIndex * 0.8
+        })
+    }
+
+    const names = [
+        'Iteration Entry',
+        'Counter Circuit',
+        'Bridge Repeat',
+        'Firewall Spiral',
+        'Even-Step Vault',
+        'Sentinel Cycle',
+        'Nested Matrix',
+        'Countdown Depths',
+        'Pattern Engine',
+        'Infinite Core'
+    ]
+
+    return {
+        grid,
+        start,
+        exit,
+        cores,
+        gates,
+        traps,
+        obstacles,
+        enemies,
+        difficulty,
+
+        name:
+            names[index],
+
+        mission:
+            `Collect ${cores.length} data cores, solve the ` +
+            `${challenges[index].kind.toUpperCase()} loop terminal, ` +
+            `avoid the spiders, bugs and hazards, then reach the exit.`
+    }
+}
+
+function loadLevel(index) {
+    levelIndex = index
+
+    const level =
+        buildLevel(index)
+
+    state = {
+        ...level,
+
+        player: {
+            x: level.start.x,
+            y: level.start.y,
+            hp: 100,
+            inv: 0
+        },
+
+        loops: 0,
+        won: false
+    }
+
+    particles = []
+    paused = false
+    challengeGate = null
+
+    document
+        .getElementById(
+            'challengeOverlay'
+        )
+        .classList.remove('show')
+
+    document
+        .getElementById(
+            'messageOverlay'
+        )
+        .classList.remove('show')
+
+    document
+        .getElementById(
+            'levelOverlay'
+        )
+        .classList.remove('show')
+
+    log(
+        `Entered <strong>${level.name}</strong>.`
+    )
+
+    updateHUD()
+}
+
+function updateHUD() {
+    if (!state) {
+        return
+    }
+
+    document.getElementById(
+        'levelLabel'
+    ).textContent =
+        `${levelIndex + 1}/10`
+
+    document.getElementById(
+        'hpLabel'
+    ).textContent =
+        Math.max(
+            0,
+            state.player.hp
+        )
+
+    document.getElementById(
+        'coreLabel'
+    ).textContent =
+        `${
+            state.cores.filter(
+                core => core.taken
+            ).length
+        }/${state.cores.length}`
+
+    document.getElementById(
+        'loopLabel'
+    ).textContent =
+        state.loops
+
+    document.getElementById(
+        'missionText'
+    ).textContent =
+        state.mission
+}
+
+function log(message) {
+    const container =
+        document.getElementById(
+            'log'
+        )
+
+    const entry =
+        document.createElement(
+            'div'
+        )
+
+    entry.className =
+        'log-entry'
+
+    entry.innerHTML =
+        message
+
+    container.prepend(entry)
+
+    while (
+        container.children.length >
+        8
+    ) {
+        container.lastChild.remove()
+    }
+}
+
+function blocked(x, y) {
+    if (
+        x < 0 ||
+        y < 0 ||
+        x >= COLS ||
+        y >= ROWS
+    ) {
+        return true
+    }
+
+    if (
+        state.grid[y][x] === '#'
+    ) {
+        return true
+    }
+
+    return state.gates.some(
+        gate => {
+            return (
+                gate.x === x &&
+                gate.y === y &&
+                !gate.open
+            )
+        }
+    )
+}
+
+function moveOpponentOutOfPath(x, y) {
+    const opponent =
+        state.enemies.find(
+            enemy => {
+                return (
+                    enemy.x === x &&
+                    enemy.y === y
+                )
+            }
+        )
+
+    if (!opponent) {
+        return true
+    }
+
+    const oldPlayerX =
+        state.player.x
+
+    const oldPlayerY =
+        state.player.y
+
+    const oldTileOccupied =
+        state.enemies.some(
+            enemy => {
+                return (
+                    enemy !== opponent &&
+                    enemy.x === oldPlayerX &&
+                    enemy.y === oldPlayerY
+                )
+            }
+        )
+
+    if (oldTileOccupied) {
+        return false
+    }
+
+    opponent.x = oldPlayerX
+    opponent.y = oldPlayerY
+
+    pulse(x, y, '#ffd447')
+
+    log(
+        '<strong>Path cleared:</strong> ' +
+        'Hacko slipped past the opponent.'
+    )
+
+    return true
+}
+
+function move(dx, dy) {
+    HackoAudio.play("step");
+    if (
+        paused ||
+        !state ||
+        state.won
+    ) {
+        return
+    }
+
+    const now =
+        performance.now()
+
+    if (
+        now - lastMove < 90
+    ) {
+        return
+    }
+
+    lastMove = now
+
+    const newX =
+        state.player.x + dx
+
+    const newY =
+        state.player.y + dy
+
+    if (
+        blocked(newX, newY)
+    ) {
+        pulse(
+            state.player.x,
+            state.player.y,
+            '#ff416c'
+        )
+
+        return
+    }
+
+    if (
+        !moveOpponentOutOfPath(
+            newX,
+            newY
+        )
+    ) {
+        pulse(
+            state.player.x,
+            state.player.y,
+            '#ff416c'
+        )
+
+        return
+    }
+
+    state.player.x = newX
+    state.player.y = newY
+
+    state.loops++
+    progress.totalLoops++
+
+    checkTile()
+    enemyTurn()
+
+    updateHUD()
+}
+
+function checkTile() {
+    state.cores.forEach(
+        core => {
+            if (
+                !core.taken &&
+                core.x ===
+                    state.player.x &&
+                core.y ===
+                    state.player.y
+            ) {
+                core.taken = true
+
+                log(
+                    '<strong>Data core acquired.</strong>'
+                )
+
+                burst(
+                    core.x,
+                    core.y,
+                    '#8dff72'
+                )
+            }
+        }
+    )
+
+    const trap =
+        state.traps.find(
+            item => {
+                return (
+                    item.x ===
+                        state.player.x &&
+                    item.y ===
+                        state.player.y
+                )
+            }
+        )
+
+    if (trap) {
+        const active =
+            isSpikeActive(trap)
+
+        if (active) {
+            damage(
+                12 +
+                levelIndex * 2,
+                'energy spikes'
+            )
+        }
+    }
+
+    const obstacle =
+        state.obstacles.find(
+            item => {
+                return (
+                    item.x ===
+                        state.player.x &&
+                    item.y ===
+                        state.player.y
+                )
+            }
+        )
+
+    if (obstacle) {
+        if (
+            obstacle.type === 'acid'
+        ) {
+            damage(
+                10 +
+                levelIndex,
+                'toxic pool'
+            )
+        }
+
+        if (
+            obstacle.type === 'blade' &&
+            isBladeActive(obstacle)
+        ) {
+            damage(
+                18 +
+                levelIndex,
+                'spinning blade'
+            )
+        }
+
+        if (
+            obstacle.type === 'plate'
+        ) {
+            log(
+                '<strong>Pressure plate activated.</strong>'
+            )
+
+            burst(
+                obstacle.x,
+                obstacle.y,
+                '#ff69ca'
+            )
+        }
+    }
+
+    const onExit =
+        state.exit.x ===
+            state.player.x &&
+        state.exit.y ===
+            state.player.y
+
+    if (onExit) {
+        const allCoresCollected =
+            state.cores.every(
+                core => core.taken
+            )
+
+        const allGatesOpen =
+            state.gates.every(
+                gate => gate.open
+            )
+
+        if (
+            allCoresCollected &&
+            allGatesOpen
+        ) {
+            completeLevel()
+        } else {
+            log(
+                '<strong>Exit locked:</strong> ' +
+                'collect all cores and solve the terminal.'
+            )
+        }
+    }
+}
+
+function enemyTurn() {
+    if (
+        state.loops %
+        state.difficulty.enemyMoveEvery !==
+        0
+    ) {
+        return
+    }
+
+    const moveWave = () => {
+        state.enemies.forEach(
+            (enemy, enemyIndex) => {
+                const distanceX =
+                    state.player.x - enemy.x
+
+                const distanceY =
+                    state.player.y - enemy.y
+
+                const distance =
+                    Math.abs(distanceX) +
+                    Math.abs(distanceY)
+
+                const horizontal = {
+                    x: Math.sign(distanceX),
+                    y: 0
+                }
+
+                const vertical = {
+                    x: 0,
+                    y: Math.sign(distanceY)
+                }
+
+                const patrol = [
+                    { x: 1, y: 0 },
+                    { x: 0, y: 1 },
+                    { x: -1, y: 0 },
+                    { x: 0, y: -1 }
+                ]
+
+                const chase =
+                    distance <=
+                    state.difficulty.chaseRange
+
+                const preferred =
+                    Math.abs(distanceX) >
+                    Math.abs(distanceY)
+                        ? [horizontal, vertical]
+                        : [vertical, horizontal]
+
+                const patrolOffset =
+                    (
+                        state.loops +
+                        enemyIndex +
+                        enemy.type
+                    ) % 4
+
+                const candidates =
+                    chase
+                        ? [
+                            ...preferred,
+                            ...patrol
+                        ]
+                        : patrol
+                            .slice(patrolOffset)
+                            .concat(
+                                patrol.slice(
+                                    0,
+                                    patrolOffset
+                                )
+                            )
+
+                const step =
+                    candidates.find(
+                        candidate => {
+                            if (
+                                candidate.x === 0 &&
+                                candidate.y === 0
+                            ) {
+                                return false
+                            }
+
+                            const x =
+                                enemy.x + candidate.x
+
+                            const y =
+                                enemy.y + candidate.y
+
+                            const occupied =
+                                state.enemies.some(
+                                    other => {
+                                        return (
+                                            other !== enemy &&
+                                            other.x === x &&
+                                            other.y === y
+                                        )
+                                    }
+                                )
+
+                            const exitTile =
+                                state.exit.x === x &&
+                                state.exit.y === y
+
+                            return (
+                                !blocked(x, y) &&
+                                !occupied &&
+                                !exitTile
+                            )
+                        }
+                    )
+
+                if (!step) {
+                    return
+                }
+
+                const newX =
+                    enemy.x + step.x
+
+                const newY =
+                    enemy.y + step.y
+
+                const attacksPlayer =
+                    state.player.x === newX &&
+                    state.player.y === newY
+
+                if (attacksPlayer) {
+                    damage(
+                        state.difficulty.enemyDamage,
+                        enemy.type === 0
+                            ? 'spider'
+                            : 'bug'
+                    )
+
+                    pulse(
+                        enemy.x,
+                        enemy.y,
+                        '#ff416c'
+                    )
+
+                    return
+                }
+
+                enemy.x = newX
+                enemy.y = newY
+            }
+        )
+    }
+
+    moveWave()
+
+    if (
+        state.difficulty.extraMoveEvery &&
+        state.loops %
+            state.difficulty.extraMoveEvery ===
+            0
+    ) {
+        moveWave()
+    }
+}
+
+function damage(amount, source) {
+    if (
+        performance.now() <
+        state.player.inv
+    ) {
+        return
+    }
+
+    state.player.hp -= amount
+
+    state.player.inv =
+        performance.now() + 700
+
+    log(
+        `<strong>Damage:</strong> ` +
+        `${amount} from ${source}.`
+    )
+
+    burst(
+        state.player.x,
+        state.player.y,
+        '#ff416c'
+    )
+
+    updateHUD()
+
+    if (
+        state.player.hp <= 0
+    ) {
+        state.player.hp = 0
+
+        updateHUD()
+
+        showMessage(
+            'SYSTEM LOOP BROKEN',
+
+            'Hacko ran out of energy inside the labyrinth.',
+
+            'RETRY',
+
+            restartLevel
+        )
+    }
+}
+
+function nearestGate() {
+    return state.gates.find(
+        gate => {
+            const distance =
+                Math.abs(
+                    gate.x -
+                    state.player.x
+                ) +
+                Math.abs(
+                    gate.y -
+                    state.player.y
+                )
+
+            return (
+                !gate.open &&
+                distance <= 1
+            )
+        }
+    )
+}
+
+function interact() {
+    HackoAudio.play("select");
+    if (
+        paused ||
+        !state
+    ) {
+        return
+    }
+
+    const gate =
+        nearestGate()
+
+    if (!gate) {
+        log(
+            'No loop terminal within reach.'
+        )
+
+        return
+    }
+
+    challengeGate = gate
+
+    const challenge =
+        challenges[
+            gate.challenge
+        ]
+
+    document.getElementById(
+        'challengeTitle'
+    ).textContent =
+        `LEVEL ${levelIndex + 1}: ` +
+        challenge.title
+
+    document.getElementById(
+        'challengePrompt'
+    ).innerHTML =
+        challenge.prompt
+
+    document.getElementById(
+        'expectedOutput'
+    ).textContent =
+        challenge.output
+
+    document.getElementById(
+        'challengeHint'
+    ).textContent = ''
+
+    /* fresh puzzle, so hints start from the gentlest tier */
+    hintTier = 0
+
+    document.getElementById(
+        'answerInput'
+    ).value = ''
+
+    const feedback =
+        document.getElementById(
+            'feedback'
+        )
+
+    feedback.className =
+        'feedback'
+
+    feedback.textContent =
+        'Enter your answer, then run the loop.'
+
+    document
+        .getElementById(
+            'challengeOverlay'
+        )
+        .classList.add('show')
+
+    paused = true
+
+    setTimeout(() => {
+        document
+            .getElementById(
+                'answerInput'
+            )
+            .focus()
+    }, 50)
+}
+
+function normalize(value) {
+    return value
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/;/g, '')
+}
+
+function submitAnswer() {
+    const challenge =
+        challenges[levelIndex]
+
+    const rawAnswer =
+        document.getElementById(
+            'answerInput'
+        ).value
+
+    const normalizedAnswer =
+        normalize(rawAnswer)
+
+    let correct =
+        rawAnswer.trim().length > 12 &&
+        challenge.tokens.every(
+            token => {
+                return normalizedAnswer.includes(
+                    normalize(token)
+                )
+            }
+        )
+
+    const forCount =
+        (
+            rawAnswer.match(
+                /\bfor\s*\(/gi
+            ) || []
+        ).length
+
+    const whileCount =
+        (
+            rawAnswer.match(
+                /\bwhile\s*\(/gi
+            ) || []
+        ).length
+
+    if (
+        challenge.minFor &&
+        forCount <
+        challenge.minFor
+    ) {
+        correct = false
+    }
+
+    if (
+        challenge.minWhile &&
+        whileCount <
+        challenge.minWhile
+    ) {
+        correct = false
+    }
+
+    if (
+        challenge.kind === 'for' &&
+        forCount < 1
+    ) {
+        correct = false
+    }
+
+    if (
+        challenge.kind === 'while' &&
+        whileCount < 1
+    ) {
+        correct = false
+    }
+
+    if (
+        challenge.kind === 'mixed' &&
+        (
+            forCount < 1 ||
+            whileCount < 1
+        )
+    ) {
+        correct = false
+    }
+
+    const feedback =
+        document.getElementById(
+            'feedback'
+        )
+
+    if (correct) {
+        feedback.className =
+            'feedback good'
+
+        feedback.textContent =
+            'ACCESS GRANTED — loop logic accepted.'
+
+        challengeGate.open = true
+
+        progress.unlocked =
+            Math.max(
+                progress.unlocked,
+                Math.min(
+                    10,
+                    levelIndex + 2
+                )
+            )
+
+        localStorage.setItem(
+            'hackoLoopProgress',
+            JSON.stringify(
+                progress
+            )
+        )
+
+        burst(
+            challengeGate.x,
+            challengeGate.y,
+            '#ffd447'
+        )
+
+        setTimeout(() => {
+            closeChallenge()
+
+            log(
+                '<strong>Loop gate opened.</strong>'
+            )
+        }, 650)
+    } else {
+        feedback.className =
+            'feedback bad'
+
+        feedback.textContent =
+            'ACCESS DENIED — check the loop type, condition, ' +
+            'update step and required action.'
+    }
+}
+
+/* Reveals one hint tier at a time.
+ *
+ * This used to print the hint AND paste challenge.starter
+ * into the answer box - and starter was the finished, correct
+ * code. Pressing HINT then SUBMIT solved the level without
+ * typing anything, which is what the client reported as
+ * "the hint shows the answer itself".
+ *
+ * Hints now go nudge -> structure -> worked example, and the
+ * worked example always uses different numbers from the
+ * answer. tools/audit-hints.js fails the build if one ever
+ * contains its own answer again.
+ */
+let hintTier = 0
+
+function useHint() {
+    const challenge =
+        challenges[levelIndex]
+
+    const tiers =
+        challenge.hints || [challenge.hint]
+
+    const label =
+        ['HINT', 'STRUCTURE', 'EXAMPLE'][hintTier] ||
+        'EXAMPLE'
+
+    document.getElementById(
+        'challengeHint'
+    ).textContent =
+        label + ': ' + tiers[hintTier]
+
+    if (hintTier < tiers.length - 1) {
+        hintTier++
+    }
+}
+
+function closeChallenge() {
+    document
+        .getElementById(
+            'challengeOverlay'
+        )
+        .classList.remove('show')
+
+    paused = false
+    challengeGate = null
+}
+
+function completeLevel() {
+    /* tell the mission map this level is cleared */
+    if (window.HackoStore) {
+        HackoStore.completeLevel(4, levelIndex, 100);
+    }
+
+    HackoAudio.play("win");
+    if (state.won) {
+        return
+    }
+
+    state.won = true
+
+    if (
+        !progress.completed.includes(
+            levelIndex + 1
+        )
+    ) {
+        progress.completed.push(
+            levelIndex + 1
+        )
+    }
+
+    progress.unlocked =
+        Math.max(
+            progress.unlocked,
+            Math.min(
+                10,
+                levelIndex + 2
+            )
+        )
+
+    localStorage.setItem(
+        'hackoLoopProgress',
+        JSON.stringify(
+            progress
+        )
+    )
+
+    showMessage(
+        'LABYRINTH CLEARED',
+
+        `Hacko escaped ${state.name}. ` +
+        `You used ${state.loops} movement iterations.`,
+
+        levelIndex === 9
+            ? 'PLAY AGAIN'
+            : 'NEXT LEVEL',
+
+        () => {
+            if (
+                levelIndex === 9
+            ) {
+                loadLevel(0)
+            } else {
+                loadLevel(
+                    levelIndex + 1
+                )
+            }
+        }
+    )
+}
+
+function showMessage(
+    title,
+    body,
+    label,
+    callback
+) {
+    paused = true
+
+    document.getElementById(
+        'messageTitle'
+    ).textContent =
+        title
+
+    document.getElementById(
+        'messageBody'
+    ).textContent =
+        body
+
+    const button =
+        document.getElementById(
+            'messagePrimary'
+        )
+
+    button.textContent =
+        label
+
+    button.onclick =
+        callback
+
+    document
+        .getElementById(
+            'messageOverlay'
+        )
+        .classList.add('show')
+}
+
+function restartLevel() {
+    loadLevel(levelIndex)
+}
+
+function openLevelSelect() {
+    paused = true
+
+    const grid =
+        document.getElementById(
+            'levelGrid'
+        )
+
+    grid.innerHTML = ''
+
+    for (
+        let index = 0;
+        index < 10;
+        index++
+    ) {
+        const unlocked =
+            index <
+            progress.unlocked
+
+        const completed =
+            progress.completed.includes(
+                index + 1
+            )
+
+        const card =
+            document.createElement(
+                'div'
+            )
+
+        card.className =
+            'level-card' +
+            (
+                !unlocked
+                    ? ' locked'
+                    : ''
+            ) +
+            (
+                completed
+                    ? ' complete'
+                    : ''
+            )
+
+        card.innerHTML = `
+            <b>${index + 1}</b>
+
+            <small>
+                ${challenges[index].title}
+            </small>
+
+            ${
+                completed
+                    ? '<div style="color:#8dff72">✓ COMPLETE</div>'
+                    : ''
+            }
+        `
+
+        if (unlocked) {
+            card.onclick = () => {
+                loadLevel(index)
+            }
+        }
+
+        grid.appendChild(card)
+    }
+
+    document
+        .getElementById(
+            'levelOverlay'
+        )
+        .classList.add('show')
+}
+
+function closeLevelSelect() {
+    document
+        .getElementById(
+            'levelOverlay'
+        )
+        .classList.remove('show')
+
+    document
+        .getElementById(
+            'messageOverlay'
+        )
+        .classList.remove('show')
+
+    paused = false
+}
+
+function resetProgress() {
+    localStorage.removeItem(
+        'hackoLoopProgress'
+    )
+
+    location.reload()
+}
+
+function pulse(x, y, color) {
+    particles.push({
+        x:
+            x * TILE +
+            TILE / 2,
+
+        y:
+            y * TILE +
+            TILE / 2,
+
+        color,
+        life: 16,
+        r: 6
+    })
+}
+
+function burst(x, y, color) {
+    for (
+        let particleIndex = 0;
+        particleIndex < 14;
+        particleIndex++
+    ) {
+        particles.push({
+            x:
+                x * TILE +
+                TILE / 2,
+
+            y:
+                y * TILE +
+                TILE / 2,
+
+            color,
+            life: 28,
+            r: 3,
+
+            vx:
+                (
+                    Math.random() -
+                    0.5
+                ) * 7,
+
+            vy:
+                (
+                    Math.random() -
+                    0.5
+                ) * 7
+        })
+    }
+}
+
+function isSpikeActive(trap) {
+    return (
+        Math.floor(
+            performance.now() /
+            500 +
+            trap.phase
+        ) %
+        2 === 0
+    )
+}
+
+function isBladeActive(obstacle) {
+    return (
+        Math.floor(
+            performance.now() /
+            500 +
+            obstacle.phase
+        ) %
+        2 === 0
+    )
+}
+
+function roundedRect(
+    context,
+    x,
+    y,
+    width,
+    height,
+    radius
+) {
+    context.beginPath()
+
+    context.roundRect(
+        x,
+        y,
+        width,
+        height,
+        radius
+    )
+}
+
+function drawSpider(enemy) {
+    const centerX =
+        enemy.x * TILE + 25
+
+    const centerY =
+        enemy.y * TILE + 25
+
+    ctx.save()
+
+    ctx.strokeStyle =
+        '#281329'
+
+    ctx.lineWidth = 4
+    ctx.lineCap = 'round'
+
+    for (
+        let sideIndex = 0;
+        sideIndex < 2;
+        sideIndex++
+    ) {
+        const side =
+            sideIndex === 0
+                ? -1
+                : 1
+
+        for (
+            let leg = 0;
+            leg < 4;
+            leg++
+        ) {
+            const startY =
+                centerY -
+                10 +
+                leg * 7
+
+            const middleX =
+                centerX +
+                side * 16
+
+            const endX =
+                centerX +
+                side * 25
+
+            const endY =
+                startY +
+                (
+                    leg < 2
+                        ? -5
+                        : 5
+                )
+
+            ctx.beginPath()
+
+            ctx.moveTo(
+                centerX +
+                side * 7,
+                startY
+            )
+
+            ctx.lineTo(
+                middleX,
+                startY
+            )
+
+            ctx.lineTo(
+                endX,
+                endY
+            )
+
+            ctx.stroke()
+        }
+    }
+
+    ctx.shadowBlur = 16
+    ctx.shadowColor = '#ff416c'
+
+    ctx.fillStyle = '#5c1d4a'
+
+    ctx.beginPath()
+
+    ctx.ellipse(
+        centerX,
+        centerY + 5,
+        14,
+        17,
+        0,
+        0,
+        Math.PI * 2
+    )
+
+    ctx.fill()
+
+    ctx.fillStyle = '#922c62'
+
+    ctx.beginPath()
+
+    ctx.arc(
+        centerX,
+        centerY - 9,
+        10,
+        0,
+        Math.PI * 2
+    )
+
+    ctx.fill()
+
+    ctx.shadowBlur = 0
+    ctx.fillStyle = '#ffd447'
+
+    const eyes = [
+        [-5, -12],
+        [0, -14],
+        [5, -12],
+        [-3, -7],
+        [3, -7]
+    ]
+
+    eyes.forEach(
+        ([x, y]) => {
+            ctx.beginPath()
+
+            ctx.arc(
+                centerX + x,
+                centerY + y,
+                1.7,
+                0,
+                Math.PI * 2
+            )
+
+            ctx.fill()
+        }
+    )
+
+    ctx.restore()
+}
+
+function drawBeetle(enemy) {
+    const centerX =
+        enemy.x * TILE + 25
+
+    const centerY =
+        enemy.y * TILE + 25
+
+    ctx.save()
+
+    ctx.strokeStyle =
+        '#281d38'
+
+    ctx.lineWidth = 4
+    ctx.lineCap = 'round'
+
+    for (
+        let index = -1;
+        index <= 1;
+        index++
+    ) {
+        ctx.beginPath()
+
+        ctx.moveTo(
+            centerX - 10,
+            centerY +
+            index * 9
+        )
+
+        ctx.lineTo(
+            centerX - 23,
+            centerY +
+            index * 13
+        )
+
+        ctx.stroke()
+
+        ctx.beginPath()
+
+        ctx.moveTo(
+            centerX + 10,
+            centerY +
+            index * 9
+        )
+
+        ctx.lineTo(
+            centerX + 23,
+            centerY +
+            index * 13
+        )
+
+        ctx.stroke()
+    }
+
+    ctx.shadowBlur = 15
+    ctx.shadowColor = '#ff8a3d'
+
+    ctx.fillStyle = '#cb4e3c'
+
+    ctx.beginPath()
+
+    ctx.ellipse(
+        centerX,
+        centerY + 3,
+        16,
+        19,
+        0,
+        0,
+        Math.PI * 2
+    )
+
+    ctx.fill()
+
+    ctx.strokeStyle = '#59283f'
+    ctx.lineWidth = 3
+
+    ctx.beginPath()
+
+    ctx.moveTo(
+        centerX,
+        centerY - 13
+    )
+
+    ctx.lineTo(
+        centerX,
+        centerY + 20
+    )
+
+    ctx.stroke()
+
+    ctx.shadowBlur = 0
+
+    ctx.fillStyle = '#2c1833'
+
+    ctx.beginPath()
+
+    ctx.arc(
+        centerX,
+        centerY - 13,
+        10,
+        0,
+        Math.PI * 2
+    )
+
+    ctx.fill()
+
+    ctx.strokeStyle = '#2c1833'
+    ctx.lineWidth = 2
+
+    ctx.beginPath()
+
+    ctx.moveTo(
+        centerX - 4,
+        centerY - 19
+    )
+
+    ctx.lineTo(
+        centerX - 11,
+        centerY - 27
+    )
+
+    ctx.moveTo(
+        centerX + 4,
+        centerY - 19
+    )
+
+    ctx.lineTo(
+        centerX + 11,
+        centerY - 27
+    )
+
+    ctx.stroke()
+
+    ctx.restore()
+}
+
+function drawFlyingBug(enemy) {
+    const centerX =
+        enemy.x * TILE + 25
+
+    const centerY =
+        enemy.y * TILE + 25
+
+    const flutter =
+        Math.sin(
+            performance.now() /
+            100 +
+            enemy.x
+        ) * 3
+
+    ctx.save()
+
+    ctx.globalAlpha = 0.7
+    ctx.fillStyle = '#b5eaff'
+
+    ctx.beginPath()
+
+    ctx.ellipse(
+        centerX - 12,
+        centerY - 3 + flutter,
+        10,
+        15,
+        -0.5,
+        0,
+        Math.PI * 2
+    )
+
+    ctx.ellipse(
+        centerX + 12,
+        centerY - 3 - flutter,
+        10,
+        15,
+        0.5,
+        0,
+        Math.PI * 2
+    )
+
+    ctx.fill()
+
+    ctx.globalAlpha = 1
+    ctx.shadowBlur = 14
+    ctx.shadowColor = '#ff69ca'
+
+    ctx.fillStyle = '#702a70'
+
+    ctx.beginPath()
+
+    ctx.ellipse(
+        centerX,
+        centerY + 2,
+        10,
+        17,
+        0,
+        0,
+        Math.PI * 2
+    )
+
+    ctx.fill()
+
+    ctx.shadowBlur = 0
+    ctx.fillStyle = '#ffd447'
+
+    ctx.beginPath()
+
+    ctx.arc(
+        centerX - 4,
+        centerY - 8,
+        2,
+        0,
+        Math.PI * 2
+    )
+
+    ctx.arc(
+        centerX + 4,
+        centerY - 8,
+        2,
+        0,
+        Math.PI * 2
+    )
+
+    ctx.fill()
+
+    ctx.restore()
+}
+
+function drawObstacle(obstacle) {
+    const tileX =
+        obstacle.x * TILE
+
+    const tileY =
+        obstacle.y * TILE
+
+    if (
+        obstacle.type === 'acid'
+    ) {
+        const wave =
+            Math.sin(
+                performance.now() /
+                180 +
+                obstacle.phase
+            ) * 2
+
+        ctx.save()
+
+        ctx.shadowBlur = 18
+        ctx.shadowColor = '#7cff4f'
+
+        const gradient =
+            ctx.createLinearGradient(
+                tileX,
+                tileY + 10,
+                tileX,
+                tileY + 43
+            )
+
+        gradient.addColorStop(
+            0,
+            '#87ff62'
+        )
+
+        gradient.addColorStop(
+            1,
+            '#246937'
+        )
+
+        ctx.fillStyle = gradient
+
+        roundedRect(
+            ctx,
+            tileX + 4,
+            tileY + 13,
+            42,
+            29,
+            9
+        )
+
+        ctx.fill()
+
+        ctx.fillStyle =
+            '#d6ff7e'
+
+        ctx.beginPath()
+
+        ctx.ellipse(
+            tileX + 17,
+            tileY + 25 + wave,
+            8,
+            4,
+            0,
+            0,
+            Math.PI * 2
+        )
+
+        ctx.ellipse(
+            tileX + 34,
+            tileY + 30 - wave,
+            7,
+            4,
+            0,
+            0,
+            Math.PI * 2
+        )
+
+        ctx.fill()
+
+        ctx.restore()
+    }
+
+    if (
+        obstacle.type === 'blade'
+    ) {
+        const active =
+            isBladeActive(
+                obstacle
+            )
+
+        const angle =
+            performance.now() /
+            170 +
+            obstacle.phase
+
+        ctx.save()
+
+        ctx.translate(
+            tileX + 25,
+            tileY + 25
+        )
+
+        ctx.rotate(angle)
+
+        ctx.globalAlpha =
+            active ? 1 : 0.35
+
+        ctx.shadowBlur =
+            active ? 12 : 0
+
+        ctx.shadowColor =
+            '#ffffff'
+
+        ctx.fillStyle =
+            '#d9e8f2'
+
+        ctx.strokeStyle =
+            '#5e7183'
+
+        ctx.lineWidth = 2
+
+        for (
+            let bladeIndex = 0;
+            bladeIndex < 4;
+            bladeIndex++
+        ) {
+            ctx.rotate(
+                Math.PI / 2
+            )
+
+            ctx.beginPath()
+
+            ctx.moveTo(0, 0)
+            ctx.lineTo(7, -5)
+            ctx.lineTo(21, 0)
+            ctx.lineTo(7, 5)
+            ctx.closePath()
+
+            ctx.fill()
+            ctx.stroke()
+        }
+
+        ctx.fillStyle =
+            active
+                ? '#ff8a3d'
+                : '#6c7582'
+
+        ctx.beginPath()
+
+        ctx.arc(
+            0,
+            0,
+            7,
+            0,
+            Math.PI * 2
+        )
+
+        ctx.fill()
+
+        ctx.restore()
+    }
+
+    if (
+        obstacle.type === 'plate'
+    ) {
+        const pressed =
+            state.player.x ===
+                obstacle.x &&
+            state.player.y ===
+                obstacle.y
+
+        ctx.save()
+
+        ctx.shadowBlur =
+            pressed ? 18 : 7
+
+        ctx.shadowColor =
+            '#ff69ca'
+
+        ctx.fillStyle =
+            pressed
+                ? '#ff69ca'
+                : '#7f3d7c'
+
+        roundedRect(
+            ctx,
+            tileX + 8,
+            tileY + 30,
+            34,
+            pressed ? 8 : 12,
+            5
+        )
+
+        ctx.fill()
+
+        ctx.shadowBlur = 0
+
+        ctx.strokeStyle =
+            '#ffb6e7'
+
+        ctx.lineWidth = 2
+
+        ctx.strokeRect(
+            tileX + 11,
+            tileY + 32,
+            28,
+            5
+        )
+
+        ctx.restore()
+    }
+}
+
+function drawHacko(player) {
+    const centerX =
+        player.x * TILE +
+        TILE / 2
+
+    const centerY =
+        player.y * TILE +
+        TILE / 2
+
+    const blinking =
+        performance.now() <
+            player.inv &&
+        Math.floor(
+            performance.now() /
+            80
+        ) %
+        2 === 0
+
+    ctx.save()
+
+    ctx.globalAlpha =
+        blinking ? 0.35 : 1
+
+    ctx.shadowBlur = 18
+    ctx.shadowColor = '#45f3ff'
+
+    if (
+        hackoImageReady &&
+        hackoImage.naturalWidth > 0
+    ) {
+        const maxWidth = 44
+        const maxHeight = 47
+
+        const scale =
+            Math.min(
+                maxWidth /
+                hackoImage.naturalWidth,
+
+                maxHeight /
+                hackoImage.naturalHeight
+            )
+
+        const width =
+            hackoImage.naturalWidth *
+            scale
+
+        const height =
+            hackoImage.naturalHeight *
+            scale
+
+        ctx.drawImage(
+            hackoImage,
+
+            centerX -
+            width / 2,
+
+            centerY -
+            height / 2,
+
+            width,
+            height
+        )
+    } else {
+        ctx.fillStyle = '#45f3ff'
+
+        ctx.beginPath()
+
+        ctx.arc(
+            centerX,
+            centerY - 2,
+            17,
+            0,
+            Math.PI * 2
+        )
+
+        ctx.fill()
+
+        ctx.shadowBlur = 0
+        ctx.fillStyle = '#081426'
+
+        ctx.fillRect(
+            centerX - 9,
+            centerY - 8,
+            6,
+            6
+        )
+
+        ctx.fillRect(
+            centerX + 3,
+            centerY - 8,
+            6,
+            6
+        )
+
+        ctx.fillStyle = '#ffffff'
+
+        ctx.font =
+            'bold 9px Orbitron'
+
+        ctx.textAlign =
+            'center'
+
+        ctx.fillText(
+            'H',
+            centerX,
+            centerY + 9
+        )
+    }
+
+    ctx.restore()
+}
+
+function draw() {
+    if (!state) {
+        return
+    }
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    )
+
+    const scaleX =
+        canvas.width /
+        (COLS * TILE)
+
+    const scaleY =
+        canvas.height /
+        (ROWS * TILE)
+
+    ctx.save()
+    ctx.scale(scaleX, scaleY)
+
+    const backgroundGradient =
+        ctx.createLinearGradient(
+            0,
+            0,
+            COLS * TILE,
+            ROWS * TILE
+        )
+
+    backgroundGradient.addColorStop(
+        0,
+        '#081c30'
+    )
+
+    backgroundGradient.addColorStop(
+        0.5,
+        '#0d2943'
+    )
+
+    backgroundGradient.addColorStop(
+        1,
+        '#171b3d'
+    )
+
+    ctx.fillStyle =
+        backgroundGradient
+
+    ctx.fillRect(
+        0,
+        0,
+        COLS * TILE,
+        ROWS * TILE
+    )
+
+    for (
+        let y = 0;
+        y < ROWS;
+        y++
+    ) {
+        for (
+            let x = 0;
+            x < COLS;
+            x++
+        ) {
+            const wall =
+                state.grid[y][x] === '#'
+
+            const tileX =
+                x * TILE
+
+            const tileY =
+                y * TILE
+
+            if (wall) {
+                const wallGradient =
+                    ctx.createLinearGradient(
+                        tileX,
+                        tileY,
+                        tileX,
+                        tileY + TILE
+                    )
+
+                wallGradient.addColorStop(
+                    0,
+                    '#285979'
+                )
+
+                wallGradient.addColorStop(
+                    1,
+                    '#122e4b'
+                )
+
+                ctx.fillStyle =
+                    wallGradient
+
+                ctx.fillRect(
+                    tileX,
+                    tileY,
+                    TILE,
+                    TILE
+                )
+
+                ctx.strokeStyle =
+                    '#3b7d9d'
+
+                ctx.lineWidth = 2
+
+                ctx.strokeRect(
+                    tileX + 3,
+                    tileY + 3,
+                    TILE - 6,
+                    TILE - 6
+                )
+
+                ctx.fillStyle =
+                    '#74dbef25'
+
+                ctx.fillRect(
+                    tileX + 8,
+                    tileY + 8,
+                    TILE - 16,
+                    6
+                )
+
+                ctx.fillStyle =
+                    '#07152466'
+
+                ctx.fillRect(
+                    tileX + 8,
+                    tileY + 35,
+                    TILE - 16,
+                    7
+                )
+            } else {
+                ctx.fillStyle =
+                    (
+                        x + y
+                    ) %
+                    2
+                        ? '#17425b'
+                        : '#153a55'
+
+                ctx.fillRect(
+                    tileX,
+                    tileY,
+                    TILE,
+                    TILE
+                )
+
+                ctx.strokeStyle =
+                    '#2d668033'
+
+                ctx.strokeRect(
+                    tileX,
+                    tileY,
+                    TILE,
+                    TILE
+                )
+
+                ctx.fillStyle =
+                    '#6cdce70c'
+
+                ctx.beginPath()
+
+                ctx.arc(
+                    tileX + 10,
+                    tileY + 10,
+                    2,
+                    0,
+                    Math.PI * 2
+                )
+
+                ctx.fill()
+            }
+        }
+    }
+
+    state.traps.forEach(
+        trap => {
+            const active =
+                isSpikeActive(trap)
+
+            ctx.save()
+
+            ctx.shadowBlur =
+                active ? 14 : 4
+
+            ctx.shadowColor =
+                '#ad72ff'
+
+            ctx.fillStyle =
+                active
+                    ? '#ad72ff'
+                    : '#513b72'
+
+            for (
+                let spike = 0;
+                spike < 3;
+                spike++
+            ) {
+                const baseX =
+                    trap.x * TILE +
+                    6 +
+                    spike * 13
+
+                ctx.beginPath()
+
+                ctx.moveTo(
+                    baseX,
+                    trap.y * TILE + 42
+                )
+
+                ctx.lineTo(
+                    baseX + 7,
+
+                    trap.y * TILE +
+                    (
+                        active
+                            ? 8
+                            : 25
+                    )
+                )
+
+                ctx.lineTo(
+                    baseX + 14,
+                    trap.y * TILE + 42
+                )
+
+                ctx.closePath()
+                ctx.fill()
+            }
+
+            ctx.restore()
+        }
+    )
+
+    state.obstacles.forEach(
+        drawObstacle
+    )
+
+    state.cores.forEach(
+        core => {
+            if (core.taken) {
+                return
+            }
+
+            const floatOffset =
+                Math.sin(
+                    performance.now() /
+                    250 +
+                    core.x
+                ) * 3
+
+            const centerX =
+                core.x * TILE + 25
+
+            const centerY =
+                core.y * TILE +
+                25 +
+                floatOffset
+
+            ctx.save()
+
+            ctx.shadowBlur = 22
+            ctx.shadowColor = '#8dff72'
+            ctx.fillStyle = '#8dff72'
+
+            ctx.beginPath()
+
+            for (
+                let point = 0;
+                point < 8;
+                point++
+            ) {
+                const angle =
+                    Math.PI /
+                    4 *
+                    point -
+                    Math.PI / 2
+
+                const radius =
+                    point % 2 === 0
+                        ? 14
+                        : 9
+
+                const pointX =
+                    centerX +
+                    Math.cos(angle) *
+                    radius
+
+                const pointY =
+                    centerY +
+                    Math.sin(angle) *
+                    radius
+
+                if (point === 0) {
+                    ctx.moveTo(
+                        pointX,
+                        pointY
+                    )
+                } else {
+                    ctx.lineTo(
+                        pointX,
+                        pointY
+                    )
+                }
+            }
+
+            ctx.closePath()
+            ctx.fill()
+
+            ctx.shadowBlur = 0
+            ctx.fillStyle = '#0b2635'
+
+            ctx.beginPath()
+
+            ctx.arc(
+                centerX,
+                centerY,
+                5,
+                0,
+                Math.PI * 2
+            )
+
+            ctx.fill()
+
+            ctx.restore()
+        }
+    )
+
+    state.gates.forEach(
+        gate => {
+            const centerX =
+                gate.x * TILE + 25
+
+            const centerY =
+                gate.y * TILE + 25
+
+            ctx.save()
+
+            ctx.shadowBlur = 16
+
+            ctx.shadowColor =
+                gate.open
+                    ? '#8dff72'
+                    : '#ffd447'
+
+            ctx.fillStyle =
+                gate.open
+                    ? '#1c6656'
+                    : '#7c5820'
+
+            roundedRect(
+                ctx,
+                gate.x * TILE + 5,
+                gate.y * TILE + 3,
+                40,
+                44,
+                7
+            )
+
+            ctx.fill()
+
+            ctx.shadowBlur = 0
+
+            ctx.strokeStyle =
+                gate.open
+                    ? '#8dff72'
+                    : '#ffd447'
+
+            ctx.lineWidth = 3
+
+            roundedRect(
+                ctx,
+                gate.x * TILE + 8,
+                gate.y * TILE + 6,
+                34,
+                38,
+                5
+            )
+
+            ctx.stroke()
+
+            ctx.fillStyle = '#ffffff'
+
+            ctx.font =
+                'bold 16px Orbitron'
+
+            ctx.textAlign =
+                'center'
+
+            ctx.fillText(
+                gate.open
+                    ? '✓'
+                    : '{ }',
+
+                centerX,
+                centerY + 6
+            )
+
+            ctx.restore()
+        }
+    )
+
+    const exitPulse =
+        17 +
+        Math.sin(
+            performance.now() /
+            180
+        ) * 3
+
+    ctx.save()
+
+    ctx.shadowBlur = 26
+    ctx.shadowColor = '#ffffff'
+
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 5
+
+    ctx.beginPath()
+
+    ctx.arc(
+        state.exit.x * TILE + 25,
+        state.exit.y * TILE + 25,
+        exitPulse,
+        0,
+        Math.PI * 2
+    )
+
+    ctx.stroke()
+
+    ctx.fillStyle = '#75efff55'
+
+    ctx.beginPath()
+
+    ctx.arc(
+        state.exit.x * TILE + 25,
+        state.exit.y * TILE + 25,
+        12,
+        0,
+        Math.PI * 2
+    )
+
+    ctx.fill()
+
+    ctx.shadowBlur = 0
+    ctx.fillStyle = '#ffffff'
+
+    ctx.font =
+        'bold 8px Orbitron'
+
+    ctx.textAlign = 'center'
+
+    ctx.fillText(
+        'EXIT',
+        state.exit.x * TILE + 25,
+        state.exit.y * TILE + 28
+    )
+
+    ctx.restore()
+
+    state.enemies.forEach(
+        enemy => {
+            if (
+                enemy.type === 0
+            ) {
+                drawSpider(enemy)
+            } else if (
+                enemy.type === 1
+            ) {
+                drawBeetle(enemy)
+            } else {
+                drawFlyingBug(enemy)
+            }
+        }
+    )
+
+    drawHacko(
+        state.player
+    )
+
+    particles.forEach(
+        particle => {
+            ctx.globalAlpha =
+                Math.max(
+                    0,
+                    particle.life / 28
+                )
+
+            ctx.fillStyle =
+                particle.color
+
+            ctx.beginPath()
+
+            ctx.arc(
+                particle.x,
+                particle.y,
+                particle.r,
+                0,
+                Math.PI * 2
+            )
+
+            ctx.fill()
+
+            particle.x +=
+                particle.vx || 0
+
+            particle.y +=
+                particle.vy || 0
+
+            particle.life--
+        }
+    )
+
+    particles =
+        particles.filter(
+            particle => {
+                return (
+                    particle.life > 0
+                )
+            }
+        )
+
+    ctx.globalAlpha = 1
+
+    ctx.restore()
+}
+
+function animationLoop() {
+    draw()
+
+    requestAnimationFrame(
+        animationLoop
+    )
+}
+
+window.addEventListener(
+    'keydown',
+    event => {
+        if (
+            dirs[event.key]
+        ) {
+            event.preventDefault()
+
+            move(
+                ...dirs[event.key]
+            )
+        } else if (
+            event.key === 'e' ||
+            event.key === 'E'
+        ) {
+            interact()
+        } else if (
+            event.key === 'r' ||
+            event.key === 'R'
+        ) {
+            restartLevel()
+        } else if (
+            event.key ===
+            'Escape'
+        ) {
+            const challengeOpen =
+                document
+                    .getElementById(
+                        'challengeOverlay'
+                    )
+                    .classList
+                    .contains(
+                        'show'
+                    )
+
+            const levelsOpen =
+                document
+                    .getElementById(
+                        'levelOverlay'
+                    )
+                    .classList
+                    .contains(
+                        'show'
+                    )
+
+            if (challengeOpen) {
+                closeChallenge()
+            } else if (
+                levelsOpen
+            ) {
+                closeLevelSelect()
+            }
+        }
+    }
+)
+
+setInterval(() => {
+    if (
+        paused ||
+        !state ||
+        state.won
+    ) {
+        return
+    }
+
+    state.traps.forEach(
+        trap => {
+            const touching =
+                trap.x ===
+                    state.player.x &&
+                trap.y ===
+                    state.player.y
+
+            if (
+                touching &&
+                isSpikeActive(trap)
+            ) {
+                damage(
+                    5 +
+                    levelIndex,
+                    'active spikes'
+                )
+            }
+        }
+    )
+
+    state.obstacles.forEach(
+        obstacle => {
+            const touching =
+                obstacle.x ===
+                    state.player.x &&
+                obstacle.y ===
+                    state.player.y
+
+            if (
+                touching &&
+                obstacle.type ===
+                    'acid'
+            ) {
+                damage(
+                    4 +
+                    levelIndex,
+                    'toxic pool'
+                )
+            }
+
+            if (
+                touching &&
+                obstacle.type ===
+                    'blade' &&
+                isBladeActive(
+                    obstacle
+                )
+            ) {
+                damage(
+                    7 +
+                    levelIndex,
+                    'active blade'
+                )
+            }
+        }
+    )
+}, 500)
+
+loadLevel(
+    Math.min(
+        progress.unlocked - 1,
+        9
+    )
+)
+
+animationLoop()
+
+/* =====================================================
+   RESUME + AUTOSAVE
+
+   Progress used to be written only when a level was
+   finished, and no page in the project listened for
+   pagehide or visibilitychange. Leaving mid-level threw
+   that level's work away - which is what the client meant
+   by "pag na back mawawala".
+
+   Every cleared level is now recorded as it happens, and
+   coming back drops the player at the start of the level
+   they had reached.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoStore || !HackoStore.isLoggedIn()) {
+        return;
+    }
+
+    HackoStore.registerTotalLevels(4, 10);
+
+    /* The jump has to happen AFTER the game has booted.
+       theescaperoom builds itself in window.onload, so doing
+       this at parse time meant its own loadLevel(0) ran
+       afterwards and silently sent the player back to level 1.
+       A load listener registered here fires after any onload
+       the page assigned earlier. */
+    function goToSavedLevel() {
+
+        var resume = HackoStore.getResumeLevel(4);
+
+        if (resume > 0 && resume < 10) {
+            try {
+                buildLevel(resume);
+            } catch (e) {
+                /* a game that cannot jump just starts at the top */
+            }
+        }
+    }
+
+    if (document.readyState === "complete") {
+        setTimeout(goToSavedLevel, 0);
+    } else {
+        window.addEventListener("load", function () {
+            setTimeout(goToSavedLevel, 0);
+        });
+    }
+
+    HackoStore.bindAutosave(function () {
+        try {
+            return { mission: 4, level: levelIndex };
+        } catch (e) {
+            return null;
+        }
+    });
+
+}());
+
+/* =====================================================
+   SOUND LAYER
+
+   Sound used to fire only on a few discrete events, so a
+   game could sit in silence for long stretches. Every page
+   now carries a quiet background track and a visible
+   SOUND ON / SOUND OFF button, so a player can always tell
+   whether audio is working.
+
+   Browsers will not start audio until the player has
+   interacted, so the track is requested here and actually
+   begins on the first key press or click.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoAudio) {
+        return;
+    }
+
+    function begin() {
+        HackoAudio.music.play("labyrinth");
+        HackoAudio.mountToggle(document.body);
+        if (window.HackoStore) {
+            HackoStore.mountMapLink();
+        }
+    }
+
+    if (document.readyState === "complete") {
+        begin();
+    } else {
+        window.addEventListener("load", begin);
+    }
+
+}());
+</script>
+
+</body>
+</html>

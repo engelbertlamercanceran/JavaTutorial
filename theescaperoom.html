@@ -1,0 +1,2951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HACKO: Data Escape • 2D Adventure</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+        :root {
+            --neon: #00d4ff;
+            --green: #00ff88;
+            --orange: #ff6b00;
+            --danger: #ff1744;
+            --dark: #0a0e27;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: rgba(10, 14, 39, 0.96);
+            border-bottom: 3px solid var(--neon);
+            padding: 12px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+            z-index: 100;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--neon);
+            text-shadow: 0 0 20px var(--neon);
+        }
+
+        .level-info {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .progress-bar {
+            width: 220px;
+            height: 18px;
+            background: #111;
+            border: 2px solid var(--neon);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00d4ff);
+            transition: width 0.4s ease;
+        }
+
+        #canvas {
+            flex: 1;
+            background: #0a0e27;
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 0 60px rgba(0, 212, 255, 0.5);
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            background: rgba(5, 8, 25, 0.62);
+        }
+
+        .modal {
+            pointer-events: all;
+            background: linear-gradient(
+                145deg,
+                rgba(16, 24, 48, 0.99),
+                rgba(10, 14, 39, 0.99)
+            );
+            border: 4px solid var(--neon);
+            border-radius: 20px;
+            padding: 30px 40px;
+            max-width: 920px;
+            width: 92%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 0 80px rgba(0, 212, 255, 0.6);
+        }
+
+        .modal h2 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon);
+            text-align: center;
+            margin: 0 0 20px;
+            font-size: 2rem;
+        }
+
+        .clue-popup {
+            position: fixed;
+            left: 50%;
+            top: 160px;
+            transform: translateX(-50%);
+            background: #111827;
+            border: 3px solid #ff6b00;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 380px;
+            box-shadow: 0 0 40px #ff6b00;
+            animation: cluePop 0.4s ease;
+            z-index: 250;
+        }
+
+        @keyframes cluePop {
+            from {
+                transform: translateX(-50%) scale(0.6);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(-50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .terminal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .inventory {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid var(--green);
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 240px;
+        }
+
+        .inventory h3 {
+            margin-top: 0;
+            color: var(--green);
+        }
+
+        .items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .data-item {
+            width: 88px;
+            height: 88px;
+            background: #1e2937;
+            border: 3px solid var(--neon);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            transition: all 0.2s;
+            font-family: 'Orbitron', sans-serif;
+            user-select: none;
+        }
+
+        .data-item:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 25px var(--neon);
+        }
+
+        .data-item.used {
+            opacity: 0.25;
+            pointer-events: none;
+        }
+
+        .data-item .type {
+            font-size: 1.1rem;
+            color: var(--green);
+        }
+
+        .slots {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid var(--orange);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .slot {
+            margin-bottom: 14px;
+            padding: 12px;
+            background: #111827;
+            border-radius: 10px;
+            border: 2px dashed #666;
+        }
+
+        .slot.filled {
+            border-style: solid;
+            border-color: var(--green);
+        }
+
+        .slot-label {
+            font-size: 1.05rem;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .dropzone {
+            min-height: 54px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-family: 'Orbitron', sans-serif;
+            color: #555;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .code-preview {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 20px 0;
+            white-space: pre-wrap;
+            color: #d4d4d4;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.12);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            color: #0a0e27;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff4444, #cc2222);
+            color: #fff;
+        }
+
+        .back-btn {
+            padding: 10px 18px;
+            background: #ff6b00;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .footer-hud {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 14, 39, 0.94);
+            padding: 9px 20px;
+            border-radius: 9999px;
+            border: 2px solid var(--neon);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            z-index: 150;
+            white-space: nowrap;
+        }
+
+        .key-hint {
+            font-size: 0.88rem;
+            opacity: 0.8;
+        }
+
+        .health-bar {
+            width: 120px;
+            height: 14px;
+            border: 2px solid var(--danger);
+            background: #111;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .health-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff1744, #ff9100);
+            transition: width 0.25s ease;
+        }
+
+        .danger-text {
+            color: #ff4d6d;
+            text-shadow: 0 0 12px #ff4d6d;
+        }
+
+        .damage-flash {
+            animation: damageFlash 0.14s alternate 5;
+        }
+
+        @keyframes damageFlash {
+            from {
+                filter: brightness(1);
+            }
+
+            to {
+                filter: brightness(2.8);
+            }
+        }
+
+        @media (max-width: 1000px) {
+            header {
+                padding: 10px;
+            }
+
+            .logo {
+                font-size: 1.4rem;
+            }
+
+            .level-info {
+                font-size: 0.9rem;
+                gap: 8px;
+            }
+
+            .progress-bar {
+                width: 120px;
+            }
+
+            .footer-hud {
+                font-size: 0.8rem;
+                gap: 10px;
+            }
+
+            .key-hint {
+                display: none;
+            }
+
+            .terminal-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+<script src="shared/audio.js" data-track="escape"></script>
+<script src="shared/storage.js"></script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            HACKO
+            <span style="font-size:1rem">DATA ESCAPE</span>
+        </div>
+
+        <div class="level-info">
+            <div>
+                LEVEL <span id="current-level">1</span>/10
+            </div>
+
+            <div class="progress">
+                <span id="collected-text">0/3 collected</span>
+
+                <div class="progress-bar">
+                    <div
+                        id="progress-fill"
+                        class="progress-fill"
+                        style="width:0%"
+                    ></div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <button onclick="showLevelSelect()" class="back-btn">
+                LEVEL SELECT
+            </button>
+
+            <button
+                onclick="togglePause()"
+                class="back-btn"
+                style="margin-left:8px;background:#00d4ff"
+            >
+                ⏸ PAUSE
+            </button>
+        </div>
+    </header>
+
+    <canvas id="canvas" width="1000" height="560"></canvas>
+
+    <div id="game-overlay" class="overlay" style="display:none">
+        <div class="modal">
+            <h2 id="overlay-title">MISSION COMPLETE</h2>
+
+            <p
+                id="overlay-text"
+                style="text-align:center;font-size:1.3rem;margin:20px 0"
+            ></p>
+
+            <div style="text-align:center;margin-top:30px">
+                <button
+                    onclick="nextLevel()"
+                    id="next-btn"
+                    class="btn btn-success"
+                >
+                    NEXT LEVEL →
+                </button>
+
+                <button
+                    onclick="restartLevel()"
+                    class="btn btn-danger"
+                    style="margin-left:15px"
+                >
+                    RETRY LEVEL
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="clue-popup" class="clue-popup" style="display:none"></div>
+
+    <div id="terminal-modal" class="overlay" style="display:none">
+        <div class="modal">
+            <h2>🖥️ TERMINAL v1.0 • UNLOCK GATE</h2>
+
+            <p style="text-align:center;opacity:0.8;margin-bottom:20px">
+                Drag each collected data type into a matching terminal slot.
+                Use the hallway clues to understand the variables.
+            </p>
+
+            <div class="terminal-grid">
+                <div>
+                    <div class="inventory">
+                        <h3>📦 COLLECTED DATA TYPES</h3>
+                        <div id="inventory-container" class="items"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="slots">
+                        <h3 style="margin-top:0;color:#ff6b00">
+                            🔑 ASSIGN TO TERMINAL
+                        </h3>
+
+                        <div id="slots-container"></div>
+                    </div>
+
+                    <div id="code-preview" class="code-preview"></div>
+
+                    <div
+                        style="
+                            display:flex;
+                            gap:10px;
+                            justify-content:center;
+                            flex-wrap:wrap;
+                        "
+                    >
+                        <button
+                            onclick="submitTerminal()"
+                            class="btn btn-success"
+                        >
+                            EXECUTE
+                        </button>
+
+                        <button
+                            onclick="resetTerminal()"
+                            class="btn btn-danger"
+                        >
+                            RESET
+                        </button>
+
+                        <button
+                            onclick="closeTerminal()"
+                            class="btn"
+                            style="background:#666;color:white"
+                        >
+                            CANCEL
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div
+        id="pause-menu"
+        class="overlay"
+        style="display:none;background:rgba(10,14,39,0.95)"
+    >
+        <div class="modal" style="max-width:760px">
+            <h2>MISSION SELECT</h2>
+
+            <div
+                id="level-list"
+                style="
+                    display:grid;
+                    grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+                    gap:12px;
+                    margin:30px 0;
+                "
+            ></div>
+
+            <div style="text-align:center">
+                <button onclick="togglePause()" class="btn btn-danger">
+                    RESUME GAME
+                </button>
+
+                <button
+                    onclick="restartGame()"
+                    class="btn"
+                    style="margin-left:15px;background:#ff6b00;color:white"
+                >
+                    RESTART GAME
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-hud">
+        <span class="key-hint">
+            ← → / A D — MOVE  SPACE — DOUBLE JUMP  E — INTERACT
+        </span>
+
+        <span>
+            ❤️ LIVES:
+            <strong id="lives-display" class="danger-text">3</strong>
+        </span>
+
+        <div class="health-bar">
+            <div id="health-fill" class="health-fill"></div>
+        </div>
+
+        <span>
+            DIFFICULTY:
+            <strong id="difficulty-display" style="color:#ffcc00">
+                EASY
+            </strong>
+        </span>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas')
+        const ctx = canvas.getContext('2d')
+
+        const WIDTH = canvas.width
+        const HEIGHT = canvas.height
+
+        let cameraX = 0
+        let gameState = 'playing'
+        let keys = {}
+        let jumpPressed = false
+        let lastFrameTime = performance.now()
+
+        let currentLevelIndex = 0
+        let levelWidth = 2800
+
+        let levelPlatforms = []
+        let levelCollectibles = []
+        let levelInteractives = []
+        let levelRequired = []
+        let levelEnemies = []
+        let levelHazards = []
+        let levelCheckpoints = []
+
+        let inventory = []
+        let assignedSlots = []
+        let collectedCount = 0
+        let totalToCollect = 0
+
+        let playerLives = 3
+        let playerHealth = 100
+        let invincibleUntil = 0
+        let screenShake = 0
+
+        let spawnPoint = {
+            x: 120,
+            y: 200
+        }
+
+        const player = {
+            x: 120,
+            y: 200,
+            vx: 0,
+            vy: 0,
+            width: 64,
+            height: 64,
+            onGround: false,
+            jumps: 0,
+            maxJumps: 2,
+            img: new Image()
+        }
+
+        player.img.src = 'hacko.png'
+
+        const TYPE_COLORS = {
+            int: '#00d4ff',
+            string: '#00ff88',
+            boolean: '#ffcc00',
+            double: '#cc88ff',
+            char: '#ff88cc'
+        }
+
+        const TYPE_LABELS = {
+            int: 'int',
+            string: 'str',
+            boolean: 'bool',
+            double: 'dbl',
+            char: 'chr'
+        }
+
+        const DIFFICULTY_SETTINGS = [
+            {
+                name: 'EASY',
+                enemySpeed: 0.9,
+                chaseSpeed: 1.3,
+                damage: 10,
+                laserCycle: 2600
+            },
+            {
+                name: 'EASY',
+                enemySpeed: 1.05,
+                chaseSpeed: 1.45,
+                damage: 11,
+                laserCycle: 2400
+            },
+            {
+                name: 'EASY',
+                enemySpeed: 1.2,
+                chaseSpeed: 1.6,
+                damage: 12,
+                laserCycle: 2250
+            },
+            {
+                name: 'NORMAL',
+                enemySpeed: 1.35,
+                chaseSpeed: 1.8,
+                damage: 14,
+                laserCycle: 2100
+            },
+            {
+                name: 'NORMAL',
+                enemySpeed: 1.5,
+                chaseSpeed: 2,
+                damage: 15,
+                laserCycle: 1950
+            },
+            {
+                name: 'NORMAL',
+                enemySpeed: 1.65,
+                chaseSpeed: 2.2,
+                damage: 17,
+                laserCycle: 1800
+            },
+            {
+                name: 'CHALLENGING',
+                enemySpeed: 1.8,
+                chaseSpeed: 2.4,
+                damage: 18,
+                laserCycle: 1700
+            },
+            {
+                name: 'CHALLENGING',
+                enemySpeed: 1.95,
+                chaseSpeed: 2.6,
+                damage: 20,
+                laserCycle: 1600
+            },
+            {
+                name: 'HARD',
+                enemySpeed: 2.1,
+                chaseSpeed: 2.8,
+                damage: 22,
+                laserCycle: 1500
+            },
+            {
+                name: 'HARD',
+                enemySpeed: 2.3,
+                chaseSpeed: 3,
+                damage: 24,
+                laserCycle: 1400
+            }
+        ]
+
+        function createCollectible(x, y, type) {
+            return {
+                x,
+                y,
+                type,
+                label: TYPE_LABELS[type],
+                color: TYPE_COLORS[type],
+                collected: false
+            }
+        }
+
+        function createEnemy(x, minX, maxX, type = 'patrol') {
+            return {
+                x,
+                y: 386,
+                minX,
+                maxX,
+                type
+            }
+        }
+
+        function createHazard(x, w) {
+            return {
+                x,
+                y: 423,
+                w,
+                h: 17,
+                type: 'laser'
+            }
+        }
+
+        const LEVELS = [
+            {
+                id: 1,
+                name: 'VAULT 01 - ENTRY',
+                width: 2800,
+                platforms: [
+                    { x: 0, y: 440, w: 2800, h: 120 },
+                    { x: 620, y: 320, w: 220, h: 20 },
+                    { x: 1120, y: 260, w: 180, h: 20 },
+                    { x: 1680, y: 340, w: 140, h: 20 }
+                ],
+                collectibles: [
+                    createCollectible(480, 240, 'int'),
+                    createCollectible(980, 180, 'string'),
+                    createCollectible(1580, 220, 'boolean')
+                ],
+                interactives: [
+                    {
+                        x: 650,
+                        y: 240,
+                        w: 80,
+                        h: 110,
+                        type: 'bookshelf',
+                        clue: 'The keypad log says the code is six times seven.'
+                    },
+                    {
+                        x: 1150,
+                        y: 200,
+                        w: 110,
+                        h: 70,
+                        type: 'desk',
+                        clue: 'The password is the default administrator account name, all lowercase.'
+                    },
+                    {
+                        x: 1710,
+                        y: 260,
+                        w: 60,
+                        h: 90,
+                        type: 'lightswitch',
+                        clue: 'The lock has been opened. Record whether it is unlocked.'
+                    }
+                ],
+                required: [
+                    { name: 'doorCode', type: 'int', value: 42 },
+                    { name: 'password', type: 'string', value: 'admin' },
+                    { name: 'isUnlocked', type: 'boolean', value: true }
+                ],
+                enemies: [],
+                hazards: [],
+                checkpoints: [
+                    { x: 900, y: 405 },
+                    { x: 1750, y: 405 }
+                ],
+                terminalX: 2450
+            },
+            {
+                id: 2,
+                name: 'VAULT 02 - DEEP STORAGE',
+                width: 3000,
+                platforms: [
+                    { x: 0, y: 440, w: 3000, h: 120 },
+                    { x: 420, y: 310, w: 160, h: 20 },
+                    { x: 920, y: 220, w: 240, h: 20 },
+                    { x: 1480, y: 340, w: 180, h: 20 },
+                    { x: 2100, y: 160, w: 120, h: 20 }
+                ],
+                collectibles: [
+                    createCollectible(380, 230, 'int'),
+                    createCollectible(820, 140, 'string'),
+                    createCollectible(1350, 260, 'boolean'),
+                    createCollectible(1820, 175, 'double')
+                ],
+                interactives: [
+                    {
+                        x: 460,
+                        y: 230,
+                        w: 80,
+                        h: 110,
+                        type: 'bookshelf',
+                        clue: 'Scratched beside the panel: twenty plus twenty-two.'
+                    },
+                    {
+                        x: 960,
+                        y: 150,
+                        w: 110,
+                        h: 70,
+                        type: 'desk',
+                        clue: 'The lab door is stencilled with the branch of physics this wing studies.'
+                    },
+                    {
+                        x: 1510,
+                        y: 260,
+                        w: 60,
+                        h: 90,
+                        type: 'lightswitch',
+                        clue: 'The switch is in the off position. Record whether the light is on.'
+                    },
+                    {
+                        x: 2140,
+                        y: 90,
+                        w: 70,
+                        h: 70,
+                        type: 'desk',
+                        clue: 'The safe is mounted one metre and eighty-five centimetres up.'
+                    }
+                ],
+                required: [
+                    { name: 'doorCode', type: 'int', value: 42 },
+                    { name: 'password', type: 'string', value: 'quantum' },
+                    { name: 'lightSwitch', type: 'boolean', value: false },
+                    { name: 'safeHeight', type: 'double', value: 1.85 }
+                ],
+                enemies: [
+                    createEnemy(1250, 1120, 1550, 'patrol')
+                ],
+                hazards: [],
+                checkpoints: [
+                    { x: 900, y: 405 },
+                    { x: 1450, y: 405 },
+                    { x: 2150, y: 405 }
+                ],
+                terminalX: 2680
+            },
+            {
+                id: 3,
+                name: 'VAULT 03 - CRYPTO WING',
+                width: 3200,
+                platforms: [
+                    { x: 0, y: 440, w: 3200, h: 120 },
+                    { x: 300, y: 340, w: 140, h: 20 },
+                    { x: 680, y: 220, w: 200, h: 20 },
+                    { x: 1180, y: 300, w: 110, h: 20 },
+                    { x: 1650, y: 180, w: 170, h: 20 },
+                    { x: 2280, y: 270, w: 130, h: 20 }
+                ],
+                collectibles: [
+                    createCollectible(250, 260, 'int'),
+                    createCollectible(620, 140, 'string'),
+                    createCollectible(1050, 220, 'boolean'),
+                    createCollectible(1520, 180, 'double'),
+                    createCollectible(2100, 190, 'char')
+                ],
+                interactives: [
+                    {
+                        x: 340,
+                        y: 260,
+                        w: 80,
+                        h: 110,
+                        type: 'bookshelf',
+                        clue: 'Scratched beside the panel: twenty plus twenty-two.'
+                    },
+                    {
+                        x: 730,
+                        y: 150,
+                        w: 110,
+                        h: 70,
+                        type: 'desk',
+                        clue: 'The password is another word for a secret code, all lowercase.'
+                    },
+                    {
+                        x: 1200,
+                        y: 220,
+                        w: 60,
+                        h: 90,
+                        type: 'lightswitch',
+                        clue: 'The bolt has slid back. Record the state of the lock.'
+                    },
+                    {
+                        x: 1700,
+                        y: 110,
+                        w: 70,
+                        h: 70,
+                        type: 'desk',
+                        clue: 'The safe is mounted one metre and eighty-five centimetres up.'
+                    },
+                    {
+                        x: 2320,
+                        y: 190,
+                        w: 80,
+                        h: 80,
+                        type: 'bookshelf',
+                        clue: 'A single letter marks the spot on the map.'
+                    }
+                ],
+                required: [
+                    { name: 'doorCode', type: 'int', value: 42 },
+                    { name: 'password', type: 'string', value: 'cipher' },
+                    { name: 'isUnlocked', type: 'boolean', value: true },
+                    { name: 'safeHeight', type: 'double', value: 1.85 },
+                    { name: 'keyChar', type: 'char', value: 'X' }
+                ],
+                enemies: [
+                    createEnemy(900, 780, 1120, 'patrol'),
+                    createEnemy(1940, 1800, 2200, 'patrol')
+                ],
+                hazards: [
+                    createHazard(1370, 170)
+                ],
+                checkpoints: [
+                    { x: 1600, y: 405 }
+                ],
+                terminalX: 2850
+            },
+            ...Array.from({ length: 7 }, (_, index) => {
+                const levelNumber = index + 4
+                const width = 3000 + levelNumber * 120
+                const baseX = 360
+
+                const enemyCount = Math.min(1 + Math.floor((levelNumber - 4) / 2), 4)
+                const hazardCount = Math.min(1 + Math.floor((levelNumber - 4) / 2), 4)
+
+                const enemies = Array.from(
+                    { length: enemyCount },
+                    (_, enemyIndex) => {
+                        const x = 620 + enemyIndex * 470
+
+                        return createEnemy(
+                            x,
+                            x - 130,
+                            x + 260,
+                            enemyIndex > 0 && levelNumber >= 5
+                                ? 'chaser'
+                                : 'patrol'
+                        )
+                    }
+                )
+
+                const hazards = Array.from(
+                    { length: hazardCount },
+                    (_, hazardIndex) => {
+                        return createHazard(
+                            980 + hazardIndex * 510,
+                            Math.max(45, 150 - levelNumber * 7)
+                        )
+                    }
+                )
+
+                return {
+                    id: levelNumber,
+                    name:
+                        levelNumber < 7
+                            ? `VAULT 0${levelNumber} - SECURE ZONE`
+                            : `VAULT ${levelNumber} - CRITICAL ZONE`,
+                    width,
+                    platforms: [
+                        { x: 0, y: 440, w: width, h: 120 },
+                        { x: baseX, y: 330, w: 180, h: 20 },
+                        { x: baseX + 460, y: 230, w: 170, h: 20 },
+                        { x: baseX + 920, y: 310, w: 150, h: 20 },
+                        { x: baseX + 1380, y: 190, w: 190, h: 20 },
+                        { x: baseX + 1840, y: 280, w: 150, h: 20 },
+                        { x: baseX + 2300, y: 160, w: 160, h: 20 }
+                    ],
+                    collectibles: [
+                        createCollectible(baseX + 80, 250, 'int'),
+                        createCollectible(baseX + 520, 145, 'string'),
+                        createCollectible(baseX + 980, 225, 'boolean'),
+                        createCollectible(baseX + 1440, 100, 'double'),
+                        createCollectible(baseX + 1900, 195, 'char'),
+                        ...(levelNumber >= 7
+                            ? [
+                                createCollectible(
+                                    baseX + 2380,
+                                    80,
+                                    'string'
+                                )
+                            ]
+                            : [])
+                    ],
+                    interactives: [
+                        {
+                            x: baseX + 110,
+                            y: 260,
+                            w: 80,
+                            h: 110,
+                            type: 'bookshelf',
+                            clue: 'Scratched beside the panel: twenty plus twenty-two.'
+                        },
+                        {
+                            x: baseX + 550,
+                            y: 160,
+                            w: 110,
+                            h: 70,
+                            type: 'desk',
+                            clue: `Password = "level${levelNumber}key".`
+                        },
+                        {
+                            x: baseX + 1020,
+                            y: 220,
+                            w: 60,
+                            h: 90,
+                            type: 'lightswitch',
+                            clue:
+                                'Switch status = ' +
+                                (levelNumber % 2 === 0)
+                        },
+                        {
+                            x: baseX + 1470,
+                            y: 110,
+                            w: 70,
+                            h: 70,
+                            type: 'desk',
+                            clue: 'The safe is mounted one metre and eighty-five centimetres up.'
+                        },
+                        {
+                            x: baseX + 1930,
+                            y: 200,
+                            w: 80,
+                            h: 80,
+                            type: 'bookshelf',
+                            clue: 'A single letter marks the spot on the map.'
+                        },
+                        ...(levelNumber >= 7
+                            ? [
+                                {
+                                    x: baseX + 2380,
+                                    y: 90,
+                                    w: 100,
+                                    h: 70,
+                                    type: 'desk',
+                                    clue: 'The backup word forces the system to obey its command, all lowercase.'
+                                }
+                            ]
+                            : [])
+                    ],
+                    required: [
+                        { name: 'doorCode', type: 'int', value: 42 },
+                        {
+                            name: 'password',
+                            type: 'string',
+                            value: `level${levelNumber}key`
+                        },
+                        {
+                            name: 'isUnlocked',
+                            type: 'boolean',
+                            value: levelNumber % 2 === 0
+                        },
+                        {
+                            name: 'safeHeight',
+                            type: 'double',
+                            value: 1.85
+                        },
+                        {
+                            name: 'keyChar',
+                            type: 'char',
+                            value: 'X'
+                        },
+                        ...(levelNumber >= 7
+                            ? [
+                                {
+                                    name: 'extraPass',
+                                    type: 'string',
+                                    value: 'override'
+                                }
+                            ]
+                            : [])
+                    ],
+                    enemies,
+                    hazards,
+                    checkpoints:
+                        levelNumber >= 8
+                            ? [
+                                { x: 1450, y: 405 },
+                                { x: 2600, y: 405 }
+                            ]
+                            : [{ x: 1550, y: 405 }],
+                    terminalX: width - 320
+                }
+            })
+        ]
+
+        function loadLevel(index) {
+            const level = LEVELS[index]
+
+            currentLevelIndex = index
+            levelWidth = level.width
+            levelPlatforms = level.platforms.map(item => ({ ...item }))
+            levelCollectibles = level.collectibles.map(item => ({
+                ...item,
+                collected: false
+            }))
+            levelInteractives = level.interactives.map(item => ({ ...item }))
+            levelRequired = level.required.map(item => ({ ...item }))
+
+            levelEnemies = (level.enemies || []).map((enemy, index) => ({
+                ...enemy,
+                id: index,
+                width: 54,
+                height: 54,
+                direction: 1,
+                alive: true
+            }))
+
+            levelHazards = (level.hazards || []).map((hazard, index) => ({
+                ...hazard,
+                id: index,
+                active: true,
+                startTime: performance.now() + index * 230
+            }))
+
+            levelCheckpoints = (level.checkpoints || []).map(item => ({
+                ...item,
+                activated: false
+            }))
+
+            inventory = []
+            assignedSlots = new Array(levelRequired.length).fill(null)
+            collectedCount = 0
+            totalToCollect = levelCollectibles.length
+
+            spawnPoint = {
+                x: 120,
+                y: 200
+            }
+
+            player.x = spawnPoint.x
+            player.y = spawnPoint.y
+            player.vx = 0
+            player.vy = 0
+            player.jumps = 0
+
+            playerHealth = 100
+            invincibleUntil = 0
+            cameraX = 0
+
+            document.getElementById('current-level').textContent = level.id
+            document.getElementById('difficulty-display').textContent =
+                DIFFICULTY_SETTINGS[index].name
+
+            document.getElementById('clue-popup').style.display = 'none'
+
+            updateHUD()
+            updatePlayerHUD()
+        }
+
+        function updateHUD() {
+            const percentage = totalToCollect
+                ? Math.round((collectedCount / totalToCollect) * 100)
+                : 0
+
+            document.getElementById('collected-text').innerHTML =
+                `<span style="color:#00ff88">${collectedCount}</span>` +
+                `/${totalToCollect} collected`
+
+            document.getElementById('progress-fill').style.width =
+                percentage + '%'
+        }
+
+        function updatePlayerHUD() {
+            document.getElementById('lives-display').textContent =
+                playerLives
+
+            document.getElementById('health-fill').style.width =
+                Math.max(0, playerHealth) + '%'
+        }
+
+        function rectanglesOverlap(a, b) {
+            return (
+                a.x < b.x + b.width &&
+                a.x + a.width > b.x &&
+                a.y < b.y + b.height &&
+                a.y + a.height > b.y
+            )
+        }
+
+        function drawBackground() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, HEIGHT)
+
+            gradient.addColorStop(0, '#0a0e27')
+            gradient.addColorStop(1, '#1a1f3a')
+
+            ctx.fillStyle = gradient
+            ctx.fillRect(0, 0, WIDTH, HEIGHT)
+
+            ctx.strokeStyle = 'rgba(0,212,255,0.15)'
+            ctx.lineWidth = 4
+
+            for (let i = -2; i < 30; i++) {
+                const x =
+                    i * 110 -
+                    (cameraX * 0.2) % 110
+
+                ctx.beginPath()
+                ctx.moveTo(x, 0)
+                ctx.lineTo(x + 40, HEIGHT)
+                ctx.stroke()
+            }
+
+            ctx.fillStyle = '#222'
+            ctx.fillRect(0, 440, WIDTH, HEIGHT - 440)
+
+            ctx.shadowBlur = 30
+            ctx.shadowColor = '#00d4ff'
+            ctx.fillStyle = '#00d4ff'
+            ctx.fillRect(0, 438, WIDTH, 7)
+            ctx.shadowBlur = 0
+        }
+
+        function drawPlatforms() {
+            levelPlatforms.forEach(platform => {
+                const screenX = platform.x - cameraX
+
+                ctx.shadowBlur = 12
+                ctx.shadowColor = '#00d4ff'
+                ctx.fillStyle = '#334455'
+                ctx.fillRect(
+                    screenX,
+                    platform.y,
+                    platform.w,
+                    platform.h
+                )
+
+                ctx.fillStyle = '#00d4ff'
+                ctx.fillRect(
+                    screenX,
+                    platform.y,
+                    platform.w,
+                    5
+                )
+            })
+
+            ctx.shadowBlur = 0
+        }
+
+        function drawPlayer() {
+            const screenX = player.x - cameraX
+
+            ctx.save()
+
+            if (
+                performance.now() < invincibleUntil &&
+                Math.floor(performance.now() / 90) % 2 === 0
+            ) {
+                ctx.globalAlpha = 0.3
+            }
+
+            if (
+                player.img.complete &&
+                player.img.naturalWidth > 0
+            ) {
+                ctx.drawImage(
+                    player.img,
+                    screenX,
+                    player.y,
+                    player.width,
+                    player.height
+                )
+            } else {
+                ctx.shadowBlur = 20
+                ctx.shadowColor = '#00d4ff'
+                ctx.fillStyle = '#00d4ff'
+                ctx.fillRect(
+                    screenX,
+                    player.y,
+                    player.width,
+                    player.height
+                )
+            }
+
+            ctx.restore()
+        }
+
+        function drawCollectibles() {
+            const time = Date.now() / 300
+
+            levelCollectibles.forEach((item, index) => {
+                if (item.collected) {
+                    return
+                }
+
+                const screenX = item.x - cameraX
+                const bob = Math.sin(time + index) * 10
+
+                ctx.shadowBlur = 25
+                ctx.shadowColor = item.color
+                ctx.fillStyle = item.color
+
+                ctx.beginPath()
+                ctx.arc(
+                    screenX + 22,
+                    item.y + bob + 22,
+                    26,
+                    0,
+                    Math.PI * 2
+                )
+                ctx.fill()
+
+                ctx.shadowBlur = 0
+                ctx.fillStyle = '#111827'
+
+                ctx.beginPath()
+                ctx.arc(
+                    screenX + 22,
+                    item.y + bob + 22,
+                    18,
+                    0,
+                    Math.PI * 2
+                )
+                ctx.fill()
+
+                ctx.fillStyle = '#fff'
+                ctx.font = 'bold 20px Orbitron'
+                ctx.textAlign = 'center'
+                ctx.fillText(
+                    item.label,
+                    screenX + 22,
+                    item.y + bob + 29
+                )
+
+                ctx.font = '11px Rajdhani'
+                ctx.fillText(
+                    'DATA',
+                    screenX + 22,
+                    item.y + bob + 48
+                )
+            })
+        }
+
+        function drawInteractives() {
+            levelInteractives.forEach(object => {
+                const screenX = object.x - cameraX
+
+                if (object.type === 'bookshelf') {
+                    ctx.fillStyle = '#553311'
+                    ctx.fillRect(
+                        screenX,
+                        object.y,
+                        object.w,
+                        object.h
+                    )
+
+                    ctx.fillStyle = '#bb8'
+
+                    for (let i = 0; i < 5; i++) {
+                        ctx.fillRect(
+                            screenX + 12,
+                            object.y + 18 + i * 18,
+                            object.w - 24,
+                            10
+                        )
+                    }
+
+                    ctx.fillStyle = '#ff6b00'
+                    ctx.fillRect(
+                        screenX + 8,
+                        object.y + 8,
+                        12,
+                        12
+                    )
+                }
+
+                if (object.type === 'desk') {
+                    ctx.fillStyle = '#664422'
+                    ctx.fillRect(
+                        screenX,
+                        object.y + 40,
+                        object.w,
+                        30
+                    )
+
+                    ctx.fillRect(
+                        screenX + 10,
+                        object.y + 20,
+                        object.w - 40,
+                        30
+                    )
+
+                    ctx.fillStyle = '#00d4ff'
+                    ctx.fillRect(
+                        screenX + 18,
+                        object.y + 28,
+                        18,
+                        6
+                    )
+                }
+
+                if (object.type === 'lightswitch') {
+                    ctx.fillStyle = '#222'
+                    ctx.fillRect(
+                        screenX,
+                        object.y,
+                        object.w,
+                        object.h
+                    )
+
+                    ctx.fillStyle = '#ffcc00'
+                    ctx.fillRect(
+                        screenX + 14,
+                        object.y + 18,
+                        object.w - 28,
+                        14
+                    )
+
+                    ctx.fillStyle = '#00ff88'
+                    ctx.fillRect(
+                        screenX + 22,
+                        object.y + 26,
+                        8,
+                        8
+                    )
+                }
+            })
+        }
+
+        function drawEnemies() {
+            levelEnemies.forEach(enemy => {
+                if (!enemy.alive) {
+                    return
+                }
+
+                const screenX = enemy.x - cameraX
+                const playerNear =
+                    Math.abs(player.x - enemy.x) < 430
+
+                const alert =
+                    enemy.type === 'chaser' &&
+                    playerNear
+
+                ctx.save()
+
+                ctx.shadowBlur = alert ? 30 : 18
+                ctx.shadowColor = alert
+                    ? '#ff1744'
+                    : '#ff6b00'
+
+                ctx.fillStyle = alert
+                    ? '#ff1744'
+                    : '#ff6b00'
+
+                ctx.fillRect(
+                    screenX,
+                    enemy.y,
+                    enemy.width,
+                    enemy.height
+                )
+
+                ctx.fillStyle = '#111827'
+                ctx.fillRect(
+                    screenX + 7,
+                    enemy.y + 7,
+                    enemy.width - 14,
+                    enemy.height - 14
+                )
+
+                ctx.fillStyle = '#ff1744'
+                ctx.fillRect(
+                    screenX + 10,
+                    enemy.y + 15,
+                    12,
+                    8
+                )
+
+                ctx.fillRect(
+                    screenX + enemy.width - 22,
+                    enemy.y + 15,
+                    12,
+                    8
+                )
+
+                ctx.fillStyle = '#fff'
+                ctx.font = 'bold 10px Orbitron'
+                ctx.textAlign = 'center'
+                ctx.fillText(
+                    enemy.type === 'chaser'
+                        ? 'SEEK'
+                        : 'GUARD',
+                    screenX + enemy.width / 2,
+                    enemy.y + 44
+                )
+
+                ctx.restore()
+            })
+        }
+
+        function drawHazards() {
+            const now = performance.now()
+            const difficulty =
+                DIFFICULTY_SETTINGS[currentLevelIndex]
+
+            levelHazards.forEach(hazard => {
+                const elapsed = now - hazard.startTime
+                const phase =
+                    ((elapsed % difficulty.laserCycle) +
+                        difficulty.laserCycle) %
+                    difficulty.laserCycle
+
+                hazard.active =
+                    phase < difficulty.laserCycle * 0.58
+
+                const screenX = hazard.x - cameraX
+
+                ctx.save()
+
+                if (hazard.active) {
+                    ctx.shadowBlur = 30
+                    ctx.shadowColor = '#ff1744'
+                    ctx.fillStyle = '#ff1744'
+                } else {
+                    ctx.fillStyle =
+                        'rgba(255,23,68,0.18)'
+                }
+
+                ctx.fillRect(
+                    screenX,
+                    hazard.y,
+                    hazard.w,
+                    hazard.h
+                )
+
+                ctx.fillStyle = '#555'
+                ctx.fillRect(
+                    screenX - 9,
+                    hazard.y - 7,
+                    9,
+                    hazard.h + 14
+                )
+
+                ctx.fillRect(
+                    screenX + hazard.w,
+                    hazard.y - 7,
+                    9,
+                    hazard.h + 14
+                )
+
+                ctx.restore()
+            })
+        }
+
+        function drawCheckpoints() {
+            levelCheckpoints.forEach(checkpoint => {
+                const screenX = checkpoint.x - cameraX
+
+                ctx.save()
+
+                ctx.shadowBlur =
+                    checkpoint.activated ? 30 : 12
+
+                ctx.shadowColor =
+                    checkpoint.activated
+                        ? '#00ff88'
+                        : '#00d4ff'
+
+                ctx.fillStyle =
+                    checkpoint.activated
+                        ? '#00ff88'
+                        : '#00d4ff'
+
+                ctx.fillRect(
+                    screenX,
+                    checkpoint.y - 60,
+                    10,
+                    95
+                )
+
+                ctx.beginPath()
+                ctx.moveTo(screenX + 10, checkpoint.y - 60)
+                ctx.lineTo(screenX + 62, checkpoint.y - 42)
+                ctx.lineTo(screenX + 10, checkpoint.y - 24)
+                ctx.closePath()
+                ctx.fill()
+
+                ctx.restore()
+            })
+        }
+
+        function drawTerminalGate() {
+            const level = LEVELS[currentLevelIndex]
+            const gateX = level.terminalX - cameraX
+
+            if (gateX < WIDTH + 100 && gateX > -200) {
+
+                /* The gate used to be a flat dark rectangle with a
+                   lock emoji on it. It is the goal of every level,
+                   so it is now drawn as a proper vault door: a
+                   riveted frame, two leaves that part when it
+                   unlocks, and a spoked wheel that turns. */
+
+                const ready = collectedCount === totalToCollect
+                const accent = ready ? '#00ff88' : '#00d4ff'
+                const now = performance.now()
+
+                const top = 180
+                const height = 280
+                const width = 90
+                const cx = gateX + width / 2
+                const cy = top + height / 2
+
+                /* recess behind the door */
+                ctx.fillStyle = '#05080f'
+                ctx.fillRect(gateX - 6, top - 8, width + 12, height + 16)
+
+                /* frame */
+                ctx.strokeStyle = accent
+                ctx.lineWidth = 3
+                ctx.shadowBlur = ready ? 26 : 12
+                ctx.shadowColor = accent
+                ctx.strokeRect(gateX - 6, top - 8, width + 12, height + 16)
+                ctx.shadowBlur = 0
+
+                /* the two leaves slide apart once it is unlocked */
+                const part = ready
+                    ? Math.min(14, (Math.sin(now / 420) + 1) * 7)
+                    : 0
+
+                ctx.fillStyle = '#16233a'
+
+                ctx.fillRect(gateX, top, width / 2 - part, height)
+                ctx.fillRect(
+                    cx + part, top, width / 2 - part, height
+                )
+
+                /* panel seams */
+                ctx.strokeStyle = '#243b5c'
+                ctx.lineWidth = 2
+
+                for (let row = 1; row < 4; row++) {
+                    const y = top + (height / 4) * row
+                    ctx.beginPath()
+                    ctx.moveTo(gateX + 4, y)
+                    ctx.lineTo(cx - part - 4, y)
+                    ctx.moveTo(cx + part + 4, y)
+                    ctx.lineTo(gateX + width - 4, y)
+                    ctx.stroke()
+                }
+
+                /* rivets down both edges */
+                ctx.fillStyle = '#31527a'
+
+                for (let row = 0; row < 7; row++) {
+                    const y = top + 18 + row * 40
+                    ctx.beginPath()
+                    ctx.arc(gateX + 8, y, 2.6, 0, Math.PI * 2)
+                    ctx.arc(gateX + width - 8, y, 2.6, 0, Math.PI * 2)
+                    ctx.fill()
+                }
+
+                /* status lamp */
+                ctx.fillStyle = accent
+                ctx.shadowBlur = 14
+                ctx.shadowColor = accent
+                ctx.fillRect(gateX + 10, top + 14, width - 20, 8)
+                ctx.shadowBlur = 0
+
+                /* locking wheel - turns slowly when unlocked */
+                ctx.save()
+                ctx.translate(cx, cy)
+                ctx.rotate(ready ? now / 1400 : 0.4)
+
+                ctx.strokeStyle = accent
+                ctx.lineWidth = 4
+                ctx.beginPath()
+                ctx.arc(0, 0, 22, 0, Math.PI * 2)
+                ctx.stroke()
+
+                ctx.lineWidth = 3
+                for (let spoke = 0; spoke < 6; spoke++) {
+                    ctx.rotate(Math.PI / 3)
+                    ctx.beginPath()
+                    ctx.moveTo(0, 8)
+                    ctx.lineTo(0, 22)
+                    ctx.stroke()
+                }
+
+                ctx.fillStyle = ready ? accent : '#0b1626'
+                ctx.beginPath()
+                ctx.arc(0, 0, 7, 0, Math.PI * 2)
+                ctx.fill()
+
+                ctx.restore()
+
+                /* label */
+                ctx.font = 'bold 13px Orbitron'
+                ctx.textAlign = 'center'
+                ctx.fillStyle = ready ? accent : '#8fb4cc'
+                ctx.fillText(
+                    ready ? 'OPEN' : 'SEALED',
+                    cx,
+                    top + height - 22
+                )
+
+                ctx.font = '15px Rajdhani'
+                ctx.fillStyle = '#fff'
+                ctx.fillText('TERMINAL', cx, top + height + 28)
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, WIDTH, HEIGHT)
+
+            ctx.save()
+
+            if (screenShake > 0) {
+                ctx.translate(
+                    (Math.random() - 0.5) * screenShake,
+                    (Math.random() - 0.5) * screenShake
+                )
+
+                screenShake *= 0.82
+
+                if (screenShake < 0.5) {
+                    screenShake = 0
+                }
+            }
+
+            drawBackground()
+            drawPlatforms()
+            drawHazards()
+            drawCheckpoints()
+            drawInteractives()
+            drawCollectibles()
+            drawEnemies()
+            drawPlayer()
+            drawTerminalGate()
+
+            ctx.fillStyle = '#fff'
+            ctx.font = '18px Rajdhani'
+            ctx.textAlign = 'left'
+            ctx.fillText(
+                `LEVEL ${LEVELS[currentLevelIndex].id}`,
+                30,
+                45
+            )
+
+            ctx.fillStyle = '#ff6b00'
+            ctx.fillText(
+                `SECURITY BOTS: ${
+                    levelEnemies.filter(enemy => enemy.alive).length
+                }`,
+                30,
+                72
+            )
+
+            ctx.restore()
+        }
+
+        /* Running used to be silent. A step every frame would be
+         * a buzz, so this paces them into an actual walking rhythm
+         * and only sounds when the player is on the ground. */
+        let lastFootstep = 0
+
+        function footstep() {
+
+            const now = performance.now()
+
+            if (!player.onGround || now - lastFootstep < 260) {
+                return
+            }
+
+            lastFootstep = now
+            HackoAudio.play('step')
+        }
+
+        function damagePlayer(amount, sourceX = player.x) {
+            HackoAudio.play("hit");
+            if (performance.now() < invincibleUntil) {
+                return
+            }
+
+            playerHealth -= amount
+            invincibleUntil = performance.now() + 1700
+            screenShake = 15
+
+            player.vy = -11
+            player.vx =
+                player.x < sourceX ? -9 : 9
+
+            canvas.classList.remove('damage-flash')
+            void canvas.offsetWidth
+            canvas.classList.add('damage-flash')
+
+            updatePlayerHUD()
+
+            if (playerHealth <= 0) {
+                loseLife()
+            }
+        }
+
+        function loseLife() {
+            HackoAudio.play("wrong");
+            playerLives--
+
+            if (playerLives <= 0) {
+                updatePlayerHUD()
+                gameOver()
+                return
+            }
+
+            respawnPlayer()
+        }
+
+        function respawnPlayer() {
+            playerHealth = 100
+            player.x = spawnPoint.x
+            player.y = spawnPoint.y
+            player.vx = 0
+            player.vy = 0
+            player.jumps = 0
+
+            cameraX = Math.max(
+                0,
+                spawnPoint.x - WIDTH * 0.4
+            )
+
+            invincibleUntil =
+                performance.now() + 1800
+
+            updatePlayerHUD()
+        }
+
+        function activateCheckpoint(checkpoint) {
+            if (checkpoint.activated) {
+                return
+            }
+
+            levelCheckpoints.forEach(item => {
+                item.activated = false
+            })
+
+            checkpoint.activated = true
+
+            spawnPoint = {
+                x: checkpoint.x - 20,
+                y: checkpoint.y - player.height
+            }
+        }
+
+        function gameOver() {
+            HackoAudio.play("gameover");
+            gameState = 'lost'
+
+            document.getElementById('overlay-title').textContent =
+                '💀 SYSTEM BREACH'
+
+            document.getElementById('overlay-text').innerHTML =
+                'HACKO was detected by the security system.<br>' +
+                'Restart the level and try again.'
+
+            document.getElementById('next-btn').style.display =
+                'none'
+
+            document.getElementById(
+                'game-overlay'
+            ).style.display = 'flex'
+        }
+
+        function updateEnemies(deltaTime) {
+            const difficulty =
+                DIFFICULTY_SETTINGS[currentLevelIndex]
+
+            const multiplier = Math.min(
+                deltaTime / 16.67,
+                2
+            )
+
+            levelEnemies.forEach(enemy => {
+                if (!enemy.alive) {
+                    return
+                }
+
+                const distanceX = player.x - enemy.x
+                const distanceY = Math.abs(
+                    player.y - enemy.y
+                )
+
+                const playerNearby =
+                    Math.abs(distanceX) < 430 &&
+                    distanceY < 160
+
+                let speed = difficulty.enemySpeed
+
+                if (
+                    enemy.type === 'chaser' &&
+                    playerNearby
+                ) {
+                    speed = difficulty.chaseSpeed
+                    enemy.direction =
+                        distanceX < 0 ? -1 : 1
+                } else {
+                    if (enemy.x <= enemy.minX) {
+                        enemy.direction = 1
+                    }
+
+                    if (enemy.x >= enemy.maxX) {
+                        enemy.direction = -1
+                    }
+                }
+
+                enemy.x +=
+                    speed *
+                    enemy.direction *
+                    multiplier
+
+                const enemyRect = {
+                    x: enemy.x,
+                    y: enemy.y,
+                    width: enemy.width,
+                    height: enemy.height
+                }
+
+                if (!rectanglesOverlap(player, enemyRect)) {
+                    return
+                }
+
+                const previousPlayerBottom =
+                    player.y +
+                    player.height -
+                    player.vy
+
+                const stomped =
+                    player.vy > 2 &&
+                    previousPlayerBottom <= enemy.y + 12
+
+                if (stomped) {
+                    enemy.alive = false
+                    player.vy = -12
+                    player.jumps = 0
+                } else {
+                    damagePlayer(
+                        difficulty.damage,
+                        enemy.x + enemy.width / 2
+                    )
+                }
+            })
+        }
+
+        function updateHazards() {
+            levelHazards.forEach(hazard => {
+                if (!hazard.active) {
+                    return
+                }
+
+                const hazardRect = {
+                    x: hazard.x,
+                    y: hazard.y,
+                    width: hazard.w,
+                    height: hazard.h
+                }
+
+                if (
+                    rectanglesOverlap(
+                        player,
+                        hazardRect
+                    )
+                ) {
+                    damagePlayer(
+                        14 + currentLevelIndex,
+                        hazard.x + hazard.w / 2
+                    )
+                }
+            })
+        }
+
+        function updateCheckpoints() {
+            levelCheckpoints.forEach(checkpoint => {
+                const distanceX =
+                    player.x +
+                    player.width / 2 -
+                    checkpoint.x
+
+                const distanceY =
+                    player.y +
+                    player.height / 2 -
+                    checkpoint.y
+
+                if (
+                    Math.abs(distanceX) < 70 &&
+                    Math.abs(distanceY) < 120
+                ) {
+                    activateCheckpoint(checkpoint)
+                }
+            })
+        }
+
+        function updateCollectibles() {
+            levelCollectibles.forEach(
+                (collectible, index) => {
+                    if (collectible.collected) {
+                        return
+                    }
+
+                    const dx =
+                        player.x +
+                        player.width / 2 -
+                        (collectible.x + 22)
+
+                    const dy =
+                        player.y +
+                        player.height / 2 -
+                        (collectible.y + 22)
+
+                    if (dx * dx + dy * dy < 1300) {
+                        collectible.collected = true
+                        collectedCount++
+
+                        inventory.push({
+                            id: `${currentLevelIndex}-${index}`,
+                            type: collectible.type,
+                            label: collectible.label,
+                            color: collectible.color,
+                            used: false
+                        })
+
+                        updateHUD()
+                    }
+                }
+            )
+        }
+
+        function updatePhysics(deltaTime = 16.67) {
+            const level = LEVELS[currentLevelIndex]
+
+            player.vx *= 0.86
+
+            if (
+                keys.ArrowLeft ||
+                keys.a ||
+                keys.A
+            ) {
+                player.vx = -6.5
+                footstep()
+            }
+
+            if (
+                keys.ArrowRight ||
+                keys.d ||
+                keys.D
+            ) {
+                player.vx = 6.5
+                footstep()
+            }
+
+            if (keys[' '] || keys.Space) {
+                if (
+                    !jumpPressed &&
+                    player.jumps < player.maxJumps
+                ) {
+                    HackoAudio.play("jump")
+                    player.vy = -16.5
+                    player.jumps++
+                    jumpPressed = true
+                }
+            } else {
+                jumpPressed = false
+            }
+
+            const previousX = player.x
+            const previousY = player.y
+
+            player.vy += 0.92
+            player.x += player.vx
+            player.y += player.vy
+
+            player.x = Math.max(
+                0,
+                Math.min(
+                    player.x,
+                    levelWidth - player.width
+                )
+            )
+
+            player.onGround = false
+
+            for (const platform of levelPlatforms) {
+                const horizontalOverlap =
+                    player.x + player.width >
+                        platform.x &&
+                    player.x <
+                        platform.x + platform.w
+
+                const previousBottom =
+                    previousY + player.height
+
+                const currentBottom =
+                    player.y + player.height
+
+                if (
+                    horizontalOverlap &&
+                    player.vy >= 0 &&
+                    previousBottom <= platform.y &&
+                    currentBottom >= platform.y
+                ) {
+                    player.y =
+                        platform.y - player.height
+
+                    if (player.vy > 6) {
+                        HackoAudio.play("land")
+                    }
+
+                    player.vy = 0
+                    player.onGround = true
+                    player.jumps = 0
+                }
+
+                const verticalOverlap =
+                    player.y + player.height >
+                        platform.y &&
+                    player.y <
+                        platform.y + platform.h
+
+                if (!verticalOverlap) {
+                    continue
+                }
+
+                const previousRight =
+                    previousX + player.width
+
+                const currentRight =
+                    player.x + player.width
+
+                if (
+                    previousRight <= platform.x &&
+                    currentRight > platform.x
+                ) {
+                    player.x =
+                        platform.x - player.width
+                    player.vx = 0
+                }
+
+                if (
+                    previousX >=
+                        platform.x + platform.w &&
+                    player.x <
+                        platform.x + platform.w
+                ) {
+                    player.x =
+                        platform.x + platform.w
+                    player.vx = 0
+                }
+            }
+
+            if (player.y > HEIGHT + 80) {
+                damagePlayer(100)
+            }
+
+            updateEnemies(deltaTime)
+            updateHazards()
+            updateCheckpoints()
+            updateCollectibles()
+
+            const targetCamera = Math.max(
+                0,
+                Math.min(
+                    player.x - WIDTH * 0.4,
+                    levelWidth - WIDTH
+                )
+            )
+
+            cameraX +=
+                (targetCamera - cameraX) * 0.12
+
+            if (
+                player.x > level.terminalX - 80 &&
+                collectedCount === totalToCollect
+            ) {
+                showTerminal()
+            }
+        }
+
+        function gameLoop(currentTime = performance.now()) {
+            if (gameState !== 'playing') {
+                return
+            }
+
+            const deltaTime = Math.min(
+                currentTime - lastFrameTime,
+                34
+            )
+
+            lastFrameTime = currentTime
+
+            updatePhysics(deltaTime)
+            draw()
+
+            requestAnimationFrame(gameLoop)
+        }
+
+        function renderTerminalInventory() {
+            const container =
+                document.getElementById(
+                    'inventory-container'
+                )
+
+            container.innerHTML = ''
+
+            inventory.forEach((item, index) => {
+                const element =
+                    document.createElement('div')
+
+                element.className =
+                    'data-item' +
+                    (item.used ? ' used' : '')
+
+                element.draggable = !item.used
+                element.style.borderColor = item.color
+
+                element.innerHTML = `
+                    <div class="type">${item.label}</div>
+                    <div style="font-size:11px;color:#ddd;margin-top:4px">
+                        ${item.type}
+                    </div>
+                `
+
+                element.addEventListener(
+                    'dragstart',
+                    event => {
+                        event.dataTransfer.setData(
+                            'text/plain',
+                            String(index)
+                        )
+                    }
+                )
+
+                container.appendChild(element)
+            })
+        }
+
+        function showTerminal() {
+            if (gameState === 'terminal') {
+                return
+            }
+
+            gameState = 'terminal'
+            assignedSlots =
+                new Array(levelRequired.length).fill(null)
+
+            renderTerminalInventory()
+
+            const slotsContainer =
+                document.getElementById(
+                    'slots-container'
+                )
+
+            slotsContainer.innerHTML = ''
+
+            levelRequired.forEach((requirement, slotIndex) => {
+                const slot =
+                    document.createElement('div')
+
+                slot.className = 'slot'
+
+                slot.innerHTML = `
+                    <div class="slot-label">
+                        <span>
+                            <strong>${requirement.name}</strong>
+                            <span style="color:#00d4ff">
+                                (which type?)
+                            </span>
+                        </span>
+                        <span style="color:#ffcc00">?</span>
+                    </div>
+
+                    <div class="dropzone">
+                        DROP A VALUE HERE
+                    </div>
+                `
+
+                const dropzone =
+                    slot.querySelector('.dropzone')
+
+                dropzone.addEventListener(
+                    'dragover',
+                    event => {
+                        event.preventDefault()
+                    }
+                )
+
+                dropzone.addEventListener(
+                    'drop',
+                    event => {
+                        event.preventDefault()
+
+                        const inventoryIndex =
+                            Number(
+                                event.dataTransfer.getData(
+                                    'text/plain'
+                                )
+                            )
+
+                        const item =
+                            inventory[inventoryIndex]
+
+                        if (!item || item.used) {
+                            return
+                        }
+
+                        if (
+                            item.type !== requirement.type
+                        ) {
+                            dropzone.textContent =
+                                '❌ WRONG DATA TYPE'
+
+                            setTimeout(() => {
+                                dropzone.textContent =
+                                    'DROP A VALUE HERE'
+                            }, 800)
+
+                            return
+                        }
+
+                        if (assignedSlots[slotIndex]) {
+                            assignedSlots[
+                                slotIndex
+                            ].used = false
+                        }
+
+                        assignedSlots[slotIndex] = item
+                        item.used = true
+
+                        slot.classList.add('filled')
+
+                        dropzone.innerHTML = `
+                            <span style="color:${item.color}">
+                                ${item.label} • ${item.type}
+                            </span>
+                        `
+
+                        renderTerminalInventory()
+                        updateCodePreview()
+                    }
+                )
+
+                slotsContainer.appendChild(slot)
+            })
+
+            updateCodePreview()
+
+            document.getElementById(
+                'terminal-modal'
+            ).style.display = 'flex'
+        }
+
+        function formatValue(requirement) {
+            if (requirement.type === 'string') {
+                return `"${requirement.value}"`
+            }
+
+            if (requirement.type === 'char') {
+                return `'${requirement.value}'`
+            }
+
+            return String(requirement.value)
+        }
+
+        function updateCodePreview() {
+            let preview =
+                'public class Terminal {\n' +
+                '    public static void main(String[] args) {\n'
+
+            levelRequired.forEach(
+                (requirement, index) => {
+                    const assigned =
+                        assignedSlots[index]
+
+                    const value = assigned
+                        ? formatValue(requirement)
+                        : '???'
+
+                    preview +=
+                        `        ${requirement.type} ` +
+                        `${requirement.name} = ${value};\n`
+                }
+            )
+
+            preview +=
+                '        System.out.println("Gate status checked.");\n' +
+                '    }\n' +
+                '}'
+
+            document.getElementById(
+                'code-preview'
+            ).textContent = preview
+        }
+
+        function submitTerminal() {
+            const complete = assignedSlots.every(
+                item => item !== null
+            )
+
+            if (!complete) {
+                alert(
+                    '❌ Fill every terminal slot before executing.'
+                )
+
+                return
+            }
+
+            document.getElementById(
+                'terminal-modal'
+            ).style.display = 'none'
+
+            gameState = 'won'
+
+            const level = LEVELS[currentLevelIndex]
+
+            document.getElementById(
+                'overlay-title'
+            ).innerHTML =
+                `✅ GATE UNLOCKED!<br>` +
+                `LEVEL ${level.id} COMPLETE`
+
+            document.getElementById(
+                'overlay-text'
+            ).innerHTML =
+                'You collected the required data, survived the security system, and completed the terminal puzzle.'
+
+            document.getElementById(
+                'next-btn'
+            ).style.display = 'inline-block'
+
+            document.getElementById(
+                'game-overlay'
+            ).style.display = 'flex'
+
+            const progress =
+                JSON.parse(
+                    localStorage.getItem(
+                        'hackoProgress'
+                    )
+                ) || {
+                    completedMissions: [],
+                    currentMission: 1,
+                    totalXP: 0,
+                    streak: 1
+                }
+
+            if (
+                !progress.completedMissions.includes(
+                    level.id
+                )
+            ) {
+                progress.completedMissions.push(level.id)
+                progress.totalXP +=
+                    100 + currentLevelIndex * 25
+            }
+
+            progress.currentMission = Math.min(
+                LEVELS.length,
+                Math.max(
+                    progress.currentMission,
+                    level.id + 1
+                )
+            )
+
+            localStorage.setItem(
+                'hackoProgress',
+                JSON.stringify(progress)
+            )
+        }
+
+        function resetTerminal() {
+            inventory.forEach(item => {
+                item.used = false
+            })
+
+            assignedSlots =
+                new Array(levelRequired.length).fill(null)
+
+            document.getElementById(
+                'terminal-modal'
+            ).style.display = 'none'
+
+            gameState = 'playing'
+
+            setTimeout(() => {
+                showTerminal()
+            }, 100)
+        }
+
+        function closeTerminal() {
+            inventory.forEach(item => {
+                item.used = false
+            })
+
+            assignedSlots =
+                new Array(levelRequired.length).fill(null)
+
+            document.getElementById(
+                'terminal-modal'
+            ).style.display = 'none'
+
+            gameState = 'playing'
+            lastFrameTime = performance.now()
+            gameLoop()
+        }
+
+        function checkInteraction() {
+            HackoAudio.play("select");
+            const popup =
+                document.getElementById('clue-popup')
+
+            if (popup.style.display === 'block') {
+                popup.style.display = 'none'
+                return true
+            }
+
+            for (const object of levelInteractives) {
+                const playerCenterX =
+                    player.x + player.width / 2
+
+                const objectCenterX =
+                    object.x + object.w / 2
+
+                const closeEnough =
+                    Math.abs(
+                        playerCenterX - objectCenterX
+                    ) < 105 &&
+                    Math.abs(player.y - object.y) < 130
+
+                if (closeEnough) {
+                    popup.innerHTML = `
+                        <strong style="color:#ff6b00">
+                            CLUE FOUND!
+                        </strong>
+
+                        <br><br>
+
+                        ${object.clue}
+
+                        <br><br>
+
+                        <small style="opacity:0.7">
+                            Press E again to close.
+                        </small>
+                    `
+
+                    popup.style.display = 'block'
+                    return true
+                }
+            }
+
+            return false
+        }
+
+        window.addEventListener('keydown', event => {
+            keys[event.key] = true
+
+            if (
+                ['ArrowLeft', 'ArrowRight', ' '].includes(
+                    event.key
+                )
+            ) {
+                event.preventDefault()
+            }
+
+            if (
+                gameState === 'playing' &&
+                (event.key === 'e' ||
+                    event.key === 'E')
+            ) {
+                checkInteraction()
+            }
+
+            if (event.key === 'Escape') {
+                if (gameState === 'terminal') {
+                    closeTerminal()
+                } else if (
+                    gameState === 'playing' ||
+                    gameState === 'paused'
+                ) {
+                    togglePause()
+                }
+            }
+        })
+
+        window.addEventListener('keyup', event => {
+            keys[event.key] = false
+        })
+
+        function nextLevel() {
+            /* tell the mission map this level is cleared */
+            if (window.HackoStore) {
+                HackoStore.completeLevel(1, currentLevelIndex, 100);
+            }
+
+            HackoAudio.play("win");
+            document.getElementById(
+                'game-overlay'
+            ).style.display = 'none'
+
+            if (
+                currentLevelIndex <
+                LEVELS.length - 1
+            ) {
+                playerHealth = 100
+                playerLives = Math.min(
+                    3,
+                    playerLives + 1
+                )
+
+                loadLevel(currentLevelIndex + 1)
+
+                gameState = 'playing'
+                lastFrameTime = performance.now()
+                gameLoop()
+
+                return
+            }
+
+            document.getElementById(
+                'overlay-title'
+            ).innerHTML =
+                '🎉 FULL ESCAPE COMPLETE!'
+
+            document.getElementById(
+                'overlay-text'
+            ).innerHTML =
+                'You mastered all ten vaults and escaped the security network.<br>You are now a HACKO legend!'
+
+            document.getElementById(
+                'next-btn'
+            ).style.display = 'none'
+
+            document.getElementById(
+                'game-overlay'
+            ).style.display = 'flex'
+        }
+
+        function restartLevel() {
+            document.getElementById(
+                'game-overlay'
+            ).style.display = 'none'
+
+            document.getElementById(
+                'terminal-modal'
+            ).style.display = 'none'
+
+            document.getElementById(
+                'next-btn'
+            ).style.display = 'inline-block'
+
+            playerLives = 3
+            playerHealth = 100
+
+            loadLevel(currentLevelIndex)
+
+            gameState = 'playing'
+            lastFrameTime = performance.now()
+            gameLoop()
+        }
+
+        function togglePause() {
+            const menu =
+                document.getElementById('pause-menu')
+
+            if (gameState === 'paused') {
+                menu.style.display = 'none'
+                gameState = 'playing'
+                lastFrameTime = performance.now()
+                gameLoop()
+
+                return
+            }
+
+            if (gameState === 'playing') {
+                gameState = 'paused'
+                renderLevelSelect()
+                menu.style.display = 'flex'
+            }
+        }
+
+        function renderLevelSelect() {
+            const container =
+                document.getElementById('level-list')
+
+            container.innerHTML = ''
+
+            const progress =
+                JSON.parse(
+                    localStorage.getItem(
+                        'hackoProgress'
+                    )
+                ) || {}
+
+            const completed =
+                progress.completedMissions || []
+
+            LEVELS.forEach((level, index) => {
+                const unlocked =
+                    index === 0 ||
+                    completed.includes(
+                        LEVELS[index - 1].id
+                    )
+
+                const card =
+                    document.createElement('div')
+
+                card.style.padding = '18px 12px'
+                card.style.background = unlocked
+                    ? 'rgba(0,212,255,0.1)'
+                    : '#111827'
+
+                card.style.border = unlocked
+                    ? '2px solid #00d4ff'
+                    : '2px solid #444'
+
+                card.style.borderRadius = '12px'
+                card.style.textAlign = 'center'
+                card.style.cursor = unlocked
+                    ? 'pointer'
+                    : 'not-allowed'
+
+                card.innerHTML = `
+                    <div
+                        style="
+                            font-family:Orbitron;
+                            font-size:1.6rem;
+                            color:${unlocked ? '#00d4ff' : '#666'};
+                        "
+                    >
+                        ${level.id}
+                    </div>
+
+                    <div style="font-size:0.85rem;opacity:0.8">
+                        ${level.name}
+                    </div>
+
+                    <div style="font-size:0.75rem;margin-top:8px;color:#ffcc00">
+                        ${DIFFICULTY_SETTINGS[index].name}
+                    </div>
+
+                    ${
+                        completed.includes(level.id)
+                            ? '<div style="color:#00ff88;margin-top:6px">✓ COMPLETE</div>'
+                            : ''
+                    }
+                `
+
+                if (unlocked) {
+                    card.onclick = () => {
+                        document.getElementById(
+                            'pause-menu'
+                        ).style.display = 'none'
+
+                        playerLives = 3
+                        playerHealth = 100
+
+                        loadLevel(index)
+
+                        gameState = 'playing'
+                        lastFrameTime =
+                            performance.now()
+
+                        gameLoop()
+                    }
+                }
+
+                container.appendChild(card)
+            })
+        }
+
+        function showLevelSelect() {
+            if (gameState === 'playing') {
+                togglePause()
+            }
+        }
+
+        function restartGame() {
+            localStorage.removeItem('hackoProgress')
+
+            playerLives = 3
+            playerHealth = 100
+
+            document.getElementById(
+                'pause-menu'
+            ).style.display = 'none'
+
+            document.getElementById(
+                'game-overlay'
+            ).style.display = 'none'
+
+            document.getElementById(
+                'terminal-modal'
+            ).style.display = 'none'
+
+            document.getElementById(
+                'next-btn'
+            ).style.display = 'inline-block'
+
+            loadLevel(0)
+
+            gameState = 'playing'
+            lastFrameTime = performance.now()
+            gameLoop()
+        }
+
+        window.onload = () => {
+            playerLives = 3
+            playerHealth = 100
+
+            loadLevel(0)
+
+            lastFrameTime = performance.now()
+            gameLoop()
+
+            console.log(
+                '%c✅ HACKO upgraded with enemies, hazards, checkpoints, health and progressive difficulty.',
+                'background:#00d4ff;color:#0a0e27;padding:4px 8px;border-radius:4px'
+            )
+        }
+    
+/* =====================================================
+   RESUME + AUTOSAVE
+
+   Progress used to be written only when a level was
+   finished, and no page in the project listened for
+   pagehide or visibilitychange. Leaving mid-level threw
+   that level's work away - which is what the client meant
+   by "pag na back mawawala".
+
+   Every cleared level is now recorded as it happens, and
+   coming back drops the player at the start of the level
+   they had reached.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoStore || !HackoStore.isLoggedIn()) {
+        return;
+    }
+
+    HackoStore.registerTotalLevels(1, 10);
+
+    /* The jump has to happen AFTER the game has booted.
+       theescaperoom builds itself in window.onload, so doing
+       this at parse time meant its own loadLevel(0) ran
+       afterwards and silently sent the player back to level 1.
+       A load listener registered here fires after any onload
+       the page assigned earlier. */
+    function goToSavedLevel() {
+
+        var resume = HackoStore.getResumeLevel(1);
+
+        if (resume > 0 && resume < 10) {
+            try {
+                loadLevel(resume);
+            } catch (e) {
+                /* a game that cannot jump just starts at the top */
+            }
+        }
+    }
+
+    if (document.readyState === "complete") {
+        setTimeout(goToSavedLevel, 0);
+    } else {
+        window.addEventListener("load", function () {
+            setTimeout(goToSavedLevel, 0);
+        });
+    }
+
+    HackoStore.bindAutosave(function () {
+        try {
+            return { mission: 1, level: currentLevelIndex };
+        } catch (e) {
+            return null;
+        }
+    });
+
+}());
+
+/* =====================================================
+   SOUND LAYER
+
+   Sound used to fire only on a few discrete events, so a
+   game could sit in silence for long stretches. Every page
+   now carries a quiet background track and a visible
+   SOUND ON / SOUND OFF button, so a player can always tell
+   whether audio is working.
+
+   Browsers will not start audio until the player has
+   interacted, so the track is requested here and actually
+   begins on the first key press or click.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoAudio) {
+        return;
+    }
+
+    function begin() {
+        HackoAudio.music.play("escape");
+        HackoAudio.mountToggle(document.body);
+        if (window.HackoStore) {
+            HackoStore.mountMapLink();
+        }
+    }
+
+    if (document.readyState === "complete") {
+        begin();
+    } else {
+        window.addEventListener("load", begin);
+    }
+
+}());
+</script>
+</body>
+</html>

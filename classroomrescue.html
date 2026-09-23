@@ -1,0 +1,2248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classroom Rescue</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+    margin:0;
+    background:#050912;
+    color:white;
+    font-family:Arial,sans-serif;
+    overflow:hidden;
+}
+
+button{
+    cursor:pointer;
+    border:0;
+    font-weight:bold;
+}
+
+#app{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+}
+
+#top{
+    height:60px;
+    background:#0d1727;
+    border-bottom:2px solid #00d9ff;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:0 15px;
+}
+
+.logo{
+    color:#00d9ff;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.stats{
+    display:flex;
+    gap:8px;
+}
+
+.stat{
+    background:#16243a;
+    padding:8px 12px;
+    border-radius:6px;
+    font-size:12px;
+}
+
+#content{
+    flex:1;
+    min-height:0;
+    display:grid;
+    grid-template-columns:58% 42%;
+    gap:7px;
+    padding:7px;
+}
+
+/* WORLD */
+
+#world{
+    position:relative;
+    overflow:hidden;
+    border:3px solid #29445d;
+    border-radius:9px;
+    background:#9b6944;
+}
+
+.floor{
+    position:absolute;
+    inset:0;
+    background:
+    repeating-linear-gradient(
+        90deg,
+        rgba(0,0,0,.06) 0 2px,
+        transparent 2px 50px
+    ),
+    repeating-linear-gradient(
+        0deg,
+        rgba(0,0,0,.06) 0 2px,
+        transparent 2px 50px
+    );
+}
+
+.wall{
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    height:80px;
+    background:#dce4e5;
+    border-bottom:5px solid #667175;
+}
+
+.board{
+    position:absolute;
+    top:12px;
+    left:50%;
+    transform:translateX(-50%);
+    width:360px;
+    height:52px;
+    background:#173b31;
+    border:5px solid #65442d;
+    color:#9affbf;
+    text-align:center;
+    padding-top:13px;
+    font-weight:bold;
+}
+
+.window{
+    position:absolute;
+    right:18px;
+    top:102px;
+    width:120px;
+    height:80px;
+    background:#72c8e8;
+    border:7px solid #63452e;
+}
+
+.window:before{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:0;
+    bottom:0;
+    width:5px;
+    background:#63452e;
+}
+
+.window:after{
+    content:"";
+    position:absolute;
+    top:50%;
+    left:0;
+    right:0;
+    height:5px;
+    background:#63452e;
+}
+
+.desk{
+    position:absolute;
+    width:105px;
+    height:53px;
+    background:#89592f;
+    border:4px solid #54341e;
+    border-radius:5px;
+    text-align:center;
+    padding-top:16px;
+    font-size:10px;
+}
+
+.d1{left:145px;top:135px}
+.d2{left:315px;top:135px}
+.d3{left:485px;top:135px}
+.d4{left:225px;top:285px}
+.d5{left:400px;top:285px}
+
+.character{
+    position:absolute;
+    width:48px;
+    height:58px;
+    border-radius:12px 12px 8px 8px;
+    z-index:20;
+    text-align:center;
+    padding-top:11px;
+    font-size:26px;
+    transition:.2s;
+}
+
+.name{
+    position:absolute;
+    top:59px;
+    left:50%;
+    transform:translateX(-50%);
+    background:white;
+    color:#111;
+    padding:2px 5px;
+    border-radius:4px;
+    font-size:9px;
+    white-space:nowrap;
+}
+
+#player{
+    left:90px;
+    top:390px;
+    background:#00d9ff;
+    border:3px solid #00748e;
+    box-shadow:0 0 15px #00d9ff;
+}
+
+#alex{
+    left:240px;
+    top:390px;
+    background:#f39c12;
+    border:3px solid #8b5605;
+}
+
+#teacher{
+    left:425px;
+    top:95px;
+    background:#8e44ad;
+    border:3px solid #512965;
+}
+
+#robo{
+    left:650px;
+    top:390px;
+    background:#858f91;
+    border:3px solid #4a5355;
+}
+
+#door{
+    position:absolute;
+    left:18px;
+    top:105px;
+    width:78px;
+    height:150px;
+    background:#553622;
+    border:5px solid #26180f;
+    z-index:25;
+    text-align:center;
+    padding-top:52px;
+    font-size:11px;
+}
+
+#door.open{
+    background:#12432d;
+    border-color:#00ff88;
+    box-shadow:0 0 30px #00ff88;
+}
+
+.item{
+    position:absolute;
+    width:42px;
+    height:42px;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    font-size:28px;
+    z-index:22;
+}
+
+#key{left:140px;top:310px}
+#battery{left:600px;top:310px}
+#book{left:350px;top:370px}
+
+#computer{
+    position:absolute;
+    left:720px;
+    top:220px;
+    font-size:34px;
+    z-index:25;
+}
+
+#interaction{
+    display:none;
+    position:absolute;
+    bottom:15px;
+    left:50%;
+    transform:translateX(-50%);
+    background:rgba(0,0,0,.9);
+    color:#00d9ff;
+    padding:10px 15px;
+    border:1px solid #00d9ff;
+    border-radius:5px;
+    z-index:100;
+}
+
+#dialogue{
+    display:none;
+    position:absolute;
+    left:15px;
+    right:15px;
+    bottom:15px;
+    background:rgba(3,9,16,.98);
+    border:2px solid #00d9ff;
+    border-radius:7px;
+    padding:14px;
+    z-index:150;
+}
+
+#speaker{
+    color:#ffd700;
+    font-weight:bold;
+    margin-bottom:7px;
+}
+
+#dialogueText{
+    color:#dce9f2;
+    line-height:1.5;
+    font-size:13px;
+}
+
+#dialogueNext{
+    margin-top:9px;
+    background:#00d9ff;
+    padding:8px 14px;
+    border-radius:5px;
+}
+
+#controls{
+    position:absolute;
+    left:12px;
+    bottom:12px;
+    z-index:120;
+    display:grid;
+    grid-template-columns:42px 42px 42px;
+    gap:4px;
+}
+
+#controls button{
+    height:38px;
+    background:rgba(0,0,0,.65);
+    color:white;
+    border:1px solid #537087;
+    border-radius:5px;
+}
+
+#up{grid-column:2}
+#left{grid-column:1}
+#down{grid-column:2}
+#right{grid-column:3}
+
+/* TERMINAL */
+
+#console{
+    background:#09131f;
+    border:2px solid #263e58;
+    border-radius:9px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+}
+
+.consoleHeader{
+    background:#101d2d;
+    padding:11px;
+    border-bottom:1px solid #29445e;
+}
+
+.consoleHeader h2{
+    margin:0;
+    font-size:17px;
+    color:#00d9ff;
+}
+
+#mission{
+    font-size:11px;
+    color:#a9bfd1;
+    margin-top:4px;
+}
+
+#challenge{
+    background:#060c14;
+    padding:10px;
+    border-bottom:1px solid #263c52;
+}
+
+#levelTitle{
+    color:#00ff88;
+    font-weight:bold;
+    margin-bottom:5px;
+}
+
+#objective{
+    font-size:12px;
+    color:#d5e1eb;
+    line-height:1.45;
+}
+
+#reference{
+    background:#02060a;
+    border:1px solid #1e3449;
+    padding:8px;
+    margin:8px 0 0;
+    color:#8fd4ff;
+    font:11px Consolas,monospace;
+    white-space:pre-wrap;
+    max-height:115px;
+    overflow:auto;
+}
+
+#editor{
+    flex:1;
+    min-height:150px;
+    resize:none;
+    border:0;
+    outline:0;
+    background:#02070c;
+    color:#d9efff;
+    padding:11px;
+    font:13px/1.5 Consolas,monospace;
+}
+
+#buttons{
+    display:flex;
+    gap:6px;
+    padding:8px;
+    background:#101d2d;
+}
+
+#buttons button{
+    padding:9px 12px;
+    border-radius:5px;
+}
+
+#run{
+    background:#00d9ff;
+    color:#061019;
+}
+
+#hint{
+    background:#344b63;
+    color:white;
+}
+
+#reset{
+    background:#633443;
+    color:#ffd4d4;
+}
+
+#output{
+    height:110px;
+    flex-shrink:0;
+    overflow:auto;
+    background:#02060a;
+    padding:9px;
+    font:11px/1.5 Consolas,monospace;
+}
+
+.success{color:#00ff88}
+.error{color:#ff6868}
+.info{color:#5edbff}
+
+/* OVERLAYS */
+
+.overlay{
+    position:absolute;
+    inset:0;
+    background:rgba(2,7,14,.97);
+    z-index:300;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:25px;
+}
+
+.overlay h1{
+    color:#00d9ff;
+    font-size:34px;
+}
+
+.overlay p{
+    max-width:650px;
+    color:#c0d0dd;
+    line-height:1.6;
+    white-space:pre-line;
+}
+
+.overlay button{
+    margin-top:20px;
+    padding:12px 25px;
+    background:#00d9ff;
+    border-radius:6px;
+}
+
+#complete{
+    display:none;
+}
+
+@media(max-width:900px){
+
+    body{
+        overflow:auto;
+    }
+
+    #content{
+        grid-template-columns:1fr;
+        overflow:auto;
+    }
+
+    #world{
+        height:520px;
+        min-height:520px;
+    }
+
+    #console{
+        height:520px;
+        min-height:520px;
+    }
+}
+</style>
+<script src="shared/audio.js" data-track="rescue"></script>
+<script src="shared/storage.js"></script>
+</head>
+
+<body>
+
+<div id="app">
+
+<div id="top">
+
+    <div class="logo">
+        🏫 CLASSROOM RESCUE
+    </div>
+
+    <div class="stats">
+
+        <div class="stat">
+            ⭐ XP <span id="xp">0</span>
+        </div>
+
+        <div class="stat">
+            ❤️ <span id="lives">3</span>
+        </div>
+
+        <div class="stat">
+            🔥 <span id="combo">0</span>
+        </div>
+
+        <div class="stat">
+            LEVEL <span id="level">1</span>/10
+        </div>
+
+    </div>
+
+</div>
+
+
+<div id="content">
+
+
+<div id="world">
+
+    <div class="floor"></div>
+
+    <div class="wall"></div>
+
+    <div class="board">
+        OOP CLASSROOM — LOCKDOWN
+    </div>
+
+    <div class="window"></div>
+
+    <div id="door">
+        🔒<br>
+        EXIT
+    </div>
+
+    <div class="desk d1">DESK</div>
+    <div class="desk d2">DESK</div>
+    <div class="desk d3">DESK</div>
+    <div class="desk d4">DESK</div>
+    <div class="desk d5">DESK</div>
+
+
+    <div id="player" class="character">
+        🧑‍🎓
+        <div class="name">YOU</div>
+    </div>
+
+    <div id="alex" class="character">
+        🧑‍💻
+        <div class="name">ALEX</div>
+    </div>
+
+    <div id="teacher" class="character">
+        🧑‍🏫
+        <div class="name">PROF. BYTE</div>
+    </div>
+
+    <div id="robo" class="character">
+        🤖
+        <div class="name">ROBO</div>
+    </div>
+
+    <div id="computer">💻</div>
+
+    <div id="key" class="item">🔑</div>
+    <div id="battery" class="item">🔋</div>
+    <div id="book" class="item">📘</div>
+
+
+    <div id="interaction"></div>
+
+
+    <div id="dialogue">
+
+        <div id="speaker"></div>
+
+        <div id="dialogueText"></div>
+
+        <button id="dialogueNext">
+            CONTINUE
+        </button>
+
+    </div>
+
+
+    <div id="controls">
+
+        <button id="up">▲</button>
+        <button id="left">◀</button>
+        <button id="down">▼</button>
+        <button id="right">▶</button>
+
+    </div>
+
+
+    <div id="start" class="overlay">
+
+        <h1>🏫 CLASSROOM RESCUE</h1>
+
+        <p>
+The classroom has been locked down.
+
+Professor Byte needs your help.
+
+Explore the classroom.
+Talk to characters.
+Collect objects.
+Solve coding challenges.
+
+WASD / ARROW KEYS = MOVE
+E = INTERACT
+CTRL + ENTER = RUN CODE
+        </p>
+
+        <button id="startBtn">
+            START GAME
+        </button>
+
+    </div>
+
+
+    <div id="complete" class="overlay">
+
+        <h1 id="completeTitle">
+            🎉 MISSION COMPLETE
+        </h1>
+
+        <p id="completeText"></p>
+
+        <button id="nextBtn">
+            NEXT LEVEL →
+        </button>
+
+    </div>
+
+</div>
+
+
+<div id="console">
+
+    <div class="consoleHeader">
+
+        <h2>💻 OOP TERMINAL</h2>
+
+        <div id="mission">
+            MISSION
+        </div>
+
+    </div>
+
+
+    <div id="challenge">
+
+        <div id="levelTitle"></div>
+
+        <div id="objective"></div>
+
+        <pre id="reference"></pre>
+
+    </div>
+
+
+    <textarea
+        id="editor"
+        spellcheck="false"
+    ></textarea>
+
+
+    <div id="buttons">
+
+        <button id="run" type="button">
+            ▶ RUN CODE
+        </button>
+
+        <button id="hint" type="button">
+            💡 HINT
+        </button>
+
+        <button id="reset" type="button">
+            ↻ RESET
+        </button>
+
+    </div>
+
+
+    <div id="output">
+        <span class="info">
+            Terminal ready.
+        </span>
+    </div>
+
+</div>
+
+</div>
+</div>
+
+
+<script>
+
+/* =========================
+LEVEL DATA
+========================= */
+
+const levels = [
+
+{
+title:"MISSION 1 \u2014 CREATE ROBO",
+mission:"Create your first object.",
+objective:"Write a Robot class with an int field called energy, then create a Robot object named robo.",
+reference:
+`class ClassName {
+    type fieldName;
+}
+
+ClassName objectName = new ClassName();`,
+starter:
+`class Robot {
+    // declare an int field named energy
+}
+
+// create a Robot object named robo`,
+checks:[
+/class\s+Robot/,
+/Robot\s+robo\s*=\s*new\s+Robot\s*\(\s*\)/
+],
+hints:[
+"A class is a blueprint. Nothing can be built from it until the blueprint exists.",
+"Declare the class first, then build one from it: Type name = new Type();",
+"Example with a different class: Lamp deskLamp = new Lamp();"
+],
+xp:100
+},
+
+{
+title:"MISSION 2 \u2014 CREATE ALEX",
+mission:"Create a Student object.",
+objective:"Write a Student class with a String field called name, create a Student named alex, then store Alex's name in it.",
+reference:
+`class ClassName {
+    String fieldName;
+}
+
+ClassName objectName = new ClassName();
+objectName.fieldName = "value";`,
+starter:
+`class Student {
+    // declare a String field named name
+}
+
+// create a Student object named alex
+
+// store Alex's name in that object`,
+checks:[
+/class\s+Student/,
+/Student\s+alex\s*=\s*new\s+Student\s*\(\s*\)/,
+/alex\s*\.\s*name\s*=\s*"Alex"/
+],
+hints:[
+"Alex needs somewhere to keep a name before you can give them one.",
+"A field is reached through the object it belongs to, using a dot.",
+"Example: Student sam = new Student(); then sam.name = \"Sam\";"
+],
+xp:120
+},
+
+{
+title:"MISSION 3 \u2014 WAVE",
+mission:"Make Alex interact.",
+objective:"Call the wave method on alex.",
+reference:`objectName.methodName();`,
+starter:`// make alex wave`,
+checks:[
+/alex\s*\.\s*wave\s*\(\s*\)/
+],
+hints:[
+"A method is something an object knows how to do.",
+"Reach a method the same way as a field - through a dot - but add round brackets.",
+"Example: robo.beep();"
+],
+xp:130
+},
+
+{
+title:"MISSION 4 \u2014 ENERGY",
+mission:"Power Robo.",
+objective:"Set Robo's energy field to 100.",
+reference:`objectName.fieldName = value;`,
+starter:`// give robo a full charge`,
+checks:[
+/robo\s*\.\s*energy\s*=(?!=)\s*100/
+],
+hints:[
+"Robo already has an energy field. It is simply empty.",
+"Reach the field through the object, then store a value in it.",
+"Example: lamp.brightness = 50;"
+],
+xp:140
+},
+
+{
+title:"MISSION 5 \u2014 CONSTRUCTOR",
+mission:"Build Robo correctly.",
+objective:"Give Robot a constructor that takes a String and an int, then build Robo with the name Robo and 100 energy.",
+reference:
+`class ClassName {
+    type fieldA;
+
+    ClassName(type a, type b) {
+        this.fieldA = a;
+    }
+}`,
+starter:
+`class Robot {
+    String name;
+    int energy;
+
+    // write a constructor that accepts a String and an int
+    // and copies both into the fields above
+}
+
+// build robo using that constructor`,
+checks:[
+/Robot\s*\(\s*String\s+\w+\s*,\s*int\s+\w+\s*\)/,
+/new\s+Robot\s*\(\s*"Robo"\s*,\s*100\s*\)/
+],
+hints:[
+"Right now Robot objects are born empty and have to be filled in afterwards.",
+"A constructor shares its name with the class and declares no return type.",
+"Example: Lamp(String colour, int watts) { this.colour = colour; }"
+],
+xp:160
+},
+
+{
+title:"MISSION 6 \u2014 REPAIR",
+mission:"Save Robo.",
+objective:"Make alex repair robo.",
+reference:`objectA.methodName(objectB);`,
+starter:`// alex has a repair method - give it robo to work on`,
+checks:[
+/alex\s*\.\s*repair\s*\(\s*robo\s*\)/
+],
+hints:[
+"One object can be handed to another object as something to work on.",
+"Whatever a method needs goes inside its round brackets.",
+"Example: nurse.treat(patient);"
+],
+xp:180
+},
+
+{
+title:"MISSION 7 \u2014 DEBUG",
+mission:"Fix Robo's code.",
+objective:"charge() is meant to set energy to 100, but it never changes anything. Repair it.",
+reference:
+`single =   stores a value
+double ==  compares two values`,
+starter:
+`void charge() {
+    // this line runs, but energy never changes. why?
+    this.energy == 100;
+}`,
+checks:[
+/this\s*\.\s*energy\s*=(?!=)\s*100/
+],
+hints:[
+"Read that line out loud. Is it telling Java something, or asking Java something?",
+"One of these operators stores a value. The other only answers true or false.",
+"Example: count = 5; changes count. count == 5; just asks about it."
+],
+xp:200
+},
+
+{
+title:"MISSION 8 \u2014 ACTIVATION",
+mission:"Bring Robo online.",
+objective:"Charge Robo, then activate Robo. The order matters.",
+reference:`Statements run top to bottom, in the order you write them.`,
+starter:
+`// robo needs power before it can switch on
+
+// write the two calls in the order that works`,
+order:true,
+hints:[
+"Robo cannot switch on while the battery is flat.",
+"Both calls are needed. Only one order actually works.",
+"Think of it as filling the tank before starting the engine."
+],
+xp:220
+},
+
+{
+title:"MISSION 9 \u2014 UNLOCK",
+mission:"Open the exit.",
+objective:"Alex repairs Robo, Robo unlocks the door, and the door opens.",
+reference:`objectA.methodName(objectB);
+objectB.methodName();`,
+starter:
+`// alex repairs robo
+
+// robo unlocks the door
+
+// the door opens itself`,
+checks:[
+/alex\s*\.\s*repair\s*\(\s*robo\s*\)/,
+/robo\s*\.\s*unlock\s*\(\s*door\s*\)/,
+/door\s*\.\s*open\s*\(\s*\)/
+],
+hints:[
+"Three objects, each doing one job, passing the work along.",
+"Every line follows the same shape: which object, which action, what it needs.",
+"The door is an object too - it knows how to open itself."
+],
+xp:300
+},
+
+{
+title:"FINAL MISSION \u2014 ESCAPE",
+mission:"Defeat the lockdown.",
+objective:"Create Alex, build Robo with 100 energy, repair Robo, activate Robo, unlock the door and open it.",
+reference:
+`ClassName objectName = new ClassName(arguments);
+objectName.methodName(arguments);`,
+starter:
+`// create alex, a Student named Alex
+
+// build robo, a Robot named Robo with 100 energy
+
+// alex repairs robo
+
+// robo activates
+
+// robo unlocks the door
+
+// the door opens`,
+checks:[
+/Student\s+alex\s*=\s*new\s+Student\s*\(\s*"Alex"\s*\)/,
+/Robot\s+robo\s*=\s*new\s+Robot\s*\(\s*"Robo"\s*,\s*100\s*\)/,
+/alex\s*\.\s*repair\s*\(\s*robo\s*\)/,
+/robo\s*\.\s*activate\s*\(\s*\)/,
+/robo\s*\.\s*unlock\s*\(\s*door\s*\)/,
+/door\s*\.\s*open\s*\(\s*\)/
+],
+hints:[
+"Everything you have learned, in one run. Work down the escape chain in order.",
+"Objects have to exist before they can be used - build them first.",
+"Six statements, each one a step you have already written once before."
+],
+xp:500
+}
+
+];
+
+
+/* =========================
+GAME STATE
+========================= */
+
+let game={
+    level:1,
+    xp:0,
+    lives:3,
+    combo:0
+};
+
+let started=false;
+let paused=false;
+let keys={};
+let nearby=null;
+
+let dialogue=[];
+let dialogueIndex=0;
+
+
+/* =========================
+HELPER
+========================= */
+
+function $(id){
+    return document.getElementById(id);
+}
+
+
+/* =========================
+SAVE
+========================= */
+
+function saveGame(){
+
+    localStorage.setItem(
+        "classroomRescue",
+        JSON.stringify(game)
+    );
+
+}
+
+
+/* =========================
+LOAD
+========================= */
+
+function loadGame(){
+
+    const saved=
+        localStorage.getItem(
+            "classroomRescue"
+        );
+
+    if(!saved) return;
+
+    try{
+
+        const data=
+            JSON.parse(saved);
+
+        game.level=
+            Math.min(
+                10,
+                Math.max(
+                    1,
+                    Number(data.level)||1
+                )
+            );
+
+        game.xp=
+            Math.max(
+                0,
+                Number(data.xp)||0
+            );
+
+        game.lives=
+            Math.min(
+                3,
+                Math.max(
+                    1,
+                    Number(data.lives)||3
+                )
+            );
+
+        game.combo=
+            Math.max(
+                0,
+                Number(data.combo)||0
+            );
+
+    }catch(e){
+
+        console.log(e);
+
+    }
+
+}
+
+
+/* =========================
+HUD
+========================= */
+
+function updateHUD(){
+
+    $("xp").textContent=game.xp;
+    $("lives").textContent=game.lives;
+    $("combo").textContent=game.combo;
+    $("level").textContent=game.level;
+
+}
+
+
+/* =========================
+LOAD LEVEL
+========================= */
+
+function loadLevel(){
+
+    const level=
+        levels[game.level-1];
+
+    $("levelTitle").textContent=
+        level.title;
+
+    $("mission").textContent=
+        level.mission;
+
+    $("objective").textContent=
+        level.objective;
+
+    $("reference").textContent=
+        level.reference;
+
+    $("editor").value=
+        level.starter;
+
+    $("output").innerHTML=
+        `<span class="info">
+        Terminal ready.
+        </span>`;
+
+    $("door").classList.remove(
+        "open"
+    );
+
+    $("key").style.display=
+        game.level>=9
+        ?"flex"
+        :"none";
+
+    $("battery").style.display=
+        game.level>=4
+        ?"flex"
+        :"none";
+
+    $("book").style.display=
+        game.level>=7
+        ?"flex"
+        :"none";
+
+    updateHUD();
+    saveGame();
+
+}
+
+
+/* =========================
+TERMINAL OUTPUT
+========================= */
+
+function terminalOutput(
+    type,
+    text
+){
+
+    $("output").innerHTML=
+        `<span class="${type}">${
+            text.replace(/\n/g,"<br>")
+        }</span>`;
+
+}
+
+
+/* =========================
+MOVEMENT
+========================= */
+
+function movePlayer(){
+    HackoAudio.play("step");
+
+    if(!started || paused)
+        return;
+
+    const player=$("player");
+
+    let x=
+        parseFloat(
+            player.style.left
+        )||90;
+
+    let y=
+        parseFloat(
+            player.style.top
+        )||390;
+
+    const speed=4;
+
+    if(
+        keys.w ||
+        keys.arrowup
+    ) y-=speed;
+
+    if(
+        keys.s ||
+        keys.arrowdown
+    ) y+=speed;
+
+    if(
+        keys.a ||
+        keys.arrowleft
+    ) x-=speed;
+
+    if(
+        keys.d ||
+        keys.arrowright
+    ) x+=speed;
+
+    const maxX=
+        $("world").clientWidth-
+        player.offsetWidth;
+
+    const maxY=
+        $("world").clientHeight-
+        player.offsetHeight;
+
+    x=Math.max(
+        0,
+        Math.min(maxX,x)
+    );
+
+    y=Math.max(
+        82,
+        Math.min(maxY,y)
+    );
+
+    player.style.left=x+"px";
+    player.style.top=y+"px";
+
+}
+
+
+/* =========================
+DISTANCE
+========================= */
+
+function distance(a,b){
+
+    const ax=
+        parseFloat(a.style.left)||0;
+
+    const ay=
+        parseFloat(a.style.top)||0;
+
+    const bx=
+        parseFloat(b.style.left)||0;
+
+    const by=
+        parseFloat(b.style.top)||0;
+
+    return Math.hypot(
+        ax-bx,
+        ay-by
+    );
+
+}
+
+
+/* =========================
+NEARBY
+========================= */
+
+function checkNearby(){
+
+    if(!started || paused)
+        return;
+
+    nearby=null;
+
+    const objects=[
+
+        [$("teacher"),"teacher","Professor Byte"],
+
+        [$("alex"),"alex","Alex"],
+
+        [$("robo"),"robo","Robo"],
+
+        [$("computer"),"computer","Computer"],
+
+        [$("door"),"door","Exit Door"],
+
+        [$("key"),"key","Key"],
+
+        [$("battery"),"battery","Battery"],
+
+        [$("book"),"book","OOP Book"]
+
+    ];
+
+    for(
+        const [element,type,name]
+        of objects
+    ){
+
+        if(
+            getComputedStyle(element).display
+            ==="none"
+        ) continue;
+
+        if(
+            distance(
+                $("player"),
+                element
+            )<95
+        ){
+
+            nearby={
+                element,
+                type,
+                name
+            };
+
+            $("interaction").style.display=
+                "block";
+
+            $("interaction").textContent=
+                "PRESS E → "+name;
+
+            return;
+
+        }
+
+    }
+
+    $("interaction").style.display=
+        "none";
+
+}
+
+
+/* =========================
+DIALOGUE
+========================= */
+
+function showDialogue(
+    name,
+    text
+){
+
+    dialogue=text;
+    dialogueIndex=0;
+
+    $("speaker").textContent=name;
+
+    $("dialogueText").textContent=
+        dialogue[0];
+
+    $("dialogue").style.display=
+        "block";
+
+    paused=true;
+
+}
+
+
+$("dialogueNext").addEventListener(
+    "click",
+    function(){
+
+        dialogueIndex++;
+
+        if(
+            dialogueIndex<
+            dialogue.length
+        ){
+
+            $("dialogueText").textContent=
+                dialogue[dialogueIndex];
+
+        }else{
+
+            $("dialogue").style.display=
+                "none";
+
+            paused=false;
+
+        }
+
+    }
+);
+
+
+/* =========================
+INTERACT
+========================= */
+
+function interact(){
+    HackoAudio.play("select");
+
+    if(!nearby)
+        return;
+
+    switch(nearby.type){
+
+        case"teacher":
+
+            showDialogue(
+                "PROFESSOR BYTE",
+                [
+                    "The classroom is locked down!",
+
+                    "Everything here is controlled by objects.",
+
+                    "Talk to the characters and solve the coding missions.",
+
+                    "Your OOP skills are the only way out."
+                ]
+            );
+
+        break;
+
+
+        case"alex":
+
+            showDialogue(
+                "ALEX",
+                [
+                    "Objects contain data and behavior.",
+
+                    "Properties store information.",
+
+                    "Methods perform actions.",
+
+                    "Use the terminal to control us."
+                ]
+            );
+
+        break;
+
+
+        case"robo":
+
+            showDialogue(
+                "ROBO",
+                [
+                    "SYSTEM FAILURE.",
+
+                    "My energy is unstable.",
+
+                    "I need your code to repair me."
+                ]
+            );
+
+        break;
+
+
+        case"computer":
+
+            showDialogue(
+                "COMPUTER",
+                [
+                    "TERMINAL ONLINE.",
+
+                    "Write your solution.",
+
+                    "Then press RUN CODE.",
+
+                    "You can also use CTRL + ENTER."
+                ]
+            );
+
+        break;
+
+
+        case"door":
+
+            if(
+                $("door").classList.contains(
+                    "open"
+                )
+            ){
+
+                terminalOutput(
+                    "success",
+                    "🚪 EXIT OPEN!\n\nYOU ESCAPED!"
+                );
+
+            }else{
+
+                showDialogue(
+                    "EXIT DOOR",
+                    [
+                        "LOCKED.",
+
+                        "Complete the coding mission first."
+                    ]
+                );
+
+            }
+
+        break;
+
+
+        case"key":
+
+            $("key").style.display="none";
+
+            game.xp+=25;
+
+            updateHUD();
+            saveGame();
+
+            terminalOutput(
+                "success",
+                "🔑 KEY COLLECTED!\n\n+25 XP"
+            );
+
+        break;
+
+
+        case"battery":
+
+            $("battery").style.display="none";
+
+            game.xp+=20;
+
+            updateHUD();
+            saveGame();
+
+            terminalOutput(
+                "success",
+                "🔋 BATTERY COLLECTED!\n\n+20 XP"
+            );
+
+        break;
+
+
+        case"book":
+
+            $("book").style.display="none";
+
+            game.xp+=30;
+
+            updateHUD();
+            saveGame();
+
+            terminalOutput(
+                "success",
+                "📘 OOP BOOK COLLECTED!\n\n+30 XP"
+            );
+
+        break;
+
+    }
+
+}
+
+
+/* =========================
+VALIDATE CODE
+========================= */
+
+function validateCode(code){
+
+    const level=
+        levels[game.level-1];
+
+    const clean=
+        code
+        .replace(/\/\/.*$/gm,"")
+        .replace(/\s+/g," ")
+        .trim();
+
+
+    /* LEVEL 8 */
+
+    if(game.level===8){
+
+        const charge=
+            clean.search(
+                /robo\s*\.\s*charge\s*\(\s*\)/i
+            );
+
+        const activate=
+            clean.search(
+                /robo\s*\.\s*activate\s*\(\s*\)/i
+            );
+
+        return(
+            charge!==-1 &&
+            activate!==-1 &&
+            charge<activate
+        );
+
+    }
+
+
+    /* FINAL LEVEL */
+
+    if(game.level===10){
+
+        return(
+
+            /Student\s+alex\s*=\s*new\s+Student\s*\(\s*"Alex"\s*\)/.test(clean)
+
+            &&
+
+            /Robot\s+robo\s*=\s*new\s+Robot\s*\(\s*"Robo"\s*,\s*100\s*\)/.test(clean)
+
+            &&
+
+            /alex\s*\.\s*repair\s*\(\s*robo\s*\)/i.test(clean)
+
+            &&
+
+            /robo\s*\.\s*activate\s*\(\s*\)/i.test(clean)
+
+            &&
+
+            /robo\s*\.\s*unlock\s*\(\s*door\s*\)/i.test(clean)
+
+            &&
+
+            /door\s*\.\s*open\s*\(\s*\)/i.test(clean)
+
+        );
+
+    }
+
+
+    if(level.checks){
+
+        return level.checks.every(
+            regex=>regex.test(clean)
+        );
+
+    }
+
+    return false;
+
+}
+
+
+/* =========================
+RUN CODE
+========================= */
+
+function runCode(){
+
+    if(!started){
+
+        terminalOutput(
+            "error",
+            "⚠️ START THE GAME FIRST."
+        );
+
+        return;
+
+    }
+
+    if(paused){
+
+        terminalOutput(
+            "error",
+            "⚠️ Finish the current interaction first."
+        );
+
+        return;
+
+    }
+
+    const code=
+        $("editor").value.trim();
+
+
+    if(!code){
+
+        terminalOutput(
+            "error",
+            "❌ NO CODE ENTERED."
+        );
+
+        return;
+
+    }
+
+
+    terminalOutput(
+        "info",
+        "⏳ COMPILING CODE..."
+    );
+
+
+    setTimeout(
+        function(){
+
+            const correct=
+                validateCode(code);
+
+
+            if(correct){
+
+                const level=
+                    levels[game.level-1];
+
+                game.combo++;
+
+                const bonus=
+                    game.combo>=3
+                    ?50
+                    :0;
+
+                game.xp+=
+                    level.xp+
+                    bonus;
+
+
+                if(game.level>=4){
+
+                    $("robo").style.boxShadow=
+                        "0 0 40px #00ff88";
+
+                }
+
+
+                if(game.level>=9){
+
+                    $("door").classList.add(
+                        "open"
+                    );
+
+                }
+
+
+                updateHUD();
+                saveGame();
+
+
+                terminalOutput(
+                    "success",
+
+                    "✅ CODE ACCEPTED!\n\n"+
+                    "🌟 MISSION COMPLETE!\n\n"+
+                    "⭐ XP +"+
+                    level.xp+
+                    (
+                        bonus
+                        ?"\n🔥 COMBO BONUS +50 XP"
+                        :""
+                    )
+                );
+
+
+                setTimeout(
+                    showMissionComplete,
+                    700
+                );
+
+
+            }else{
+
+                game.lives--;
+                game.combo=0;
+
+
+                if(game.lives<=0){
+
+                    game.lives=3;
+
+                    game.xp=
+                        Math.max(
+                            0,
+                            game.xp-50
+                        );
+
+                    terminalOutput(
+                        "error",
+
+                        "💥 SYSTEM FAILURE!\n\n"+
+                        "❤️ Lives restored to 3.\n"+
+                        "⭐ -50 XP"
+                    );
+
+                }else{
+
+                    terminalOutput(
+                        "error",
+
+                        "❌ CODE REJECTED!\n\n"+
+                        "Your solution is not correct.\n\n"+
+                        "❤️ Lives remaining: "+
+                        game.lives+
+                        "\n\n"+
+                        "💡 Try the HINT button."
+                    );
+
+                }
+
+
+                updateHUD();
+                saveGame();
+
+            }
+
+        },
+        300
+    );
+
+}
+
+
+/* =========================
+HINT
+========================= */
+
+function useHint(){
+
+    if(!started){
+
+        terminalOutput(
+            "error",
+            "⚠️ START THE GAME FIRST."
+        );
+
+        return;
+
+    }
+
+    if(game.xp<10){
+
+        terminalOutput(
+            "error",
+            "❌ You need 10 XP for a hint."
+        );
+
+        return;
+
+    }
+
+
+    game.xp-=10;
+
+    updateHUD();
+    saveGame();
+
+
+    terminalOutput(
+        "info",
+
+        "💡 HINT\n\n"+
+        levels[game.level-1].hint+
+        "\n\n⭐ -10 XP"
+    );
+
+}
+
+
+/* =========================
+RESET
+========================= */
+
+function resetCode(){
+
+    if(!started){
+
+        terminalOutput(
+            "error",
+            "⚠️ START THE GAME FIRST."
+        );
+
+        return;
+
+    }
+
+    $("editor").value=
+        levels[game.level-1].starter;
+
+
+    terminalOutput(
+        "info",
+        "↻ CODE RESET\n\nStarter code restored."
+    );
+
+}
+
+
+/* =========================
+MISSION COMPLETE
+========================= */
+
+function showMissionComplete(){
+
+    paused=true;
+
+    if(game.level===10){
+
+        $("completeTitle").textContent=
+            "🏆 CLASSROOM RESCUED!";
+
+        $("completeText").textContent=
+            "You completed all 10 OOP missions!\n\n"+
+            "⭐ Final XP: "+game.xp+
+            "\n🔥 Final Combo: "+game.combo;
+
+        $("nextBtn").textContent=
+            "PLAY AGAIN";
+
+    }else{
+
+        $("completeTitle").textContent=
+            "🎉 MISSION COMPLETE!";
+
+        $("completeText").textContent=
+            levels[game.level-1].title+
+            "\n\n"+
+            "⭐ XP: "+game.xp+
+            "\n🔥 Combo: "+game.combo;
+
+        $("nextBtn").textContent=
+            "NEXT LEVEL →";
+
+    }
+
+
+    $("complete").style.display=
+        "flex";
+
+}
+
+
+/* =========================
+NEXT LEVEL
+========================= */
+
+function nextLevel(){
+    /* tell the mission map this level is cleared */
+    if (window.HackoStore) {
+        HackoStore.completeLevel(8, game.level - 1, levels[game.level-1].xp);
+    }
+
+    HackoAudio.play("win");
+
+    if(game.level<10){
+
+        game.level++;
+
+        $("complete").style.display=
+            "none";
+
+        paused=false;
+
+        loadLevel();
+
+    }else{
+
+        localStorage.removeItem(
+            "classroomRescue"
+        );
+
+        location.reload();
+
+    }
+
+}
+
+
+/* =========================
+START
+========================= */
+
+function startGame(){
+
+    started=true;
+    paused=false;
+
+    $("start").style.display=
+        "none";
+
+    terminalOutput(
+        "info",
+
+        "🚨 CLASSROOM LOCKDOWN ACTIVE\n\n"+
+        "Explore the classroom.\n"+
+        "Talk to Professor Byte.\n"+
+        "Then solve Mission 1."
+    );
+
+}
+
+
+/* =========================
+KEYBOARD
+========================= */
+
+document.addEventListener(
+    "keydown",
+    function(event){
+
+        const key=
+            event.key.toLowerCase();
+
+        keys[key]=true;
+
+
+        if(
+            key==="e" &&
+            !event.repeat
+        ){
+
+            interact();
+
+        }
+
+
+        if(
+            event.ctrlKey &&
+            key==="enter"
+        ){
+
+            event.preventDefault();
+
+            runCode();
+
+        }
+
+    }
+);
+
+
+document.addEventListener(
+    "keyup",
+    function(event){
+
+        keys[
+            event.key.toLowerCase()
+        ]=false;
+
+    }
+);
+
+
+/* =========================
+MOBILE CONTROLS
+========================= */
+
+function holdButton(
+    button,
+    key
+){
+
+    button.addEventListener(
+        "pointerdown",
+        function(event){
+
+            event.preventDefault();
+
+            keys[key]=true;
+
+        }
+    );
+
+    button.addEventListener(
+        "pointerup",
+        function(event){
+
+            event.preventDefault();
+
+            keys[key]=false;
+
+        }
+    );
+
+    button.addEventListener(
+        "pointercancel",
+        function(){
+
+            keys[key]=false;
+
+        }
+    );
+
+    button.addEventListener(
+        "pointerleave",
+        function(){
+
+            keys[key]=false;
+
+        }
+    );
+
+}
+
+
+holdButton($("up"),"arrowup");
+holdButton($("down"),"arrowdown");
+holdButton($("left"),"arrowleft");
+holdButton($("right"),"arrowright");
+
+
+/* =========================
+BUTTONS
+========================= */
+
+$("run").addEventListener(
+    "click",
+    runCode
+);
+
+$("hint").addEventListener(
+    "click",
+    useHint
+);
+
+$("reset").addEventListener(
+    "click",
+    resetCode
+);
+
+$("startBtn").addEventListener(
+    "click",
+    startGame
+);
+
+$("nextBtn").addEventListener(
+    "click",
+    nextLevel
+);
+
+
+/* =========================
+GAME LOOP
+========================= */
+
+function gameLoop(){
+
+    movePlayer();
+
+    checkNearby();
+
+    requestAnimationFrame(
+        gameLoop
+    );
+
+}
+
+
+/* =========================
+INITIALIZE
+========================= */
+
+loadGame();
+
+updateHUD();
+
+loadLevel();
+
+gameLoop();
+
+
+/* =====================================================
+   RESUME + AUTOSAVE
+
+   Progress used to be written only when a level was
+   finished, and no page in the project listened for
+   pagehide or visibilitychange. Leaving mid-level threw
+   that level's work away - which is what the client meant
+   by "pag na back mawawala".
+
+   Every cleared level is now recorded as it happens, and
+   coming back drops the player at the start of the level
+   they had reached.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoStore || !HackoStore.isLoggedIn()) {
+        return;
+    }
+
+    HackoStore.registerTotalLevels(8, 10);
+
+    /* The jump has to happen AFTER the game has booted.
+       theescaperoom builds itself in window.onload, so doing
+       this at parse time meant its own loadLevel(0) ran
+       afterwards and silently sent the player back to level 1.
+       A load listener registered here fires after any onload
+       the page assigned earlier. */
+    function goToSavedLevel() {
+
+        var resume = HackoStore.getResumeLevel(8);
+
+        if (resume > 0 && resume < 10) {
+            try {
+                game.level = resume + 1; loadLevel();
+            } catch (e) {
+                /* a game that cannot jump just starts at the top */
+            }
+        }
+    }
+
+    if (document.readyState === "complete") {
+        setTimeout(goToSavedLevel, 0);
+    } else {
+        window.addEventListener("load", function () {
+            setTimeout(goToSavedLevel, 0);
+        });
+    }
+
+    HackoStore.bindAutosave(function () {
+        try {
+            return { mission: 8, level: game.level - 1 };
+        } catch (e) {
+            return null;
+        }
+    });
+
+}());
+
+/* =====================================================
+   SOUND LAYER
+
+   Sound used to fire only on a few discrete events, so a
+   game could sit in silence for long stretches. Every page
+   now carries a quiet background track and a visible
+   SOUND ON / SOUND OFF button, so a player can always tell
+   whether audio is working.
+
+   Browsers will not start audio until the player has
+   interacted, so the track is requested here and actually
+   begins on the first key press or click.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoAudio) {
+        return;
+    }
+
+    function begin() {
+        HackoAudio.music.play("rescue");
+        HackoAudio.mountToggle(document.body);
+        if (window.HackoStore) {
+            HackoStore.mountMapLink();
+        }
+    }
+
+    if (document.readyState === "complete") {
+        begin();
+    } else {
+        window.addEventListener("load", begin);
+    }
+
+}());
+</script>
+
+</body>
+</html>

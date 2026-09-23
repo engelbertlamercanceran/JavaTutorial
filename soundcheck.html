@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HACKO - Sound Check</title>
+<link rel="stylesheet" href="shared/hacko.css">
+<script src="shared/audio.js"></script>
+<style>
+body { padding: 24px; }
+.wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 16px; }
+.grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.grid .hk-btn { flex: 0 0 auto; }
+#log {
+    font: 13px/1.6 Consolas, monospace;
+    background: #071421; border: 1px solid var(--hk-line);
+    border-radius: 10px; padding: 12px; white-space: pre-wrap;
+    max-height: 220px; overflow: auto;
+}
+.bad { color: #ff9eb3; }
+.good { color: #91ff6f; }
+</style>
+</head>
+
+<body class="hk-body">
+<div class="wrap">
+
+    <div>
+        <h1 class="hk-display" style="color:var(--hk-cyan);margin:0">SOUND CHECK</h1>
+        <p class="hk-note" style="margin:6px 0 0">
+            Nothing to download. If a button here makes a noise, the audio
+            engine works and the problem is in the game page. If nothing
+            here makes a noise, read the diagnostics at the bottom.
+        </p>
+    </div>
+
+    <div class="hk-panel">
+        <h3>Effects</h3>
+        <div class="grid" id="sfx"></div>
+    </div>
+
+    <div class="hk-panel">
+        <h3>Background tracks</h3>
+        <div class="grid" id="music"></div>
+        <div class="grid" style="margin-top:8px">
+            <button class="hk-btn hk-btn--danger" id="stop">STOP MUSIC</button>
+        </div>
+    </div>
+
+    <div class="hk-panel">
+        <h3>Diagnostics</h3>
+        <div id="log">click anything above first</div>
+    </div>
+
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    var log = document.getElementById("log");
+
+    function say(text, cls) {
+        var line = document.createElement("div");
+        line.textContent = text;
+        if (cls) { line.className = cls; }
+        log.appendChild(line);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function diagnose() {
+
+        log.textContent = "";
+
+        if (!window.HackoAudio) {
+            say("HackoAudio is MISSING - shared/audio.js did not load.", "bad");
+            say("Check the Network tab for a 404 on shared/audio.js.", "bad");
+            return;
+        }
+
+        say("HackoAudio loaded: " + HackoAudio.sounds.length +
+            " effects, " + HackoAudio.tracks.length + " tracks", "good");
+
+        var Ctor = window.AudioContext || window.webkitAudioContext;
+        say("Web Audio supported: " + (Ctor ? "yes" : "NO"),
+            Ctor ? "good" : "bad");
+
+        say("Muted flag: " + HackoAudio.isMuted(),
+            HackoAudio.isMuted() ? "bad" : "good");
+
+        if (HackoAudio.isMuted()) {
+            say("Sound is muted. Click SOUND ON, bottom right.", "bad");
+        }
+
+        try {
+            var probe = new Ctor();
+            say("AudioContext state: " + probe.state +
+                (probe.state === "running"
+                    ? ""
+                    : "  (starts after you click - this is normal)"),
+                probe.state === "running" ? "good" : "");
+            say("Output sample rate: " + probe.sampleRate + " Hz");
+            probe.close();
+        } catch (e) {
+            say("Could not create an AudioContext: " + e.message, "bad");
+        }
+
+        say("");
+        say("If everything above is green and you still hear nothing:");
+        say("  1. Check the tab is not muted (right-click the tab).");
+        say("  2. Check the system output device.");
+        say("  3. Hard-refresh with Ctrl+F5 - the browser caches");
+        say("     shared/audio.js aggressively.");
+    }
+
+    if (window.HackoAudio) {
+
+        HackoAudio.sounds.forEach(function (name) {
+            var b = document.createElement("button");
+            b.className = "hk-btn hk-btn--ghost";
+            b.textContent = name;
+            b.onclick = function () {
+                HackoAudio.play(name);
+                say("played effect: " + name, "good");
+            };
+            document.getElementById("sfx").appendChild(b);
+        });
+
+        HackoAudio.tracks.forEach(function (name) {
+            var b = document.createElement("button");
+            b.className = "hk-btn hk-btn--lime";
+            b.textContent = name;
+            b.onclick = function () {
+                HackoAudio.music.play(name);
+                say("started track: " + name, "good");
+            };
+            document.getElementById("music").appendChild(b);
+        });
+
+        document.getElementById("stop").onclick = function () {
+            HackoAudio.music.stop();
+            say("music stopped");
+        };
+
+        HackoAudio.mountToggle(document.body);
+    }
+
+    document.addEventListener("click", diagnose, { once: true });
+    diagnose();
+
+}());
+</script>
+</body>
+</html>

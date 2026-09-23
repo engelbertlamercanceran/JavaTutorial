@@ -1,0 +1,3648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>HACKO - Mission Progression</title>
+
+<style>
+
+/* =========================================================
+   RESET
+========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+
+    background:
+        linear-gradient(
+            rgba(30, 55, 70, .35),
+            rgba(30, 55, 45, .45)
+        ),
+        linear-gradient(
+            to bottom,
+            #7fa8c4 0%,
+            #a9c2cb 28%,
+            #728c72 60%,
+            #465b45 100%
+        );
+
+    color: white;
+
+    overflow-x: hidden;
+}
+
+
+/* =========================================================
+   GAME CONTAINER - FULL SCREEN
+========================================================= */
+
+.game {
+    width: 100%;
+    min-height: 100vh;
+
+    position: relative;
+
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   BACKGROUND
+========================================================= */
+
+.background {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 0;
+
+    pointer-events: none;
+
+    background:
+        radial-gradient(
+            circle at 15% 15%,
+            rgba(255,255,255,.45),
+            transparent 20%
+        ),
+        radial-gradient(
+            circle at 85% 20%,
+            rgba(255,255,255,.25),
+            transparent 20%
+        ),
+        linear-gradient(
+            to bottom,
+            transparent 50%,
+            rgba(25,45,30,.35)
+        );
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.header {
+    position: relative;
+
+    z-index: 10;
+
+    width: 100%;
+
+    padding: 25px 35px 18px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 25px;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(35,45,48,.94),
+            rgba(45,43,39,.88)
+        );
+
+    border-bottom: 4px solid #c99a52;
+
+    box-shadow:
+        0 5px 15px rgba(0,0,0,.5);
+}
+
+
+/* =========================================================
+   LOGO
+========================================================= */
+
+.logo-area {
+    text-align: left;
+}
+
+.logo {
+    font-size: clamp(42px, 6vw, 72px);
+
+    line-height: .85;
+
+    font-weight: 1000;
+
+    letter-spacing: 4px;
+
+    color: #e8e1d5;
+
+    -webkit-text-stroke: 2px #4a4036;
+
+    text-shadow:
+        0 4px 0 #817363,
+        0 7px 0 #302b27,
+        0 10px 15px rgba(0,0,0,.7);
+}
+
+.logo-subtitle {
+    display: inline-block;
+
+    margin-top: 10px;
+
+    padding: 6px 22px;
+
+    background:
+        linear-gradient(
+            #e7b85c,
+            #925c29
+        );
+
+    border: 2px solid #4c3322;
+
+    border-radius: 4px;
+
+    font-size: 14px;
+
+    font-weight: 1000;
+
+    letter-spacing: 2px;
+
+    box-shadow:
+        0 3px 0 #302015;
+}
+
+
+/* =========================================================
+   PLAYER HUD
+========================================================= */
+
+.player-hud {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+
+    justify-content: flex-end;
+}
+
+.player-card,
+.stat-card {
+    min-height: 58px;
+
+    padding: 8px 15px;
+
+    border-radius: 8px;
+
+    border: 2px solid #bda77e;
+
+    background:
+        linear-gradient(
+            rgba(75,63,48,.95),
+            rgba(38,34,30,.95)
+        );
+
+    box-shadow:
+        0 4px 8px rgba(0,0,0,.45);
+}
+
+.player-card {
+    min-width: 180px;
+}
+
+.player-label {
+    color: #d8bb7a;
+
+    font-size: 10px;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+}
+
+.username-display {
+    margin-top: 3px;
+
+    font-size: 18px;
+
+    font-weight: 1000;
+
+    color: white;
+
+    max-width: 180px;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+}
+
+.stat-card {
+    min-width: 100px;
+
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+
+    font-size: 10px;
+
+    color: #d3bd8b;
+
+    font-weight: bold;
+}
+
+.stat-value {
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 20px;
+
+    font-weight: 1000;
+}
+
+.points {
+    color: #ffd35c;
+}
+
+.hearts {
+    color: #ff5555;
+
+    letter-spacing: 2px;
+}
+
+
+/* =========================================================
+   USERNAME SCREEN
+========================================================= */
+
+.login-screen {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 9999;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        linear-gradient(
+            rgba(20,30,35,.85),
+            rgba(20,25,20,.94)
+        );
+}
+
+.login-box {
+    width: min(500px, 95%);
+
+    padding: 40px;
+
+    text-align: center;
+
+    border-radius: 14px;
+
+    border: 4px solid #d3b174;
+
+    background:
+        linear-gradient(
+            to bottom,
+            #5b4835,
+            #29231d
+        );
+
+    box-shadow:
+        0 20px 50px rgba(0,0,0,.8);
+}
+
+.login-logo {
+    font-size: 65px;
+
+    font-weight: 1000;
+
+    color: #e8e0d3;
+
+    -webkit-text-stroke: 2px #443a31;
+
+    text-shadow:
+        0 5px #2c2824,
+        0 8px 12px #000;
+}
+
+.login-box h2 {
+    margin-top: 15px;
+
+    color: #ffd36a;
+}
+
+.login-box p {
+    margin: 15px 0 25px;
+
+    color: #ddd;
+
+    line-height: 1.5;
+}
+
+.username-input {
+    width: 100%;
+
+    padding: 15px;
+
+    border-radius: 7px;
+
+    border: 2px solid #a98957;
+
+    outline: none;
+
+    background: #191715;
+
+    color: white;
+
+    font-size: 18px;
+
+    text-align: center;
+}
+
+.username-input:focus {
+    border-color: #ffd36a;
+
+    box-shadow:
+        0 0 10px rgba(255,211,106,.4);
+}
+
+.start-button {
+    width: 100%;
+
+    margin-top: 15px;
+
+    padding: 15px;
+
+    border: 3px solid #57351f;
+
+    border-radius: 7px;
+
+    cursor: pointer;
+
+    background:
+        linear-gradient(
+            #e3a74e,
+            #924c23
+        );
+
+    color: white;
+
+    font-size: 18px;
+
+    font-weight: 1000;
+
+    text-shadow:
+        0 2px 2px #000;
+
+    box-shadow:
+        0 5px 0 #372117;
+
+    transition: .15s;
+}
+
+.start-button:hover {
+    filter: brightness(1.15);
+
+    transform: translateY(-2px);
+}
+
+.start-button:active {
+    transform: translateY(3px);
+
+    box-shadow:
+        0 2px 0 #372117;
+}
+
+
+/* =========================================================
+   MAIN CONTENT
+========================================================= */
+
+.main {
+    position: relative;
+
+    z-index: 5;
+
+    width: 100%;
+
+    min-height: calc(100vh - 120px);
+
+    padding: 30px 35px 70px;
+}
+
+
+/* =========================================================
+   PROGRESS BAR
+========================================================= */
+
+.progress-container {
+    width: min(1100px, 100%);
+
+    margin: 0 auto 30px;
+
+    padding: 15px 20px;
+
+    background:
+        rgba(35,35,30,.78);
+
+    border: 2px solid #aa8c5b;
+
+    border-radius: 10px;
+
+    box-shadow:
+        0 5px 10px rgba(0,0,0,.35);
+}
+
+.progress-top {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 8px;
+
+    font-size: 13px;
+
+    font-weight: bold;
+}
+
+.progress-text {
+    color: #ffd16a;
+}
+
+.progress-bar {
+    width: 100%;
+
+    height: 14px;
+
+    border-radius: 20px;
+
+    overflow: hidden;
+
+    background: #181714;
+
+    border: 2px solid #544533;
+}
+
+.progress-fill {
+    width: 0%;
+
+    height: 100%;
+
+    background:
+        linear-gradient(
+            90deg,
+            #c9792d,
+            #ffd75e
+        );
+
+    transition:
+        width .5s ease;
+}
+
+
+/* =========================================================
+   MAP
+========================================================= */
+
+.map {
+    width: min(1200px, 100%);
+
+    margin: auto;
+
+    position: relative;
+
+    padding: 15px 20px 80px;
+}
+
+
+/* =========================================================
+   MOUNTAINS
+========================================================= */
+
+.mountains {
+    position: absolute;
+
+    left: 0;
+    right: 0;
+
+    top: 100px;
+
+    height: 700px;
+
+    overflow: hidden;
+
+    opacity: .42;
+
+    pointer-events: none;
+}
+
+.mountain {
+    position: absolute;
+
+    bottom: 0;
+
+    width: 0;
+    height: 0;
+
+    border-left: 220px solid transparent;
+
+    border-right: 220px solid transparent;
+
+    border-bottom: 520px solid #566d70;
+}
+
+.mountain:nth-child(1) {
+    left: -180px;
+}
+
+.mountain:nth-child(2) {
+    left: 170px;
+
+    transform: scale(1.2);
+
+    border-bottom-color: #708585;
+}
+
+.mountain:nth-child(3) {
+    left: 500px;
+
+    transform: scale(.9);
+
+    border-bottom-color: #4c656b;
+}
+
+.mountain:nth-child(4) {
+    right: -170px;
+
+    border-bottom-color: #657c7a;
+}
+
+
+/* =========================================================
+   MISSION GRID
+========================================================= */
+
+.missions {
+    position: relative;
+
+    z-index: 10;
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 48px 120px;
+
+    width: min(1050px, 100%);
+
+    margin: auto;
+}
+
+
+/* =========================================================
+   MISSION CARD
+========================================================= */
+
+.mission {
+    position: relative;
+
+    min-height: 190px;
+
+    border-radius: 9px;
+
+    border: 4px solid #d7d0c0;
+
+    box-shadow:
+        0 0 0 2px #453a30,
+        0 9px 15px rgba(0,0,0,.55);
+
+    overflow: visible;
+
+    cursor: pointer;
+
+    transition:
+        transform .2s,
+        filter .2s;
+}
+
+.mission:hover {
+    transform: scale(1.035);
+
+    filter: brightness(1.1);
+
+    z-index: 30;
+}
+
+.mission.locked {
+    cursor: not-allowed;
+
+    filter:
+        grayscale(.8)
+        brightness(.55);
+}
+
+.mission.locked:hover {
+    transform: none;
+}
+
+
+/* =========================================================
+   CARD COLORS
+========================================================= */
+
+.card-1 {
+    background:
+        linear-gradient(
+            rgba(70,48,35,.3),
+            rgba(50,32,25,.8)
+        ),
+        #79583d;
+}
+
+.card-2 {
+    background:
+        linear-gradient(
+            rgba(80,55,30,.25),
+            rgba(50,35,20,.75)
+        ),
+        #a9844f;
+}
+
+.card-3 {
+    background:
+        linear-gradient(
+            rgba(90,45,20,.25),
+            rgba(60,25,15,.75)
+        ),
+        #b86534;
+}
+
+.card-4 {
+    background:
+        linear-gradient(
+            rgba(35,55,45,.2),
+            rgba(25,40,35,.75)
+        ),
+        #617a70;
+}
+
+.card-5 {
+    background:
+        linear-gradient(
+            rgba(70,50,25,.2),
+            rgba(45,30,15,.75)
+        ),
+        #9c7242;
+}
+
+.card-6 {
+    background:
+        linear-gradient(
+            rgba(30,55,35,.2),
+            rgba(20,40,25,.8)
+        ),
+        #527057;
+}
+
+.card-7 {
+    background:
+        linear-gradient(
+            rgba(50,45,40,.2),
+            rgba(30,25,22,.8)
+        ),
+        #626058;
+}
+
+.card-8 {
+    background:
+        linear-gradient(
+            rgba(70,50,30,.2),
+            rgba(40,30,20,.8)
+        ),
+        #916d49;
+}
+
+.card-9 {
+    background:
+        linear-gradient(
+            rgba(70,50,25,.2),
+            rgba(45,30,15,.8)
+        ),
+        #9f7546;
+}
+
+
+/* =========================================================
+   CARD HEADER
+========================================================= */
+
+.mission-title {
+    padding: 10px 12px;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(45,38,32,.96),
+            rgba(65,52,40,.88)
+        );
+
+    color: white;
+
+    border-bottom: 2px solid rgba(255,255,255,.25);
+
+    font-size: 17px;
+
+    font-weight: 1000;
+
+    text-shadow:
+        0 2px 2px #000;
+}
+
+.mission-number {
+    color: #ffd36b;
+}
+
+
+/* =========================================================
+   BADGE
+========================================================= */
+
+.badge {
+    position: absolute;
+
+    right: -14px;
+
+    top: -17px;
+
+    z-index: 50;
+
+    width: 52px;
+
+    height: 52px;
+
+    border-radius: 50%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 25px;
+
+    background:
+        linear-gradient(
+            #e5bd59,
+            #8f5b23
+        );
+
+    border: 3px solid #f3df9e;
+
+    box-shadow:
+        0 4px 8px rgba(0,0,0,.7);
+
+    opacity: 0;
+
+    transform: scale(.4);
+
+    transition:
+        .35s ease;
+}
+
+.mission.completed .badge {
+    opacity: 1;
+
+    transform: scale(1);
+}
+
+.badge-label {
+    position: absolute;
+
+    top: 54px;
+
+    right: -15px;
+
+    font-size: 8px;
+
+    white-space: nowrap;
+
+    color: #ffe59b;
+
+    font-weight: 1000;
+
+    text-shadow:
+        0 2px 3px #000;
+}
+
+
+/* =========================================================
+   LOCK
+========================================================= */
+
+.lock {
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    z-index: 20;
+
+    font-size: 50px;
+
+    background:
+        rgba(0,0,0,.32);
+
+    border-radius: 5px;
+}
+
+
+/* =========================================================
+   MISSION CONTENT
+========================================================= */
+
+.mission-content {
+    min-height: 135px;
+
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+}
+
+.topic {
+    position: absolute;
+
+    top: 8px;
+
+    left: 0;
+    right: 0;
+
+    color: #f2dba9;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+    text-shadow:
+        0 2px 3px #000;
+}
+
+.art {
+    font-size: 65px;
+
+    filter:
+        drop-shadow(0 4px 3px rgba(0,0,0,.75));
+
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.art img {
+    width: min(150px, 70%);
+    height: 105px;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 4px 3px rgba(0,0,0,.75));
+}
+
+.code-symbol {
+    font-size: 42px;
+
+    font-weight: 1000;
+
+    color: #dceeff;
+
+    text-shadow:
+        0 4px 4px #000;
+}
+
+
+/* =========================================================
+   ARROWS
+========================================================= */
+
+.arrow {
+    position: absolute;
+
+    z-index: 40;
+
+    pointer-events: none;
+}
+
+.arrow-right {
+    right: -90px;
+
+    top: 50%;
+
+    width: 75px;
+
+    height: 12px;
+
+    transform: translateY(-50%);
+}
+
+.arrow-right::before {
+    content: "";
+
+    position: absolute;
+
+    top: 3px;
+    left: 0;
+
+    width: 55px;
+    height: 6px;
+
+    background:
+        linear-gradient(
+            #ffe074,
+            #b86b25
+        );
+
+    border-radius: 5px;
+
+    box-shadow:
+        0 3px 3px #000;
+}
+
+.arrow-right::after {
+    content: "";
+
+    position: absolute;
+
+    right: 0;
+
+    top: -2px;
+
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
+
+    border-left: 18px solid #d27c29;
+}
+
+.arrow-left {
+    left: -90px;
+
+    top: 50%;
+
+    width: 75px;
+
+    height: 12px;
+
+    transform:
+        translateY(-50%)
+        rotate(180deg);
+}
+
+.arrow-left::before {
+    content: "";
+
+    position: absolute;
+
+    top: 3px;
+    left: 0;
+
+    width: 55px;
+    height: 6px;
+
+    background:
+        linear-gradient(
+            #ffe074,
+            #b86b25
+        );
+
+    border-radius: 5px;
+
+    box-shadow:
+        0 3px 3px #000;
+}
+
+.arrow-left::after {
+    content: "";
+
+    position: absolute;
+
+    right: 0;
+
+    top: -2px;
+
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
+
+    border-left: 18px solid #d27c29;
+}
+
+
+/* =========================================================
+   BOSS
+========================================================= */
+
+.boss-container {
+    position: relative;
+
+    z-index: 15;
+
+    width: 100%;
+
+    display: flex;
+
+    justify-content: center;
+
+    margin-top: 80px;
+}
+
+.boss {
+    position: relative;
+
+    width: min(550px, 90%);
+
+    min-height: 245px;
+
+    border-radius: 10px;
+
+    border: 5px solid #d4c6ab;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(180,60,30,.45),
+            transparent 50%
+        ),
+        linear-gradient(
+            #5d3d2d,
+            #281c17
+        );
+
+    box-shadow:
+        0 0 0 3px #4c3020,
+        0 12px 20px rgba(0,0,0,.7);
+
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+.boss:hover {
+    transform: scale(1.035);
+}
+
+.boss.locked {
+    filter:
+        grayscale(1)
+        brightness(.45);
+
+    cursor: not-allowed;
+}
+
+.boss-title {
+    padding: 12px;
+
+    text-align: center;
+
+    background:
+        linear-gradient(
+            #773523,
+            #351b16
+        );
+
+    border-bottom: 3px solid #d5ae69;
+
+    font-size: 23px;
+
+    font-weight: 1000;
+
+    text-shadow:
+        0 3px 3px #000;
+}
+
+.boss-title span {
+    color: #ffcc5a;
+}
+
+.boss-content {
+    text-align: center;
+
+    padding: 15px;
+}
+
+.boss-art {
+    font-size: 85px;
+
+    filter:
+        drop-shadow(0 5px 4px #000);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.boss-art img {
+    width: min(190px, 55%);
+    height: 125px;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 5px 4px #000);
+}
+
+.boss-topic {
+    color: #f1d79c;
+
+    font-weight: bold;
+}
+
+
+/* =========================================================
+   FINAL LABEL
+========================================================= */
+
+.final-label {
+    position: relative;
+
+    z-index: 20;
+
+    display: block;
+
+    width: fit-content;
+
+    margin: 22px auto;
+
+    padding: 9px 55px;
+
+    background:
+        linear-gradient(
+            #d96c31,
+            #8b3020
+        );
+
+    border: 3px solid #4f251a;
+
+    box-shadow:
+        0 5px 0 #321610,
+        0 7px 10px rgba(0,0,0,.55);
+
+    font-size: 18px;
+
+    font-weight: 1000;
+
+    text-shadow:
+        0 2px 3px #000;
+}
+
+
+/* =========================================================
+   BADGES PANEL
+========================================================= */
+
+.badges-panel {
+    width: min(1050px, 100%);
+
+    margin: 40px auto 0;
+
+    padding: 20px;
+
+    position: relative;
+
+    z-index: 20;
+
+    border-radius: 10px;
+
+    background:
+        rgba(35,32,28,.88);
+
+    border: 2px solid #a88a5b;
+
+    box-shadow:
+        0 6px 12px rgba(0,0,0,.45);
+}
+
+.badges-panel h2 {
+    text-align: center;
+
+    color: #ffd36a;
+
+    margin-bottom: 18px;
+}
+
+.badges-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(10, 1fr);
+
+    gap: 10px;
+}
+
+.badge-item {
+    min-height: 85px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 5px;
+
+    border-radius: 7px;
+
+    background:
+        linear-gradient(
+            #51483b,
+            #29251f
+        );
+
+    border: 2px solid #675944;
+
+    opacity: .4;
+
+    transition: .25s;
+}
+
+.badge-item.earned {
+    opacity: 1;
+
+    border-color: #e0b858;
+
+    box-shadow:
+        0 0 12px rgba(255,210,80,.3);
+
+    cursor: pointer;
+}
+
+.badge-item.earned:hover {
+    transform: scale(1.06);
+    filter: brightness(1.12);
+}
+
+.badge-icon {
+    font-size: 30px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.badge-icon img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,.6));
+}
+
+.badge-name {
+    font-size: 9px;
+
+    text-align: center;
+
+    color: #e8d8b0;
+
+    font-weight: bold;
+}
+
+
+/* =========================================================
+   RESET BUTTON
+========================================================= */
+
+.reset-button {
+    display: block;
+
+    margin: 25px auto;
+
+    padding: 10px 25px;
+
+    border-radius: 6px;
+
+    border: 2px solid #6e3224;
+
+    background:
+        linear-gradient(
+            #9c4330,
+            #51251d
+        );
+
+    color: white;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.reset-button:hover {
+    filter: brightness(1.15);
+}
+
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+.modal {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 5000;
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        rgba(0,0,0,.78);
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-box {
+    width: min(550px, 95%);
+
+    padding: 30px;
+
+    text-align: center;
+
+    border-radius: 12px;
+
+    border: 4px solid #d8c19a;
+
+    background:
+        linear-gradient(
+            #5d4934,
+            #29221c
+        );
+
+    box-shadow:
+        0 20px 50px rgba(0,0,0,.9);
+}
+
+.badge-viewer-box {
+    width: min(420px, 95%);
+    padding: 28px 24px 24px;
+}
+
+.badge-viewer-title {
+    color: #ffd36b;
+    font-size: 22px;
+    font-weight: 1000;
+    margin-bottom: 18px;
+    text-shadow: 0 2px 3px #000;
+}
+
+.badge-viewer-image-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 22px;
+    min-height: 180px;
+}
+
+.badge-viewer-image-wrap img {
+    max-width: 100%;
+    max-height: 280px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,.7));
+    border-radius: 8px;
+}
+
+.modal-icon {
+    font-size: 70px;
+
+    margin-bottom: 10px;
+}
+
+.modal-box h2 {
+    color: #ffd36b;
+
+    font-size: 27px;
+
+    margin-bottom: 8px;
+}
+
+.modal-topic {
+    color: #e7c47a;
+
+    font-weight: bold;
+
+    margin-bottom: 15px;
+}
+
+.modal-description {
+    color: #ddd;
+
+    line-height: 1.6;
+
+    margin-bottom: 20px;
+}
+
+.reward-box {
+    display: flex;
+
+    justify-content: center;
+
+    gap: 20px;
+
+    margin: 20px 0;
+
+    flex-wrap: wrap;
+}
+
+.reward {
+    padding: 10px 18px;
+
+    border-radius: 6px;
+
+    background:
+        rgba(0,0,0,.35);
+
+    border: 1px solid #947b51;
+
+    color: #ffd36a;
+
+    font-weight: bold;
+}
+
+.modal-buttons {
+    display: flex;
+
+    justify-content: center;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+}
+
+.modal-button {
+    padding: 12px 25px;
+
+    border-radius: 6px;
+
+    border: 2px solid #4b2d1e;
+
+    background:
+        linear-gradient(
+            #d7893b,
+            #8d3d20
+        );
+
+    color: white;
+
+    font-weight: 1000;
+
+    cursor: pointer;
+}
+
+.modal-button.secondary {
+    background:
+        linear-gradient(
+            #666,
+            #333
+        );
+}
+
+
+/* =========================================================
+   MISSION COMPLETE
+========================================================= */
+
+.complete-message {
+    color: #78e48a;
+
+    font-weight: 1000;
+
+    margin: 10px 0;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+
+    .header {
+        flex-direction: column;
+
+        text-align: center;
+
+        padding: 20px;
+    }
+
+    .logo-area {
+        text-align: center;
+    }
+
+    .player-hud {
+        justify-content: center;
+    }
+
+    .missions {
+        gap: 40px 70px;
+    }
+
+    .badges-grid {
+        grid-template-columns:
+            repeat(5, 1fr);
+    }
+}
+
+
+@media (max-width: 650px) {
+
+    .main {
+        padding: 20px 10px 50px;
+    }
+
+    .missions {
+        grid-template-columns: 1fr;
+
+        gap: 40px;
+
+        max-width: 430px;
+    }
+
+    .arrow-right,
+    .arrow-left {
+        display: none;
+    }
+
+    .mission {
+        min-height: 175px;
+    }
+
+    .boss {
+        width: 100%;
+    }
+
+    .badges-grid {
+        grid-template-columns:
+            repeat(5, 1fr);
+    }
+
+    .player-hud {
+        width: 100%;
+    }
+
+    .player-card {
+        flex: 1;
+    }
+
+    .stat-card {
+        flex: 1;
+    }
+}
+
+
+@media (max-width: 430px) {
+
+    .logo {
+        font-size: 50px;
+    }
+
+    .logo-subtitle {
+        font-size: 10px;
+    }
+
+    .player-card,
+    .stat-card {
+        min-width: 80px;
+
+        padding: 7px;
+    }
+
+    .stat-value {
+        font-size: 17px;
+    }
+
+    .badges-grid {
+        grid-template-columns:
+            repeat(5, 1fr);
+    }
+
+    .badge-item {
+        min-height: 65px;
+    }
+
+    .badge-icon {
+        font-size: 23px;
+        width: 32px;
+        height: 32px;
+    }
+
+    .badge-icon img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .badge-name {
+        font-size: 7px;
+    }
+}
+
+</style>
+<link rel="stylesheet" href="shared/hacko.css">
+<script src="shared/audio.js" data-track="menu"></script>
+<script src="shared/storage.js"></script>
+<script>
+/* A visible switch for opening every mission while testing, so a
+   game can be checked without playing the ones before it. */
+window.addEventListener("load", function () {
+
+    if (!window.HackoStore) {
+        return;
+    }
+
+    var bar = document.createElement("button");
+    bar.type = "button";
+    bar.style.cssText = [
+        "position:fixed", "right:14px", "top:14px", "z-index:9999",
+        "border-radius:999px", "cursor:pointer", "padding:10px 16px",
+        "font:700 12px Orbitron,sans-serif",
+        "box-shadow:0 4px 14px rgba(0,0,0,.45)"
+    ].join(";");
+
+    function paint() {
+
+        var on = HackoStore.isTestMode();
+
+        bar.textContent = on
+            ? "TEST MODE: ALL UNLOCKED"
+            : "TEST MODE: OFF";
+
+        bar.style.background = on ? "#ffd34e" : "#102742";
+        bar.style.color = on ? "#06111c" : "#eefaff";
+        bar.style.border = "1px solid " + (on ? "#ffd34e" : "#367c9d");
+    }
+
+    bar.addEventListener("click", function () {
+        HackoStore.setTestMode(!HackoStore.isTestMode());
+        paint();
+        location.reload();
+    });
+
+    paint();
+    document.body.appendChild(bar);
+});
+</script>
+</head>
+
+
+<body>
+
+
+<!-- =======================================================
+     GAME
+======================================================== -->
+
+<div class="game">
+
+    <div class="background"></div>
+
+
+    <!-- ===================================================
+         LOGIN
+    ==================================================== -->
+
+    <div
+        class="login-screen"
+        id="loginScreen"
+    >
+
+        <div class="login-box">
+
+            <div class="login-logo">
+                HACKO
+            </div>
+
+            <h2>
+                MISSION PROGRESSION
+            </h2>
+
+            <p>
+                Enter your username to begin your
+                Java adventure.
+            </p>
+
+            <input
+                type="text"
+                id="usernameInput"
+                class="username-input"
+                placeholder="Enter your username"
+                maxlength="20"
+                autocomplete="off"
+            >
+
+            <button
+                class="start-button"
+                onclick="startGame()"
+            >
+                ⚔ START ADVENTURE
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================
+         HEADER
+    ==================================================== -->
+
+    <header class="header">
+
+        <div class="logo-area">
+
+            <div class="logo">
+                HACKO
+            </div>
+
+            <div class="logo-subtitle">
+                MISSION PROGRESSION
+            </div>
+
+        </div>
+
+
+        <!-- PLAYER HUD -->
+
+        <div class="player-hud">
+
+            <div class="player-card">
+
+                <span class="player-label">
+                    PLAYER
+                </span>
+
+                <div
+                    class="username-display"
+                    id="usernameDisplay"
+                >
+                    Player
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <span class="stat-label">
+                    POINTS
+                </span>
+
+                <span
+                    class="stat-value points"
+                    id="pointsDisplay"
+                >
+                    0
+                </span>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <span class="stat-label">
+                    LIFE
+                </span>
+
+                <span
+                    class="stat-value hearts"
+                    id="heartsDisplay"
+                >
+                    ❤️❤️❤️
+                </span>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- ===================================================
+         MAIN
+    ==================================================== -->
+
+    <main class="main">
+
+
+        <!-- PROGRESS -->
+
+        <div class="progress-container">
+
+            <div class="progress-top">
+
+                <span>
+                    HACKO ADVENTURE PROGRESS
+                </span>
+
+                <span
+                    class="progress-text"
+                    id="progressText"
+                >
+                    0 / 10 Missions
+                </span>
+
+            </div>
+
+            <div class="progress-bar">
+
+                <div
+                    class="progress-fill"
+                    id="progressFill"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             MAP
+        ================================================== -->
+
+        <div class="map">
+
+
+            <div class="mountains">
+
+                <div class="mountain"></div>
+                <div class="mountain"></div>
+                <div class="mountain"></div>
+                <div class="mountain"></div>
+
+            </div>
+
+
+            <section
+                class="missions"
+                id="missionsContainer"
+            >
+
+
+                <!-- =========================================
+                     MISSION 1
+                ========================================== -->
+
+                <div
+                    class="mission card-1"
+                    data-mission="1"
+                    onclick="openMission(1)"
+                >
+
+                    <div class="mission-title">
+                        <span class="mission-number">
+                            1.
+                        </span>
+                        The Escape Room
+                    </div>
+
+                    <div class="mission-content">
+
+                        <div class="topic">
+                            Variables + Data Types
+                        </div>
+
+                        <div class="art">
+                            <img src="theescaperoom.png" alt="The Escape Room">
+                        </div>
+
+                    </div>
+
+                    <div class="badge">
+                        🏅
+                        <span class="badge-label">
+                            VARIABLE HERO
+                        </span>
+                    </div>
+
+                    <div class="arrow arrow-right"></div>
+
+                </div>
+
+
+                <!-- =========================================
+                     MISSION 2
+                ========================================== -->
+
+                <div
+                    class="mission card-2"
+                    data-mission="2"
+                    onclick="openMission(2)"
+                >
+
+                    <div class="mission-title">
+                        <span class="mission-number">
+                            2.
+                        </span>
+                        The Secret Message
+                    </div>
+
+                    <div class="mission-content">
+
+                        <div class="topic">
+                            Input / Output
+                        </div>
+
+                        <div class="art">
+                            <img src="thesecretmessage.png" alt="The Secret Message">
+                        </div>
+
+                    </div>
+
+                    <div class="badge">
+                        🏅
+                        <span class="badge-label">
+                            CODE MESSENGER
+                        </span>
+                    </div>
+
+                    <div class="arrow arrow-down"></div>
+
+                </div>
+
+
+                <!-- =========================================
+                     MISSION 3
+                ========================================== -->
+
+                <div
+                    class="mission card-3"
+                    data-mission="3"
+                    onclick="openMission(3)"
+                >
+
+                    <div class="mission-title">
+                        <span class="mission-number">
+                            3.
+                        </span>
+                        Conditional Challenge
+                    </div>
+
+                    <div class="mission-content">
+
+                        <div class="topic">
+                            If-Else Statements
+                        </div>
+
+                        <div class="art">
+                            <img src="conditionalchallenge.png" alt="Conditional Challenge">
+                        </div>
+
+                    </div>
+
+                    <div class="badge">
+                        🏅
+                        <span class="badge-label">
+                            DECISION MASTER
+                        </span>
+                    </div>
+
+                    <div class="arrow arrow-down"></div>
+
+                </div>
+
+
+                <!-- =========================================
+                     MISSION 4
+                ========================================== -->
+
+                <div
+                    class="mission card-4"
+                    data-mission="4"
+                    onclick="openMission(4)"
+                >
+
+                    <div class="mission-title">
+                        <span class="mission-number">
+                            4.
+                        </span>
+                        Loop Labyrinth
+                    </div>
+
+                    <div class="mission-content">
+
+                        <div class="topic">
+                            Loops
+                        </div>
+
+                        <div class="art">
+                            <img src="looplabyrinth.png" alt="Loop Labyrinth">
+                        </div>
+
+                    </div>
+
+                    <div class="badge">
+                        🏅
+                        <span class="badge-label">
+                            LOOP RUNNER
+                        </span>
+                    </div>
+
+                    <div class="arrow arrow-left"></div>
+
+                </div>
+
+
+                <!-- =========================================
+                     MISSION 5
+                ========================================== -->
+
+                <div
+                    class="mission card-5"
+                    data-mission="5"
+                    onclick="openMission(5)"
+                >
+
+                    <div class="mission-title">
+                        <span class="mission-number">
+                            5.
+                        </span>
+                        Array Adventure
+                    </div>
+
+                    <div class="mission-content">
+
+                        <div class="topic">
+                            Arrays
+                        </div>
+
+                        <div class="art">
+                            <img src="arrayadventure.png" alt="Array Adventure">
+                        </div>
+
+                    </div>
+
+                    <div class="badge">
+                        🏅
+                        <span class="badge-label">
+                            ARRAY EXPLORER
+                        </span>
+                    </div>
+
+                    <div class="arrow arrow-left"></div>
+
+                </div>
+
+
+                <!-- =========================================
+                     MISSION 6
+                ========================================== -->
+
+                <div
+                    class="mission card-6"
+                    data-mission="6"
+                    onclick="openMission(6)"
+                >
+
+                    <div class="mission-title">
+                        <span class="mission-number">
+                            6.
+                        </span>
+                        Function Fortress
+                    </div>
+
+                    <div class="mission-content">
+
+                        <div class="topic">
+                            Methods / Functions
+                        </div>
+
+                        <div class="art">
+                            <img src="functionfortress.png" alt="Function Fortress">
+                        </div>
+
+                    </div>
+
+                    <div class="badge">
+                        🏅
+                        <span class="badge-label">
+                            FUNCTION KNIGHT
+                        </span>
+                    </div>
+
+                    <div class="arrow arrow-down"></div>
+
+                </div>
+
+
+                <!-- =========================================
+                     MISSION 7
+                ========================================== -->
+
+                <div
+                    class="mission card-7"
+                    data-mission="7"
+                    onclick="openMission(7)"
+                >
+
+                    <div class="mission-title">
+                        <span class="mission-number">
+                            7.
+                        </span>
+                        Debugging Duel
+                    </div>
+
+                    <div class="mission-content">
+
+                        <div class="topic">
+                            Debugging
+                        </div>
+
+                        <div class="art">
+                            <img src="debugging.png" alt="Debugging Duel">
+                        </div>
+
+                    </div>
+
+                    <div class="badge">
+                        🏅
+                        <span class="badge-label">
+                            BUG SLAYER
+                        </span>
+                    </div>
+
+                    <div class="arrow arrow-right"></div>
+
+                </div>
+
+
+                <!-- =========================================
+                     MISSION 8
+                ========================================== -->
+
+                <div
+                    class="mission card-8"
+                    data-mission="8"
+                    onclick="openMission(8)"
+                >
+
+                    <div class="mission-title">
+                        <span class="mission-number">
+                            8.
+                        </span>
+                        Classroom Rescue
+                    </div>
+
+                    <div class="mission-content">
+
+                        <div class="topic">
+                            Classes & Objects
+                        </div>
+
+                        <div class="art">
+                            <img src="classroomrescue.png" alt="Classroom Rescue">
+                        </div>
+
+                    </div>
+
+                    <div class="badge">
+                        🏅
+                        <span class="badge-label">
+                            OBJECT HERO
+                        </span>
+                    </div>
+
+                    <div class="arrow arrow-left"></div>
+
+                </div>
+
+
+                <!-- =========================================
+                     MISSION 9
+                ========================================== -->
+
+                <div
+                    class="mission card-9"
+                    data-mission="9"
+                    onclick="openMission(9)"
+                >
+
+                    <div class="mission-title">
+                        <span class="mission-number">
+                            9.
+                        </span>
+                        Conditional Labyrinth II
+                    </div>
+
+                    <div class="mission-content">
+
+                        <div class="topic">
+                            Nested Conditionals
+                        </div>
+
+                        <div class="art">
+                            <img src="conditionallabyrinth.png" alt="Conditional Labyrinth II">
+                        </div>
+
+                    </div>
+
+                    <div class="badge">
+                        🏅
+                        <span class="badge-label">
+                            LOGIC MASTER
+                        </span>
+                    </div>
+
+                    <div class="arrow arrow-down"></div>
+
+                </div>
+
+
+            </section>
+
+
+            <!-- =============================================
+                 MISSION 10
+            ============================================== -->
+
+            <section
+                class="boss-container"
+            >
+
+                <div
+                    class="boss"
+                    id="bossMission"
+                    onclick="openMission(10)"
+                >
+
+                    <div class="boss-title">
+
+                        <span>
+                            10.
+                        </span>
+
+                        Loop Boss Battle
+
+                    </div>
+
+                    <div class="boss-content">
+
+                        <div class="boss-art">
+                            <img src="loopbossbattle.png" alt="Loop Boss Battle">
+                        </div>
+
+                        <div class="boss-topic">
+                            Nested Loops
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="badge"
+                        style="
+                            right:-18px;
+                            top:-18px;
+                        "
+                    >
+                        👑
+                        <span class="badge-label">
+                            LOOP LEGEND
+                        </span>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <div class="final-label">
+                FINAL CHALLENGE!
+            </div>
+
+
+            <!-- =============================================
+                 BADGES
+            ============================================== -->
+
+            <section class="badges-panel">
+
+                <h2>
+                    🏆 BADGE COLLECTION
+                </h2>
+
+                <div
+                    class="badges-grid"
+                    id="badgesGrid"
+                ></div>
+
+            </section>
+
+
+            <button
+                class="reset-button"
+                onclick="resetGame()"
+            >
+                RESET ADVENTURE
+            </button>
+
+
+        </div>
+
+    </main>
+
+</div>
+
+
+<!-- =======================================================
+     MISSION MODAL
+======================================================== -->
+
+<div
+    class="modal"
+    id="missionModal"
+>
+
+    <div class="modal-box">
+
+        <div
+            class="modal-icon"
+            id="modalIcon"
+        >
+            🚪
+        </div>
+
+        <h2 id="modalTitle">
+            Mission
+        </h2>
+
+        <div
+            class="modal-topic"
+            id="modalTopic"
+        >
+            Topic
+        </div>
+
+        <p
+            class="modal-description"
+            id="modalDescription"
+        >
+            Description
+        </p>
+
+
+        <div
+            class="reward-box"
+        >
+
+            <div class="reward">
+                ⭐ +100 POINTS
+            </div>
+
+            <div class="reward">
+                🏅 BADGE
+            </div>
+
+        </div>
+
+
+        <div
+            class="complete-message"
+            id="completeMessage"
+        >
+        </div>
+
+
+        <div class="modal-buttons">
+
+            <button
+                class="modal-button"
+                id="playButton"
+                onclick="playMission()"
+            >
+                ▶ PLAY MISSION
+            </button>
+
+            <button
+                class="modal-button secondary"
+                id="completeButton"
+                onclick="completeMission()"
+                title="Teacher override - marks every level done"
+            >
+                ✓ MARK COMPLETE
+            </button>
+
+            <button
+                class="modal-button secondary"
+                onclick="closeMission()"
+            >
+                CLOSE
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =======================================================
+     BADGE IMAGE VIEWER
+======================================================== -->
+
+<div
+    class="modal"
+    id="badgeModal"
+>
+
+    <div class="modal-box badge-viewer-box">
+
+        <div class="badge-viewer-title" id="badgeViewerTitle">
+            Badge
+        </div>
+
+        <div class="badge-viewer-image-wrap">
+            <img
+                id="badgeViewerImage"
+                src=""
+                alt="Badge"
+            >
+        </div>
+
+        <button
+            class="modal-button secondary"
+            onclick="closeBadgeViewer()"
+        >
+            CLOSE
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   HACKO GAME DATA
+========================================================= */
+
+const missions = {
+
+    1: {
+        title: "The Escape Room",
+        topic: "Variables + Data Types",
+        icon: "🚪",
+        badge: "VARIABLE HERO",
+        badgeImage: "Badges/variablehero.png",
+        description:
+            "Escape the room by learning how Java variables and data types work.",
+        points: 100,
+        file: "theescaperoom.html"
+    },
+
+    2: {
+        title: "The Secret Message",
+        topic: "Input / Output",
+        icon: "✉️",
+        badge: "CODE MESSENGER",
+        badgeImage: "Badges/codemessenger.png",
+        description:
+            "Decode the secret message using Java input and output commands.",
+        points: 100,
+        file: "thesecretmessage.html"
+    },
+
+    3: {
+        title: "Conditional Challenge",
+        topic: "If-Else Statements",
+        icon: "⚔️",
+        badge: "DECISION MASTER",
+        badgeImage: "Badges/decisionmaster.png",
+        description:
+            "Use if-else statements to make the correct decisions and defeat the challenge.",
+        points: 150,
+        file: "conditionalchallenge.html"
+    },
+
+    4: {
+        title: "Loop Labyrinth",
+        topic: "Loops",
+        icon: "🌀",
+        badge: "LOOP RUNNER",
+        badgeImage: "Badges/looprunner.png",
+        description:
+            "Navigate the labyrinth by solving Java loop challenges.",
+        points: 150,
+        file: "looplabyrinth.html"
+    },
+
+    5: {
+        title: "Array Adventure",
+        topic: "Arrays",
+        icon: "🧰",
+        badge: "ARRAY EXPLORER",
+        badgeImage: "Badges/arrayexplorer.png",
+        description:
+            "Explore arrays, organize data, and discover the hidden treasure.",
+        points: 175,
+        file: "arrayadventure.html"
+    },
+
+    6: {
+        title: "Function Fortress",
+        topic: "Methods / Functions",
+        icon: "🏰",
+        badge: "FUNCTION KNIGHT",
+        badgeImage: "Badges/functionknight.png",
+        description:
+            "Master Java methods and functions to unlock the fortress.",
+        points: 175,
+        file: "functionfortress.html"
+    },
+
+    7: {
+        title: "Debugging Duel",
+        topic: "Debugging",
+        icon: "⚔️",
+        badge: "BUG SLAYER",
+        badgeImage: "Badges/bugslayer.png",
+        description:
+            "Find the bugs hidden inside broken Java code and defeat them.",
+        points: 200,
+        file: "aa/debugging.html"
+    },
+
+    8: {
+        title: "Classroom Rescue",
+        topic: "Classes & Objects",
+        icon: "🖥️",
+        badge: "OBJECT HERO",
+        badgeImage: "Badges/objecthero.png",
+        description:
+            "Use Java classes and objects to rescue the classroom.",
+        points: 200,
+        file: "classroomrescue.html"
+    },
+
+    9: {
+        title: "Conditional Labyrinth II",
+        topic: "Nested Conditionals",
+        icon: "🚪",
+        badge: "LOGIC MASTER",
+        badgeImage: "Badges/LOGICMASTER.png",
+        description:
+            "Solve advanced nested conditional puzzles to reach the final challenge.",
+        points: 250,
+        file: "conditionallabyrinth.html"
+    },
+
+    10: {
+        title: "Loop Boss Battle",
+        topic: "Nested Loops",
+        icon: "👹",
+        badge: "LOOP LEGEND",
+        badgeImage: "Badges/LOOPLEGEND.png",
+        description:
+            "FINAL CHALLENGE! Defeat the Loop Boss using nested loops to generate sequences and solve patterns.",
+        points: 500,
+        file: "loopboss.html"
+    }
+
+};
+
+
+/* =========================================================
+   GAME STATE
+========================================================= */
+
+let gameState = {
+
+    username: "",
+
+    points: 0,
+
+    hearts: 3,
+
+    completed: [],
+
+    badges: []
+
+};
+
+let selectedMission = null;
+
+
+/* =========================================================
+   LOAD GAME
+========================================================= */
+
+/* Progress lives in shared/storage.js now, per signed-in
+ * player. gameState is kept as a read-only view so the
+ * existing rendering code below carries on working.
+ */
+function syncFromStore() {
+
+    const record = HackoStore.load();
+
+    if (!record) {
+        return false;
+    }
+
+    gameState.username = record.username;
+    gameState.points = record.totalXP;
+    gameState.badges = record.badges || [];
+
+    gameState.completed =
+        Object.keys(record.missions)
+            .filter(id => record.missions[id].completed)
+            .map(Number);
+
+    return true;
+}
+
+function loadGame() {
+
+    if (!syncFromStore()) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    document.getElementById("loginScreen").style.display = "none";
+
+    updateUI();
+}
+
+function loadGameLegacy() {
+
+    const saved =
+        localStorage.getItem("hackoGameState");
+
+    if (saved) {
+
+        try {
+
+            gameState =
+                JSON.parse(saved);
+
+        } catch {
+
+            gameState = {
+                username: "",
+                points: 0,
+                hearts: 3,
+                completed: [],
+                badges: []
+            };
+
+        }
+
+    }
+
+    if (
+        gameState.username &&
+        gameState.username.trim() !== ""
+    ) {
+
+        document.getElementById(
+            "loginScreen"
+        ).style.display = "none";
+
+    }
+
+    updateUI();
+
+}
+
+
+/* =========================================================
+   SAVE GAME
+========================================================= */
+
+function saveGame() {
+
+    /* shared/storage.js owns persistence now; this remains
+       so the older call sites below stay harmless. */
+    syncFromStore();
+
+}
+
+
+/* =========================================================
+   START GAME
+========================================================= */
+
+function startGame() {
+
+    const input =
+        document.getElementById(
+            "usernameInput"
+        );
+
+    const username =
+        input.value.trim();
+
+    if (!username) {
+
+        alert(
+            "Please enter your username first."
+        );
+
+        input.focus();
+
+        return;
+
+    }
+
+    gameState.username =
+        username;
+
+    gameState.points = 0;
+
+    gameState.hearts = 3;
+
+    gameState.completed = [];
+
+    gameState.badges = [];
+
+    saveGame();
+
+    document.getElementById(
+        "loginScreen"
+    ).style.display = "none";
+
+    updateUI();
+
+}
+
+
+/* =========================================================
+   UPDATE UI
+========================================================= */
+
+function updateUI() {
+
+    document.getElementById(
+        "usernameDisplay"
+    ).textContent =
+        gameState.username || "Player";
+
+
+    document.getElementById(
+        "pointsDisplay"
+    ).textContent =
+        gameState.points;
+
+
+    updateHearts();
+
+    updateMissions();
+
+    updateProgress();
+
+    updateBadges();
+
+}
+
+
+/* =========================================================
+   HEART SYSTEM
+========================================================= */
+
+function updateHearts() {
+
+    let hearts = "";
+
+    for (
+        let i = 0;
+        i < 3;
+        i++
+    ) {
+
+        if (
+            i < gameState.hearts
+        ) {
+
+            hearts += "❤️";
+
+        } else {
+
+            hearts += "🖤";
+
+        }
+
+    }
+
+    document.getElementById(
+        "heartsDisplay"
+    ).textContent =
+        hearts;
+
+}
+
+
+/* =========================================================
+   MISSION UNLOCK SYSTEM
+========================================================= */
+
+/* A mission opens once the previous one is 70% cleared, so
+ * a student who is stuck on the last few levels is not
+ * blocked. The badge still needs all 10 - see
+ * shared/storage.js.
+ */
+function isMissionUnlocked(number) {
+
+    return HackoStore.isUnlocked(number);
+
+}
+
+function playMission() {
+
+    if (selectedMission === null) {
+        return;
+    }
+
+    const mission = missions[selectedMission];
+
+    if (!mission.file) {
+
+        alert(
+            mission.title +
+            " is still being built. Try another mission."
+        );
+
+        return;
+    }
+
+    HackoAudio.play("select");
+    window.location.href = mission.file;
+
+}
+
+
+/* =========================================================
+   UPDATE MISSION CARDS
+========================================================= */
+
+function updateMissions() {
+
+    document
+        .querySelectorAll(".mission")
+        .forEach(card => {
+
+            const number =
+                Number(
+                    card.dataset.mission
+                );
+
+            card.classList.remove(
+                "locked",
+                "completed"
+            );
+
+
+            if (
+                gameState.completed
+                    .includes(number)
+            ) {
+
+                card.classList.add(
+                    "completed"
+                );
+
+            }
+
+
+            if (
+                !isMissionUnlocked(number)
+            ) {
+
+                card.classList.add(
+                    "locked"
+                );
+
+
+                if (
+                    !card.querySelector(
+                        ".lock"
+                    )
+                ) {
+
+                    const lock =
+                        document.createElement(
+                            "div"
+                        );
+
+                    lock.className =
+                        "lock";
+
+                    lock.innerHTML =
+                        "🔒";
+
+                    card.appendChild(lock);
+
+                }
+
+            } else {
+
+                const lock =
+                    card.querySelector(
+                        ".lock"
+                    );
+
+                if (lock) {
+
+                    lock.remove();
+
+                }
+
+            }
+
+        });
+
+
+    /* Boss */
+
+    const boss =
+        document.getElementById(
+            "bossMission"
+        );
+
+    if (
+        gameState.completed
+            .includes(10)
+    ) {
+
+        boss.classList.add(
+            "completed"
+        );
+
+    }
+
+
+    if (
+        !isMissionUnlocked(10)
+    ) {
+
+        boss.classList.add(
+            "locked"
+        );
+
+
+        if (
+            !boss.querySelector(
+                ".lock"
+            )
+        ) {
+
+            const lock =
+                document.createElement(
+                    "div"
+                );
+
+            lock.className =
+                "lock";
+
+            lock.innerHTML =
+                "🔒";
+
+            boss.appendChild(lock);
+
+        }
+
+    } else {
+
+        boss.classList.remove(
+            "locked"
+        );
+
+        const lock =
+            boss.querySelector(
+                ".lock"
+            );
+
+        if (lock) {
+
+            lock.remove();
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+function updateProgress() {
+
+    const completed =
+        gameState.completed.length;
+
+    const percentage =
+        (completed / 10) * 100;
+
+    document.getElementById(
+        "progressFill"
+    ).style.width =
+        percentage + "%";
+
+
+    document.getElementById(
+        "progressText"
+    ).textContent =
+        completed +
+        " / 10 Missions";
+
+}
+
+
+/* =========================================================
+   BADGES
+========================================================= */
+
+function updateBadges() {
+
+    const grid =
+        document.getElementById(
+            "badgesGrid"
+        );
+
+    grid.innerHTML = "";
+
+
+    Object.keys(missions)
+        .forEach(number => {
+
+            const mission =
+                missions[number];
+
+            const earned =
+                gameState.badges
+                    .includes(
+                        Number(number)
+                    );
+
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+            item.className =
+                "badge-item" +
+                (
+                    earned
+                        ? " earned"
+                        : ""
+                );
+
+
+            item.innerHTML = `
+
+                <div class="badge-icon">
+                    ${earned
+                        ? `<img src="${mission.badgeImage}" alt="${mission.badge}" onerror="this.style.display='none'; this.parentElement.innerHTML='🏅';">`
+                        : "🔒"}
+                </div>
+
+                <div class="badge-name">
+                    ${mission.badge}
+                </div>
+
+            `;
+
+            if (earned) {
+                item.onclick = function () {
+                    openBadgeViewer(mission.badge, mission.badgeImage);
+                };
+            }
+
+            grid.appendChild(item);
+
+        });
+
+}
+
+
+/* =========================================================
+   OPEN MISSION
+========================================================= */
+
+function openMission(number) {
+
+    if (
+        !isMissionUnlocked(number)
+    ) {
+
+        alert(
+            "🔒 Complete the previous mission to unlock this mission!"
+        );
+
+        return;
+
+    }
+
+
+    selectedMission =
+        number;
+
+    const mission =
+        missions[number];
+
+
+    document.getElementById(
+        "modalIcon"
+    ).textContent =
+        mission.icon;
+
+
+    document.getElementById(
+        "modalTitle"
+    ).textContent =
+        number +
+        ". " +
+        mission.title;
+
+
+    document.getElementById(
+        "modalTopic"
+    ).textContent =
+        mission.topic;
+
+
+    document.getElementById(
+        "modalDescription"
+    ).textContent =
+        mission.description;
+
+
+    const completeButton =
+        document.getElementById(
+            "completeButton"
+        );
+
+
+    const completeMessage =
+        document.getElementById(
+            "completeMessage"
+        );
+
+
+    if (
+        gameState.completed
+            .includes(number)
+    ) {
+
+        completeButton.style.display =
+            "none";
+
+        completeMessage.textContent =
+            "🏆 Mission completed! Badge earned.";
+
+    } else {
+
+        completeButton.style.display =
+            "inline-block";
+
+        completeMessage.textContent =
+            "";
+
+    }
+
+
+    document.getElementById(
+        "missionModal"
+    ).classList.add(
+        "active"
+    );
+
+}
+
+
+/* =========================================================
+   COMPLETE MISSION
+========================================================= */
+
+function completeMission() {
+
+    if (
+        selectedMission === null
+    ) {
+
+        return;
+
+    }
+
+
+    const number =
+        selectedMission;
+
+    const mission =
+        missions[number];
+
+
+    if (
+        gameState.completed
+            .includes(number)
+    ) {
+
+        return;
+
+    }
+
+
+    /* Add points */
+
+    gameState.points +=
+        mission.points;
+
+
+    /* Add completed mission */
+
+    gameState.completed.push(
+        number
+    );
+
+
+    /* Add badge */
+
+    gameState.badges.push(
+        number
+    );
+
+
+    /* Keep order */
+
+    gameState.completed.sort(
+        (a, b) => a - b
+    );
+
+    gameState.badges.sort(
+        (a, b) => a - b
+    );
+
+
+    saveGame();
+
+    updateUI();
+
+
+    document.getElementById(
+        "completeButton"
+    ).style.display =
+        "none";
+
+
+    document.getElementById(
+        "completeMessage"
+    ).textContent =
+        "🏆 MISSION COMPLETE! +" +
+        mission.points +
+        " POINTS • BADGE EARNED!";
+
+
+    /* Small celebration */
+
+    createConfetti();
+
+
+    setTimeout(() => {
+
+        closeMission();
+
+    }, 1800);
+
+}
+
+
+/* =========================================================
+   CLOSE MISSION
+========================================================= */
+
+function closeMission() {
+
+    document.getElementById(
+        "missionModal"
+    ).classList.remove(
+        "active"
+    );
+
+    selectedMission =
+        null;
+
+}
+
+
+/* =========================================================
+   BADGE IMAGE VIEWER
+========================================================= */
+
+function openBadgeViewer(title, imageSrc) {
+
+    document.getElementById(
+        "badgeViewerTitle"
+    ).textContent = title;
+
+    const img = document.getElementById(
+        "badgeViewerImage"
+    );
+
+    img.src = imageSrc;
+    img.alt = title;
+
+    document.getElementById(
+        "badgeModal"
+    ).classList.add(
+        "active"
+    );
+
+}
+
+function closeBadgeViewer() {
+
+    document.getElementById(
+        "badgeModal"
+    ).classList.remove(
+        "active"
+    );
+
+}
+
+
+/* =========================================================
+   CLOSE MODAL WHEN CLICKING OUTSIDE
+========================================================= */
+
+document.getElementById(
+    "missionModal"
+).addEventListener(
+    "click",
+    function(event) {
+
+        if (
+            event.target === this
+        ) {
+
+            closeMission();
+
+        }
+
+    }
+);
+
+document.getElementById(
+    "badgeModal"
+).addEventListener(
+    "click",
+    function(event) {
+
+        if (
+            event.target === this
+        ) {
+
+            closeBadgeViewer();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   RESET GAME
+========================================================= */
+
+function resetGame() {
+
+    const confirmed =
+        confirm(
+            "Reset all HACKO progress, points, hearts and badges?"
+        );
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    localStorage.removeItem(
+        "hackoGameState"
+    );
+
+
+    gameState = {
+
+        username: "",
+
+        points: 0,
+
+        hearts: 3,
+
+        completed: [],
+
+        badges: []
+
+    };
+
+
+    document.getElementById(
+        "loginScreen"
+    ).style.display =
+        "flex";
+
+
+    document.getElementById(
+        "usernameInput"
+    ).value =
+        "";
+
+
+    updateUI();
+
+}
+
+
+/* =========================================================
+   CONFETTI
+========================================================= */
+
+function createConfetti() {
+
+    for (
+        let i = 0;
+        i < 35;
+        i++
+    ) {
+
+        const piece =
+            document.createElement(
+                "div"
+            );
+
+        piece.textContent =
+            Math.random() > .5
+                ? "⭐"
+                : "✨";
+
+        piece.style.position =
+            "fixed";
+
+        piece.style.left =
+            Math.random() * 100 +
+            "%";
+
+        piece.style.top =
+            "-30px";
+
+        piece.style.fontSize =
+            (
+                12 +
+                Math.random() * 18
+            ) +
+            "px";
+
+        piece.style.zIndex =
+            "10000";
+
+        piece.style.pointerEvents =
+            "none";
+
+        piece.style.transition =
+            "transform 1.5s ease, opacity 1.5s ease";
+
+        document.body.appendChild(
+            piece
+        );
+
+
+        setTimeout(() => {
+
+            piece.style.transform =
+                `translateY(${
+                    window.innerHeight +
+                    80
+                }px) rotate(${
+                    Math.random() * 720
+                }deg)`;
+
+            piece.style.opacity =
+                "0";
+
+        }, 50);
+
+
+        setTimeout(() => {
+
+            piece.remove();
+
+        }, 1700);
+
+    }
+
+}
+
+
+/* =========================================================
+   ENTER KEY LOGIN
+========================================================= */
+
+document.getElementById(
+    "usernameInput"
+).addEventListener(
+    "keydown",
+    function(event) {
+
+        if (
+            event.key === "Enter"
+        ) {
+
+            startGame();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   START
+========================================================= */
+
+loadGame();
+
+
+/* =====================================================
+   SOUND LAYER
+
+   Sound used to fire only on a few discrete events, so a
+   game could sit in silence for long stretches. Every page
+   now carries a quiet background track and a visible
+   SOUND ON / SOUND OFF button, so a player can always tell
+   whether audio is working.
+
+   Browsers will not start audio until the player has
+   interacted, so the track is requested here and actually
+   begins on the first key press or click.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoAudio) {
+        return;
+    }
+
+    function begin() {
+        HackoAudio.music.play("menu");
+        HackoAudio.mountToggle(document.body);
+    }
+
+    if (document.readyState === "complete") {
+        begin();
+    } else {
+        window.addEventListener("load", begin);
+    }
+
+}());
+</script>
+
+</body>
+</html>

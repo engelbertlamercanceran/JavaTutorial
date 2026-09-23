@@ -1,0 +1,4642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>HACKO: Conditional Maze</title>
+
+    <style>
+        @import url(
+            'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=VT323&display=swap'
+        );
+
+        :root {
+            --cyan: #00e5ff;
+            --blue: #185cff;
+            --green: #00ff88;
+            --yellow: #ffe600;
+            --pink: #ff4db8;
+            --red: #ff3158;
+            --orange: #ff8b2b;
+            --purple: #9b5cff;
+            --dark: #02040a;
+            --panel: #081226;
+            --text: #effcff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            color: var(--text);
+            font-family: 'VT323', monospace;
+            background:
+                radial-gradient(
+                    circle at top,
+                    rgba(24, 92, 255, 0.18),
+                    transparent 38%
+                ),
+                #01030a;
+            overflow-x: hidden;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .topbar {
+            min-height: 82px;
+            padding: 12px 24px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 20px;
+            background: rgba(1, 4, 14, 0.98);
+            border-bottom: 3px solid var(--blue);
+            box-shadow:
+                0 0 25px rgba(24, 92, 255, 0.45),
+                inset 0 -10px 30px rgba(0, 0, 0, 0.45);
+        }
+
+        .brand {
+            color: var(--yellow);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.7rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow:
+                0 0 8px var(--yellow),
+                0 0 22px rgba(255, 230, 0, 0.5);
+        }
+
+        .brand small {
+            display: block;
+            margin-top: 3px;
+            color: var(--cyan);
+            font-size: 0.67rem;
+            letter-spacing: 4px;
+        }
+
+        .mission-title {
+            text-align: center;
+        }
+
+        .mission-title h1 {
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.16rem;
+        }
+
+        .mission-title p {
+            margin-top: 4px;
+            color: #8eb5e4;
+            font-size: 1rem;
+        }
+
+        .level-indicator {
+            margin-top: 5px;
+            color: var(--yellow);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.68rem;
+        }
+
+        .top-actions {
+            display: flex;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 8px;
+            padding: 9px 14px;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 700;
+            transition:
+                transform 0.18s,
+                filter 0.18s,
+                box-shadow 0.18s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.14);
+        }
+
+        .btn-blue {
+            background: linear-gradient(
+                135deg,
+                var(--cyan),
+                var(--blue)
+            );
+        }
+
+        .btn-yellow {
+            color: #181400;
+            background: linear-gradient(
+                135deg,
+                #fff378,
+                var(--yellow)
+            );
+        }
+
+        .btn-red {
+            background: linear-gradient(
+                135deg,
+                #ff627d,
+                #b3002f
+            );
+        }
+
+        .btn-green {
+            color: #00130a;
+            background: linear-gradient(
+                135deg,
+                var(--green),
+                #00b85f
+            );
+        }
+
+        .layout {
+            width: min(1480px, 100%);
+            margin: auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns:
+                minmax(660px, 1.4fr)
+                minmax(390px, 0.8fr);
+            gap: 20px;
+        }
+
+        .panel {
+            border: 2px solid rgba(0, 229, 255, 0.32);
+            border-radius: 14px;
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(7, 18, 38, 0.98),
+                    rgba(2, 7, 18, 0.98)
+                );
+            box-shadow:
+                0 0 30px rgba(0, 229, 255, 0.08),
+                inset 0 0 30px rgba(0, 0, 0, 0.45);
+        }
+
+        .game-panel {
+            padding: 16px;
+        }
+
+        .game-heading {
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .game-heading h2,
+        .info-panel h2,
+        .clue-panel h2,
+        .console-panel h2 {
+            color: var(--cyan);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+        }
+
+        .maze-zone {
+            color: var(--yellow);
+            font-size: 1.08rem;
+        }
+
+        .canvas-frame {
+            width: fit-content;
+            max-width: 100%;
+            margin: auto;
+            overflow: hidden;
+            background: #000;
+            border: 4px solid var(--blue);
+            border-radius: 12px;
+            box-shadow:
+                0 0 15px var(--blue),
+                0 0 36px rgba(24, 92, 255, 0.42);
+        }
+
+        #gameCanvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            background: #000;
+            image-rendering: pixelated;
+            touch-action: none;
+        }
+
+        .objective {
+            margin-top: 13px;
+            padding: 11px 13px;
+            color: #ccecff;
+            font-size: 1.05rem;
+            background: rgba(0, 229, 255, 0.06);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 9px;
+        }
+
+        .objective strong {
+            color: var(--yellow);
+        }
+
+        .hud {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .hud-card {
+            min-width: 0;
+            padding: 8px 5px;
+            text-align: center;
+            background: #020712;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+        }
+
+        .hud-card span {
+            display: block;
+            color: #6883a5;
+            font-size: 0.75rem;
+        }
+
+        .hud-card strong {
+            display: block;
+            margin-top: 3px;
+            color: var(--green);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.67rem;
+        }
+
+        .timer-card strong {
+            color: var(--yellow);
+        }
+
+        .timer-card.warning strong {
+            color: var(--red);
+            animation: timerPulse 0.5s infinite alternate;
+        }
+
+        @keyframes timerPulse {
+            from {
+                transform: scale(1);
+                text-shadow: 0 0 4px var(--red);
+            }
+
+            to {
+                transform: scale(1.1);
+                text-shadow: 0 0 18px var(--red);
+            }
+        }
+
+        .controls {
+            margin-top: 12px;
+            color: #7893b1;
+            text-align: center;
+            font-size: 0.98rem;
+        }
+
+        .controls kbd {
+            padding: 2px 7px;
+            color: white;
+            background: #0e1d36;
+            border: 1px solid #2b5486;
+            border-radius: 4px;
+        }
+
+        .mobile-controller {
+            width: 270px;
+            height: 198px;
+            margin: 17px auto 0;
+            position: relative;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .control-button {
+            width: 62px;
+            height: 62px;
+            position: absolute;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--cyan);
+            border-radius: 14px;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 900;
+            background:
+                linear-gradient(
+                    145deg,
+                    #153260,
+                    #07152c
+                );
+            box-shadow:
+                0 0 12px rgba(0, 229, 255, 0.35),
+                inset 0 0 14px rgba(0, 0, 0, 0.45);
+            transition:
+                transform 0.08s,
+                background 0.08s,
+                box-shadow 0.08s;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .control-button:hover {
+            filter: brightness(1.2);
+        }
+
+        .control-button:active,
+        .control-button.pressed {
+            transform: scale(0.9);
+            color: #00130a;
+            background: var(--green);
+            box-shadow:
+                0 0 24px var(--green),
+                inset 0 0 8px rgba(0, 0, 0, 0.35);
+        }
+
+        .control-up {
+            top: 0;
+            left: 62px;
+        }
+
+        .control-left {
+            top: 64px;
+            left: 0;
+        }
+
+        .control-down {
+            top: 64px;
+            left: 62px;
+        }
+
+        .control-right {
+            top: 64px;
+            left: 124px;
+        }
+
+        .action-button {
+            width: 70px;
+            height: 70px;
+            top: 46px;
+            right: 0;
+            color: #1a1200;
+            border-color: var(--yellow);
+            background:
+                linear-gradient(
+                    145deg,
+                    #fff378,
+                    #d2a900
+                );
+            box-shadow:
+                0 0 18px rgba(255, 230, 0, 0.45);
+        }
+
+        .action-button:active,
+        .action-button.pressed {
+            color: white;
+            background: var(--red);
+            box-shadow: 0 0 25px var(--red);
+        }
+
+        .side {
+            display: flex;
+            flex-direction: column;
+            gap: 17px;
+        }
+
+        .info-panel,
+        .clue-panel,
+        .console-panel {
+            padding: 16px;
+        }
+
+        .description {
+            margin-top: 10px;
+            color: #c0d2e8;
+            font-size: 1.05rem;
+            line-height: 1.38;
+        }
+
+        .concept {
+            margin-top: 11px;
+            padding: 11px;
+            color: #f1dfff;
+            background: rgba(155, 92, 255, 0.08);
+            border-left: 4px solid var(--purple);
+        }
+
+        .scenario {
+            margin-top: 10px;
+            padding: 11px;
+            color: #fff0a5;
+            background: rgba(255, 230, 0, 0.07);
+            border-left: 4px solid var(--yellow);
+        }
+
+        .task-list,
+        .clue-list {
+            margin-top: 12px;
+            display: grid;
+            gap: 7px;
+        }
+
+        .task {
+            padding: 8px 9px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            color: #8ca2bd;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 7px;
+        }
+
+        .task.done {
+            color: var(--green);
+            background: rgba(0, 255, 136, 0.06);
+            border-left: 3px solid var(--green);
+        }
+
+        .clue-item {
+            padding: 9px;
+            color: #a5bbd3;
+            background: rgba(0, 0, 0, 0.28);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 7px;
+        }
+
+        .clue-item strong {
+            color: var(--yellow);
+        }
+
+        .clue-item.locked {
+            opacity: 0.38;
+        }
+
+        .console {
+            min-height: 190px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 11px;
+            color: var(--green);
+            background: #01040a;
+            border: 2px solid #18314f;
+            border-radius: 8px;
+        }
+
+        .console-message {
+            margin-bottom: 7px;
+            padding: 7px 8px;
+            white-space: pre-wrap;
+            border-radius: 5px;
+        }
+
+        .system {
+            color: #8edfff;
+            background: rgba(0, 229, 255, 0.05);
+            border-left: 3px solid var(--cyan);
+        }
+
+        .success {
+            color: var(--green);
+            background: rgba(0, 255, 136, 0.06);
+            border-left: 3px solid var(--green);
+        }
+
+        .error {
+            color: #ff7189;
+            background: rgba(255, 49, 88, 0.07);
+            border-left: 3px solid var(--red);
+        }
+
+        .hint {
+            color: #ffe978;
+            background: rgba(255, 230, 0, 0.06);
+            border-left: 3px solid var(--yellow);
+        }
+
+        .command-row {
+            margin-top: 9px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .prompt {
+            color: var(--green);
+            font-size: 1.3rem;
+        }
+
+        #commandInput {
+            flex: 1;
+            min-width: 0;
+            padding: 9px;
+            color: var(--green);
+            background: #020712;
+            border: 2px solid #1d3b60;
+            border-radius: 7px;
+            outline: none;
+        }
+
+        #commandInput:focus {
+            border-color: var(--cyan);
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(0, 0, 8, 0.9);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.visible {
+            display: flex;
+        }
+
+        .modal-card {
+            width: min(920px, 96vw);
+            max-height: 92vh;
+            overflow-y: auto;
+            padding: 24px;
+            background:
+                linear-gradient(
+                    145deg,
+                    #0b1a36,
+                    #030812
+                );
+            border: 3px solid var(--blue);
+            border-radius: 15px;
+            box-shadow:
+                0 0 20px var(--blue),
+                0 0 55px rgba(24, 92, 255, 0.45);
+        }
+
+        .modal-card h2 {
+            color: var(--yellow);
+            font-family: 'Orbitron', sans-serif;
+            text-align: center;
+        }
+
+        .modal-subtitle {
+            margin-top: 7px;
+            color: #91a9c7;
+            text-align: center;
+            font-size: 1.08rem;
+        }
+
+        .defuse-grid {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .terminal-section {
+            padding: 14px;
+            background: rgba(0, 0, 0, 0.28);
+            border: 1px solid #25456d;
+            border-radius: 10px;
+        }
+
+        .terminal-section h3 {
+            margin-bottom: 11px;
+            color: var(--cyan);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.78rem;
+        }
+
+        .condition-box {
+            padding: 12px;
+            color: #e4f4ff;
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 8px;
+        }
+
+        .condition-box strong {
+            color: var(--yellow);
+        }
+
+        .wire-grid {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .wire {
+            min-height: 74px;
+            padding: 11px;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.72rem;
+            border: 3px solid rgba(255, 255, 255, 0.14);
+            border-radius: 10px;
+            transition:
+                transform 0.18s,
+                box-shadow 0.18s,
+                border-color 0.18s;
+        }
+
+        .wire:hover {
+            transform: scale(1.03);
+            border-color: white;
+        }
+
+        .wire.selected {
+            border-color: white;
+            box-shadow: 0 0 22px white;
+        }
+
+        .red {
+            background: linear-gradient(135deg, #9f1235, #ff3158);
+        }
+
+        .blue {
+            background: linear-gradient(135deg, #164cb5, #00a8ff);
+        }
+
+        .green {
+            background: linear-gradient(135deg, #087b42, #00dc76);
+        }
+
+        .yellow {
+            color: #1d1700;
+            background: linear-gradient(135deg, #cfa900, #fff268);
+        }
+
+        .purple {
+            background: linear-gradient(135deg, #52218f, #ae6fff);
+        }
+
+        .code {
+            min-height: 320px;
+            padding: 14px;
+            color: #d4eaff;
+            font-size: 1.03rem;
+            line-height: 1.35;
+            white-space: pre-wrap;
+            background: #01040a;
+            border: 1px solid #243f65;
+            border-radius: 8px;
+        }
+
+        .modal-actions {
+            margin-top: 17px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 9px;
+        }
+
+        .level-grid {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .level-card {
+            padding: 14px 8px;
+            text-align: center;
+            background: #061126;
+            border: 2px solid #294366;
+            border-radius: 10px;
+        }
+
+        .level-card.unlocked {
+            cursor: pointer;
+            border-color: var(--blue);
+        }
+
+        .level-card.complete {
+            border-color: var(--green);
+        }
+
+        .level-card.locked {
+            opacity: 0.32;
+            cursor: not-allowed;
+        }
+
+        .level-number {
+            color: var(--yellow);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+        }
+
+        .level-card.complete .level-number {
+            color: var(--green);
+        }
+
+        .level-name {
+            margin-top: 5px;
+            color: white;
+        }
+
+        .difficulty {
+            margin-top: 5px;
+            color: var(--cyan);
+            font-size: 0.8rem;
+        }
+
+        .summary-box {
+            margin: 18px auto;
+            padding: 15px;
+            max-width: 680px;
+            color: #d2efff;
+            background: rgba(0, 229, 255, 0.05);
+            border-left: 4px solid var(--cyan);
+        }
+
+        .result-box {
+            margin: 18px auto;
+            padding: 18px;
+            max-width: 640px;
+            color: #fff4a5;
+            text-align: center;
+            font-size: 1.35rem;
+            background: rgba(255, 230, 0, 0.07);
+            border: 2px solid var(--yellow);
+            border-radius: 11px;
+        }
+
+        .explosion {
+            animation: explode 0.15s alternate 10;
+        }
+
+        @keyframes explode {
+            from {
+                filter: brightness(1);
+                background-color: #000;
+            }
+
+            to {
+                filter: brightness(3);
+                background-color: #ff5200;
+            }
+        }
+
+        @media (max-width: 1120px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .side {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .console-panel {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .topbar {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .top-actions {
+                justify-content: center;
+            }
+
+            .layout {
+                padding: 10px;
+            }
+
+            .side {
+                display: flex;
+            }
+
+            .hud {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .defuse-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .level-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .mobile-controller {
+                transform: scale(0.95);
+                transform-origin: top center;
+                margin-bottom: -8px;
+            }
+        }
+    </style>
+<script src="shared/audio.js" data-track="defuse"></script>
+<script src="shared/storage.js"></script>
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="brand">
+            HACKO
+            <small>CONDITIONAL MAZE</small>
+        </div>
+
+        <div class="mission-title">
+            <h1>MISSION: DEFUSE THE BOMB</h1>
+
+            <p id="conceptText">
+                Programming Concept: Basic If Statement
+            </p>
+
+            <div id="levelTextTop" class="level-indicator">
+                LEVEL 1 / 10 • BEGINNER
+            </div>
+        </div>
+
+        <div class="top-actions">
+            <button
+                type="button"
+                class="btn btn-yellow"
+                onclick="openLevelSelect()"
+            >
+                LEVELS
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-blue"
+                onclick="openHelp()"
+            >
+                HELP
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-red"
+                onclick="restartLevel()"
+            >
+                RESTART
+            </button>
+        </div>
+    </header>
+
+    <main class="layout">
+        <section class="panel game-panel">
+            <div class="game-heading">
+                <h2>NEON SECURITY MAZE</h2>
+
+                <div id="zoneName" class="maze-zone">
+                    Entry Tunnel
+                </div>
+            </div>
+
+            <div class="canvas-frame">
+                <canvas
+                    id="gameCanvas"
+                    width="672"
+                    height="624"
+                ></canvas>
+            </div>
+
+            <div class="objective">
+                <strong>Objective:</strong>
+                <span id="objectiveText"></span>
+            </div>
+
+            <div class="hud">
+                <div class="hud-card">
+                    <span>Level</span>
+                    <strong id="hudLevel">1 / 10</strong>
+                </div>
+
+                <div
+                    class="hud-card timer-card"
+                    id="timerCard"
+                >
+                    <span>Timer</span>
+                    <strong id="timerText">02:00</strong>
+                </div>
+
+                <div class="hud-card">
+                    <span>Lives</span>
+                    <strong id="livesText">3</strong>
+                </div>
+
+                <div class="hud-card">
+                    <span>Clues</span>
+                    <strong id="clueText">0 / 1</strong>
+                </div>
+
+                <div class="hud-card">
+                    <span>Bomb</span>
+                    <strong id="bombText">ARMED</strong>
+                </div>
+            </div>
+
+            <div class="controls">
+                <p>
+                    Keyboard:
+                    <kbd>W</kbd>
+                    <kbd>A</kbd>
+                    <kbd>S</kbd>
+                    <kbd>D</kbd>
+                    or arrow keys
+
+                    &nbsp; Open bomb:
+                    <kbd>E</kbd>
+                </p>
+
+                <div class="mobile-controller">
+                    <button
+                        type="button"
+                        class="control-button control-up"
+                        data-direction="up"
+                        aria-label="Move up"
+                    >
+                        ▲
+                    </button>
+
+                    <button
+                        type="button"
+                        class="control-button control-left"
+                        data-direction="left"
+                        aria-label="Move left"
+                    >
+                        ◀
+                    </button>
+
+                    <button
+                        type="button"
+                        class="control-button control-down"
+                        data-direction="down"
+                        aria-label="Move down"
+                    >
+                        ▼
+                    </button>
+
+                    <button
+                        type="button"
+                        class="control-button control-right"
+                        data-direction="right"
+                        aria-label="Move right"
+                    >
+                        ▶
+                    </button>
+
+                    <button
+                        type="button"
+                        id="actionButton"
+                        class="control-button action-button"
+                        aria-label="Open bomb"
+                    >
+                        E
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <aside class="side">
+            <section class="panel info-panel">
+                <h2 id="missionName">
+                    LEVEL 1: SIMPLE CONDITION
+                </h2>
+
+                <p
+                    id="missionDescription"
+                    class="description"
+                ></p>
+
+                <div id="conceptBox" class="concept"></div>
+                <div id="scenarioBox" class="scenario"></div>
+                <div id="taskList" class="task-list"></div>
+            </section>
+
+            <section class="panel clue-panel">
+                <h2>COLLECTED CLUES</h2>
+                <div id="clueList" class="clue-list"></div>
+            </section>
+
+            <section class="panel console-panel">
+                <h2>MISSION CONSOLE</h2>
+
+                <div id="console" class="console"></div>
+
+                <div class="command-row">
+                    <span class="prompt">&gt;</span>
+
+                    <input
+                        id="commandInput"
+                        type="text"
+                        placeholder="Type help, status, clues..."
+                        autocomplete="off"
+                    >
+
+                    <button
+                        type="button"
+                        class="btn btn-green"
+                        onclick="processCommand()"
+                    >
+                        ENTER
+                    </button>
+                </div>
+            </section>
+        </aside>
+    </main>
+
+    <div id="bombModal" class="modal">
+        <div class="modal-card">
+            <h2>BOMB DEFUSAL TERMINAL</h2>
+
+            <p
+                id="bombSubtitle"
+                class="modal-subtitle"
+            ></p>
+
+            <div class="defuse-grid">
+                <section class="terminal-section">
+                    <h3>SELECT A WIRE</h3>
+
+                    <div
+                        id="conditionBox"
+                        class="condition-box"
+                    ></div>
+
+                    <div
+                        id="wireGrid"
+                        class="wire-grid"
+                    ></div>
+                </section>
+
+                <section class="terminal-section">
+                    <h3>CONDITIONAL PREVIEW</h3>
+                    <div id="codePreview" class="code"></div>
+                </section>
+            </div>
+
+            <div class="modal-actions">
+                <button
+                    type="button"
+                    class="btn btn-green"
+                    onclick="attemptDefuse()"
+                >
+                    CUT SELECTED WIRE
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-blue"
+                    onclick="closeBombModal()"
+                >
+                    RETURN TO MAZE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="levelModal" class="modal">
+        <div class="modal-card">
+            <h2>LEVEL SELECT</h2>
+
+            <p class="modal-subtitle">
+                Clear each maze to unlock the next conditional challenge.
+            </p>
+
+            <div id="levelGrid" class="level-grid"></div>
+
+            <div class="modal-actions">
+                <button
+                    type="button"
+                    class="btn btn-blue"
+                    onclick="closeLevelSelect()"
+                >
+                    CLOSE
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-red"
+                    onclick="resetProgress()"
+                >
+                    RESET PROGRESS
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="helpModal" class="modal">
+        <div class="modal-card">
+            <h2>HOW TO PLAY</h2>
+
+            <div class="summary-box">
+                Hacko moves continuously through the maze.
+
+                <br><br>
+
+                Press a direction before reaching an intersection.
+                The queued direction will activate when the path becomes
+                available.
+
+                <br><br>
+
+                Use the arrow keys, W, A, S, and D, or tap the
+                on-screen controller.
+
+                <br><br>
+
+                Collect the glowing clue chips required for the mission.
+
+                <br><br>
+
+                Large power orbs temporarily make the security birds
+                vulnerable.
+
+                <br><br>
+
+                Reach the bomb chamber and press E or tap the yellow
+                E button.
+
+                <br><br>
+
+                Select the correct wire by evaluating the conditional
+                statement.
+
+                <br><br>
+
+                The bomb explodes when the two-minute timer reaches zero.
+            </div>
+
+            <div class="modal-actions">
+                <button
+                    type="button"
+                    class="btn btn-green"
+                    onclick="closeHelp()"
+                >
+                    CONTINUE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameOverModal" class="modal">
+        <div class="modal-card">
+            <h2 style="color:#ff3158">
+                SYSTEM EXPLOSION
+            </h2>
+
+            <p
+                id="gameOverReason"
+                class="modal-subtitle"
+            ></p>
+
+            <div class="modal-actions">
+                <button
+                    type="button"
+                    class="btn btn-green"
+                    onclick="restartLevel()"
+                >
+                    RETRY
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-yellow"
+                    onclick="openLevelSelectFromGameOver()"
+                >
+                    LEVELS
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="winModal" class="modal">
+        <div class="modal-card">
+            <h2 id="winTitle">
+                BOMB DEFUSED
+            </h2>
+
+            <p
+                id="winSubtitle"
+                class="modal-subtitle"
+            ></p>
+
+            <div id="resultBox" class="result-box"></div>
+            <div id="summaryBox" class="summary-box"></div>
+
+            <div class="modal-actions">
+                <button
+                    type="button"
+                    id="nextButton"
+                    class="btn btn-green"
+                    onclick="nextLevel()"
+                >
+                    NEXT LEVEL
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-yellow"
+                    onclick="openLevelSelectFromWin()"
+                >
+                    LEVELS
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-blue"
+                    onclick="restartLevel()"
+                >
+                    REPLAY
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas =
+            document.getElementById('gameCanvas')
+
+        const ctx =
+            canvas.getContext('2d')
+
+        const TILE_SIZE = 48
+        const COLS = 14
+        const ROWS = 13
+
+        const TILE = {
+            WALL: 0,
+            PATH: 1
+        }
+
+        const BASE_MAZE = [
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,1,1,1,1,1,1,0,1,1,1,1,1,0],
+            [0,1,0,0,1,0,1,0,1,0,1,0,1,0],
+            [0,1,1,1,1,0,1,1,1,0,1,1,1,0],
+            [0,0,1,0,1,0,0,1,0,0,1,0,0,0],
+            [0,1,1,0,1,1,1,1,1,1,1,1,1,0],
+            [0,1,0,0,1,0,1,1,1,0,1,0,1,0],
+            [0,1,1,1,1,0,1,1,1,0,1,1,1,0],
+            [0,0,1,0,1,0,0,1,0,0,1,0,0,0],
+            [0,1,1,0,1,1,1,1,1,1,1,1,1,0],
+            [0,1,0,0,1,0,1,0,1,0,1,0,1,0],
+            [0,1,1,1,1,1,1,0,1,1,1,1,1,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        ]
+
+        const DIRECTIONS = {
+            left: {
+                x: -1,
+                y: 0
+            },
+
+            right: {
+                x: 1,
+                y: 0
+            },
+
+            up: {
+                x: 0,
+                y: -1
+            },
+
+            down: {
+                x: 0,
+                y: 1
+            }
+        }
+
+        const PLAYER_START = {
+            x: 1,
+            y: 1
+        }
+
+        const BOMB_POSITION = {
+            x: 12,
+            y: 11
+        }
+
+        const CLUE_POSITIONS = [
+            { x: 4, y: 1 },
+            { x: 12, y: 3 },
+            { x: 1, y: 7 },
+            { x: 8, y: 9 },
+            { x: 4, y: 11 }
+        ]
+
+        const POWER_POSITIONS = [
+            { x: 1, y: 11 },
+            { x: 12, y: 1 },
+            { x: 1, y: 5 },
+            { x: 12, y: 9 }
+        ]
+
+        const BIRD_STARTS = [
+            {
+                x: 6,
+                y: 5,
+                color: '#ff3158',
+                name: 'RED BIRD'
+            },
+
+            {
+                x: 7,
+                y: 5,
+                color: '#ff8b2b',
+                name: 'ORANGE BIRD'
+            },
+
+            {
+                x: 6,
+                y: 7,
+                color: '#00e5ff',
+                name: 'CYAN BIRD'
+            },
+
+            {
+                x: 7,
+                y: 7,
+                color: '#ff4db8',
+                name: 'PINK BIRD'
+            },
+
+            {
+                x: 8,
+                y: 7,
+                color: '#9b5cff',
+                name: 'PURPLE BIRD'
+            }
+        ]
+
+        const LEVELS = [
+            {
+                id: 1,
+                name: 'SIMPLE IF',
+                concept: 'Basic If Statement',
+                difficulty: 'BEGINNER',
+                description:
+                    'Collect one clue and evaluate a single true condition.',
+                lesson:
+                    'The if block runs when its condition is true.',
+                scenario:
+                    'sensorValue = 8. If sensorValue > 5, cut RED; otherwise cut BLUE.',
+                variables:
+                    'int sensorValue = 8;',
+                condition:
+                    'sensorValue > 5',
+                trueWire: 'red',
+                falseWire: 'blue',
+                correctWire: 'red',
+                wires: ['red', 'blue'],
+                clues: [
+                    'Sensor value is 8.',
+                    'The comparison threshold is 5.'
+                ],
+                requiredClues: 1,
+                ghosts: 1,
+                ghostSpeed: 105,
+                playerSpeed: 145,
+                wrongPenalty: 8,
+                summary:
+                    '8 is greater than 5, so the if branch selected red.'
+            },
+
+            {
+                id: 2,
+                name: 'IF OR ELSE',
+                concept: 'If-Else Statement',
+                difficulty: 'EASY',
+                description:
+                    'Choose the else branch when a condition is false.',
+                lesson:
+                    'The else block runs when the if condition is false.',
+                scenario:
+                    'battery = 30. If battery >= 50, cut GREEN; else cut BLUE.',
+                variables:
+                    'int battery = 30;',
+                condition:
+                    'battery >= 50',
+                trueWire: 'green',
+                falseWire: 'blue',
+                correctWire: 'blue',
+                wires: ['green', 'blue'],
+                clues: [
+                    'Battery value is 30.',
+                    'Safe threshold is 50.'
+                ],
+                requiredClues: 2,
+                ghosts: 1,
+                ghostSpeed: 110,
+                playerSpeed: 148,
+                wrongPenalty: 10,
+                summary:
+                    '30 is below 50, so the else branch selected blue.'
+            },
+
+            {
+                id: 3,
+                name: 'EQUALITY',
+                concept: 'Equality Operator',
+                difficulty: 'EASY',
+                description:
+                    'Use == to compare an access code.',
+                lesson:
+                    'The == operator checks whether two values are equal.',
+                scenario:
+                    'code = 42. If code == 42, cut YELLOW; else cut RED.',
+                variables:
+                    'int code = 42;',
+                condition:
+                    'code == 42',
+                trueWire: 'yellow',
+                falseWire: 'red',
+                correctWire: 'yellow',
+                wires: ['yellow', 'red', 'blue'],
+                clues: [
+                    'Entered code is 42.',
+                    'Authorized code is 42.'
+                ],
+                requiredClues: 2,
+                ghosts: 2,
+                ghostSpeed: 114,
+                playerSpeed: 150,
+                wrongPenalty: 12,
+                summary:
+                    'The two values were equal, so yellow was correct.'
+            },
+
+            {
+                id: 4,
+                name: 'BOOLEAN BRANCH',
+                concept: 'Boolean Condition',
+                difficulty: 'NORMAL',
+                description:
+                    'Use a boolean variable directly as a condition.',
+                lesson:
+                    'A boolean variable can be placed directly inside if().',
+                scenario:
+                    'isAuthorized = false. If isAuthorized, cut GREEN; else cut PURPLE.',
+                variables:
+                    'boolean isAuthorized = false;',
+                condition:
+                    'isAuthorized',
+                trueWire: 'green',
+                falseWire: 'purple',
+                correctWire: 'purple',
+                wires: ['green', 'purple', 'red'],
+                clues: [
+                    'Authorization failed.',
+                    'isAuthorized equals false.'
+                ],
+                requiredClues: 2,
+                ghosts: 2,
+                ghostSpeed: 118,
+                playerSpeed: 152,
+                wrongPenalty: 13,
+                summary:
+                    'The boolean was false, so the else branch selected purple.'
+            },
+
+            {
+                id: 5,
+                name: 'LOGICAL AND',
+                concept: 'AND Operator',
+                difficulty: 'NORMAL',
+                description:
+                    'Both comparisons must be true.',
+                lesson:
+                    'The && operator is true only when both sides are true.',
+                scenario:
+                    'temperature = 45 and pressure = 90. If temperature < 50 && pressure < 100, cut BLUE; otherwise cut RED.',
+                variables:
+                    'int temperature = 45;\nint pressure = 90;',
+                condition:
+                    'temperature < 50 && pressure < 100',
+                trueWire: 'blue',
+                falseWire: 'red',
+                correctWire: 'blue',
+                wires: ['blue', 'red', 'green'],
+                clues: [
+                    'Temperature is 45.',
+                    'Pressure is 90.',
+                    'Both safety conditions must pass.'
+                ],
+                requiredClues: 3,
+                ghosts: 3,
+                ghostSpeed: 122,
+                playerSpeed: 154,
+                wrongPenalty: 14,
+                summary:
+                    'Both comparisons were true, so blue was selected.'
+            },
+
+            {
+                id: 6,
+                name: 'LOGICAL OR',
+                concept: 'OR Operator',
+                difficulty: 'CHALLENGING',
+                description:
+                    'At least one condition must be true.',
+                lesson:
+                    'The || operator is true when either side is true.',
+                scenario:
+                    'mainAlarm = false and backupAlarm = true. If mainAlarm || backupAlarm, cut RED; otherwise cut GREEN.',
+                variables:
+                    'boolean mainAlarm = false;\nboolean backupAlarm = true;',
+                condition:
+                    'mainAlarm || backupAlarm',
+                trueWire: 'red',
+                falseWire: 'green',
+                correctWire: 'red',
+                wires: ['red', 'green', 'blue', 'yellow'],
+                clues: [
+                    'Main alarm is false.',
+                    'Backup alarm is true.',
+                    'One active alarm is enough.'
+                ],
+                requiredClues: 3,
+                ghosts: 3,
+                ghostSpeed: 126,
+                playerSpeed: 156,
+                wrongPenalty: 15,
+                summary:
+                    'The backup alarm was true, so the OR expression selected red.'
+            },
+
+            {
+                id: 7,
+                name: 'ELSE-IF',
+                concept: 'Else-If Ladder',
+                difficulty: 'CHALLENGING',
+                description:
+                    'Check several conditions from top to bottom.',
+                lesson:
+                    'An else-if ladder stops at the first matching branch.',
+                scenario:
+                    'risk = 2. If risk >= 5 cut RED; else if risk >= 3 cut YELLOW; else cut GREEN.',
+                variables:
+                    'int risk = 2;',
+                condition:
+                    'risk >= 5, then risk >= 3',
+                trueWire: 'red',
+                falseWire: 'green',
+                correctWire: 'green',
+                wires: ['red', 'yellow', 'green', 'blue'],
+                clues: [
+                    'Risk level is 2.',
+                    'High risk begins at 5.',
+                    'Medium risk begins at 3.'
+                ],
+                requiredClues: 3,
+                ghosts: 4,
+                ghostSpeed: 130,
+                playerSpeed: 158,
+                wrongPenalty: 17,
+                customCode:
+`if (risk >= 5) {
+    cutWire("RED");
+} else if (risk >= 3) {
+    cutWire("YELLOW");
+} else {
+    cutWire("GREEN");
+}`,
+                summary:
+                    'Risk level 2 matched neither earlier branch, so green was correct.'
+            },
+
+            {
+                id: 8,
+                name: 'NESTED IF',
+                concept: 'Nested Conditions',
+                difficulty: 'HARD',
+                description:
+                    'Evaluate an inner condition after an outer condition.',
+                lesson:
+                    'Nested if statements place one decision inside another.',
+                scenario:
+                    'doorOpen = true and codeValid = false. If doorOpen is true, check codeValid: cut GREEN when it is also true, otherwise cut PURPLE.',
+                variables:
+                    'boolean doorOpen = true;\nboolean codeValid = false;',
+                condition:
+                    'doorOpen, then codeValid',
+                trueWire: 'green',
+                falseWire: 'purple',
+                correctWire: 'purple',
+                wires: ['green', 'purple', 'red', 'yellow'],
+                clues: [
+                    'The door is open.',
+                    'The code is invalid.',
+                    'The inner condition controls the final choice.'
+                ],
+                requiredClues: 3,
+                ghosts: 4,
+                ghostSpeed: 134,
+                playerSpeed: 160,
+                wrongPenalty: 18,
+                customCode:
+`if (doorOpen) {
+    if (codeValid) {
+        cutWire("GREEN");
+    } else {
+        cutWire("PURPLE");
+    }
+} else {
+    cutWire("RED");
+}`,
+                summary:
+                    'The outer condition passed, but the inner condition failed, selecting purple.'
+            },
+
+            {
+                id: 9,
+                name: 'COMPLEX LOGIC',
+                concept: 'Combined Operators',
+                difficulty: 'EXTREME',
+                description:
+                    'Combine AND, OR, and parentheses.',
+                lesson:
+                    'Parentheses control how complex conditions are grouped.',
+                scenario:
+                    'temperature = 70, pressure = 80, override = true. If (temperature < 60 && pressure < 90) || override, cut YELLOW; otherwise cut RED.',
+                variables:
+                    'int temperature = 70;\nint pressure = 80;\nboolean override = true;',
+                condition:
+                    '(temperature < 60 && pressure < 90) || override',
+                trueWire: 'yellow',
+                falseWire: 'red',
+                correctWire: 'yellow',
+                wires: ['yellow', 'red', 'blue', 'green', 'purple'],
+                clues: [
+                    'Temperature is 70.',
+                    'Pressure is 80.',
+                    'Override is true.',
+                    'Evaluate the grouped AND before OR.'
+                ],
+                requiredClues: 4,
+                ghosts: 5,
+                ghostSpeed: 138,
+                playerSpeed: 162,
+                wrongPenalty: 20,
+                summary:
+                    'The grouped AND was false, but override made the whole OR expression true.'
+            },
+
+            {
+                id: 10,
+                name: 'FINAL CONDITIONAL',
+                concept: 'Complete Conditional Program',
+                difficulty: 'EXPERT',
+                description:
+                    'Combine equality, OR, AND, and nested conditions.',
+                lesson:
+                    'Complex programs use several conditional structures together.',
+                scenario:
+                    'code = 42, security = 4, override = false, timer = 25. If code == 42 && (security < 5 || override), then check timer: cut BLUE when timer <= 30, otherwise cut RED.',
+                variables:
+                    'int code = 42;\nint security = 4;\nboolean override = false;\nint timer = 25;',
+                condition:
+                    'code == 42 && (security < 5 || override), then timer <= 30',
+                trueWire: 'blue',
+                falseWire: 'red',
+                correctWire: 'blue',
+                wires: ['blue', 'yellow', 'red', 'green', 'purple'],
+                clues: [
+                    'Code is 42.',
+                    'Security level is 4.',
+                    'Override is false.',
+                    'Internal timer is 25.',
+                    'Evaluate the outer condition before the nested condition.'
+                ],
+                requiredClues: 5,
+                ghosts: 5,
+                ghostSpeed: 142,
+                playerSpeed: 164,
+                wrongPenalty: 22,
+                customCode:
+`if (code == 42 &&
+    (security < 5 || override)) {
+
+    if (timer <= 30) {
+        cutWire("BLUE");
+    } else {
+        cutWire("YELLOW");
+    }
+
+} else {
+    cutWire("RED");
+}`,
+                summary:
+                    'The code matched, security was below 5, and timer was at most 30, so blue was correct.'
+            }
+        ]
+
+        const playerImage = new Image()
+        playerImage.src = 'hacko.png'
+
+        let currentLevelIndex = 0
+        let maze = []
+        let clues = []
+        let powerPellets = []
+        let ghosts = []
+
+        let selectedWire = null
+        let animationFrame = null
+        let timerInterval = null
+        let lastFrameTime = performance.now()
+        let eventsBound = false
+        let controllerBound = false
+
+        const state = {
+            player: {
+                x:
+                    PLAYER_START.x *
+                    TILE_SIZE +
+                    TILE_SIZE / 2,
+
+                y:
+                    PLAYER_START.y *
+                    TILE_SIZE +
+                    TILE_SIZE / 2,
+
+                radius: 13,
+                direction: 'right',
+                nextDirection: 'right'
+            },
+
+            lives: 3,
+            score: 0,
+            timeRemaining: 120,
+            bombDefused: false,
+            gameOver: false,
+            gameWon: false,
+            bombOpen: false,
+            powerUntil: 0,
+            cluesCollected: 0,
+            collisionLockedUntil: 0
+        }
+
+        function currentLevel() {
+            return LEVELS[currentLevelIndex]
+        }
+
+        function getProgress() {
+            try {
+                return JSON.parse(
+                    localStorage.getItem(
+                        'hackoPacConditionalProgress'
+                    )
+                ) || {
+                    completedLevels: [],
+                    unlockedLevel: 1
+                }
+            } catch (error) {
+                return {
+                    completedLevels: [],
+                    unlockedLevel: 1
+                }
+            }
+        }
+
+        function saveProgress(levelId) {
+            const progress = getProgress()
+
+            if (
+                !progress.completedLevels.includes(
+                    levelId
+                )
+            ) {
+                progress.completedLevels.push(
+                    levelId
+                )
+            }
+
+            progress.unlockedLevel = Math.max(
+                progress.unlockedLevel,
+                Math.min(10, levelId + 1)
+            )
+
+            localStorage.setItem(
+                'hackoPacConditionalProgress',
+                JSON.stringify(progress)
+            )
+        }
+
+        function initializeGame() {
+            bindEvents()
+            bindControllerButtons()
+            loadLevel(0)
+        }
+
+        function loadLevel(index) {
+            cancelAnimationFrame(animationFrame)
+            clearInterval(timerInterval)
+
+            currentLevelIndex = index
+            selectedWire = null
+
+            maze = BASE_MAZE.map(row => [
+                ...row
+            ])
+
+            resetPlayerPosition()
+
+            state.lives = 3
+            state.score = 0
+            state.timeRemaining = 120
+            state.bombDefused = false
+            state.gameOver = false
+            state.gameWon = false
+            state.bombOpen = false
+            state.powerUntil = 0
+            state.cluesCollected = 0
+            state.collisionLockedUntil = 0
+
+            createClues()
+            createPowerPellets()
+            createGhosts()
+
+            hideModals()
+            clearConsole()
+            updateUI()
+            draw()
+
+            addConsole(
+                'system',
+                `LEVEL ${currentLevel().id}: ${currentLevel().name}`
+            )
+
+            addConsole(
+                'hint',
+                'Use the keyboard or click the on-screen direction buttons.'
+            )
+
+            startTimer()
+
+            lastFrameTime =
+                performance.now()
+
+            animationFrame =
+                requestAnimationFrame(gameLoop)
+        }
+
+        function resetPlayerPosition() {
+            state.player.x =
+                PLAYER_START.x *
+                TILE_SIZE +
+                TILE_SIZE / 2
+
+            state.player.y =
+                PLAYER_START.y *
+                TILE_SIZE +
+                TILE_SIZE / 2
+
+            state.player.direction = 'right'
+            state.player.nextDirection = 'right'
+        }
+
+        function createClues() {
+            clues =
+                currentLevel().clues.map(
+                    (text, index) => ({
+                        x:
+                            CLUE_POSITIONS[index].x,
+
+                        y:
+                            CLUE_POSITIONS[index].y,
+
+                        text,
+                        collected: false
+                    })
+                )
+        }
+
+        function createPowerPellets() {
+            powerPellets =
+                POWER_POSITIONS.map(
+                    position => ({
+                        ...position,
+                        collected: false
+                    })
+                )
+        }
+
+        function createGhosts() {
+            ghosts =
+                BIRD_STARTS
+                    .slice(
+                        0,
+                        currentLevel().ghosts
+                    )
+                    .map(
+                        (bird, index) => ({
+                            ...bird,
+
+                            x:
+                                bird.x *
+                                TILE_SIZE +
+                                TILE_SIZE / 2,
+
+                            y:
+                                bird.y *
+                                TILE_SIZE +
+                                TILE_SIZE / 2,
+
+                            radius: 12,
+
+                            direction:
+                                [
+                                    'left',
+                                    'right',
+                                    'up',
+                                    'down'
+                                ][index % 4],
+
+                            homeX:
+                                bird.x *
+                                TILE_SIZE +
+                                TILE_SIZE / 2,
+
+                            homeY:
+                                bird.y *
+                                TILE_SIZE +
+                                TILE_SIZE / 2
+                        })
+                    )
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval)
+
+            timerInterval =
+                setInterval(() => {
+                    if (
+                        state.gameOver ||
+                        state.gameWon ||
+                        state.bombDefused
+                    ) {
+                        return
+                    }
+
+                    state.timeRemaining--
+
+                    updateUI()
+
+                    if (
+                        state.timeRemaining <= 0
+                    ) {
+                        explodeBomb(
+                            'The two-minute countdown reached zero.'
+                        )
+                    }
+                }, 1000)
+        }
+
+        function gameLoop(timestamp) {
+            if (
+                state.gameOver ||
+                state.gameWon
+            ) {
+                return
+            }
+
+            const deltaSeconds =
+                Math.min(
+                    (
+                        timestamp -
+                        lastFrameTime
+                    ) / 1000,
+                    0.035
+                )
+
+            lastFrameTime = timestamp
+
+            if (
+                !state.bombOpen &&
+                !isAnyModalOpen()
+            ) {
+                updatePlayer(deltaSeconds)
+                updateGhosts(deltaSeconds)
+                checkClueCollision()
+                checkPowerCollision()
+                checkGhostCollisions()
+            }
+
+            draw()
+            updateUI()
+
+            animationFrame =
+                requestAnimationFrame(
+                    gameLoop
+                )
+        }
+
+        function tileAtPixel(x, y) {
+            return {
+                x:
+                    Math.floor(
+                        x / TILE_SIZE
+                    ),
+
+                y:
+                    Math.floor(
+                        y / TILE_SIZE
+                    )
+            }
+        }
+
+        function tileCenter(tileX, tileY) {
+            return {
+                x:
+                    tileX *
+                    TILE_SIZE +
+                    TILE_SIZE / 2,
+
+                y:
+                    tileY *
+                    TILE_SIZE +
+                    TILE_SIZE / 2
+            }
+        }
+
+        function isPathTile(x, y) {
+            return (
+                x >= 0 &&
+                y >= 0 &&
+                x < COLS &&
+                y < ROWS &&
+                maze[y][x] === TILE.PATH
+            )
+        }
+
+        function canMoveFromTile(
+            tileX,
+            tileY,
+            directionName
+        ) {
+            const direction =
+                DIRECTIONS[directionName]
+
+            if (!direction) {
+                return false
+            }
+
+            return isPathTile(
+                tileX + direction.x,
+                tileY + direction.y
+            )
+        }
+
+        function snapToCenter(entity) {
+            const tile =
+                tileAtPixel(
+                    entity.x,
+                    entity.y
+                )
+
+            const center =
+                tileCenter(
+                    tile.x,
+                    tile.y
+                )
+
+            entity.x = center.x
+            entity.y = center.y
+        }
+
+        function isOppositeDirection(
+            first,
+            second
+        ) {
+            return (
+                oppositeDirection(first) ===
+                second
+            )
+        }
+
+        function isApproachingCenter(
+            entity,
+            directionName,
+            center
+        ) {
+            switch (directionName) {
+                case 'right':
+                    return entity.x <= center.x
+
+                case 'left':
+                    return entity.x >= center.x
+
+                case 'down':
+                    return entity.y <= center.y
+
+                case 'up':
+                    return entity.y >= center.y
+
+                default:
+                    return false
+            }
+        }
+
+        function updatePlayer(delta) {
+            const player = state.player
+
+            const movement =
+                currentLevel().playerSpeed *
+                delta
+
+            if (
+                isOppositeDirection(
+                    player.direction,
+                    player.nextDirection
+                )
+            ) {
+                player.direction =
+                    player.nextDirection
+            }
+
+            const tile =
+                tileAtPixel(
+                    player.x,
+                    player.y
+                )
+
+            const center =
+                tileCenter(
+                    tile.x,
+                    tile.y
+                )
+
+            const approachingCenter =
+                isApproachingCenter(
+                    player,
+                    player.direction,
+                    center
+                )
+
+            const closeToCenter =
+                Math.abs(
+                    player.x - center.x
+                ) <= movement + 1 &&
+                Math.abs(
+                    player.y - center.y
+                ) <= movement + 1
+
+            if (
+                approachingCenter &&
+                closeToCenter
+            ) {
+                player.x = center.x
+                player.y = center.y
+
+                if (
+                    canMoveFromTile(
+                        tile.x,
+                        tile.y,
+                        player.nextDirection
+                    )
+                ) {
+                    player.direction =
+                        player.nextDirection
+                }
+
+                if (
+                    !canMoveFromTile(
+                        tile.x,
+                        tile.y,
+                        player.direction
+                    )
+                ) {
+                    return
+                }
+            }
+
+            const direction =
+                DIRECTIONS[player.direction]
+
+            if (!direction) {
+                return
+            }
+
+            const nextX =
+                player.x +
+                direction.x *
+                movement
+
+            const nextY =
+                player.y +
+                direction.y *
+                movement
+
+            if (
+                canOccupyPixel(
+                    nextX,
+                    nextY,
+                    player.radius
+                )
+            ) {
+                player.x = nextX
+                player.y = nextY
+            } else {
+                snapToCenter(player)
+
+                const currentTile =
+                    tileAtPixel(
+                        player.x,
+                        player.y
+                    )
+
+                if (
+                    canMoveFromTile(
+                        currentTile.x,
+                        currentTile.y,
+                        player.nextDirection
+                    )
+                ) {
+                    player.direction =
+                        player.nextDirection
+                }
+            }
+        }
+
+        function canOccupyPixel(
+            x,
+            y,
+            radius
+        ) {
+            const collisionRadius =
+                Math.max(
+                    7,
+                    radius - 5
+                )
+
+            const points = [
+                [
+                    x - collisionRadius,
+                    y
+                ],
+                [
+                    x + collisionRadius,
+                    y
+                ],
+                [
+                    x,
+                    y - collisionRadius
+                ],
+                [
+                    x,
+                    y + collisionRadius
+                ]
+            ]
+
+            return points.every(
+                ([pointX, pointY]) => {
+                    const tile =
+                        tileAtPixel(
+                            pointX,
+                            pointY
+                        )
+
+                    return isPathTile(
+                        tile.x,
+                        tile.y
+                    )
+                }
+            )
+        }
+
+        function updateGhosts(delta) {
+            const vulnerable =
+                Date.now() <
+                state.powerUntil
+
+            ghosts.forEach(bird => {
+                const speed =
+                    vulnerable
+                        ? 82
+                        : currentLevel()
+                            .ghostSpeed
+
+                const movement =
+                    speed * delta
+
+                if (
+                    !DIRECTIONS[
+                        bird.direction
+                    ]
+                ) {
+                    bird.direction = 'left'
+                }
+
+                const tile =
+                    tileAtPixel(
+                        bird.x,
+                        bird.y
+                    )
+
+                const center =
+                    tileCenter(
+                        tile.x,
+                        tile.y
+                    )
+
+                const approachingCenter =
+                    isApproachingCenter(
+                        bird,
+                        bird.direction,
+                        center
+                    )
+
+                const closeToCenter =
+                    Math.abs(
+                        bird.x - center.x
+                    ) <= movement + 1 &&
+                    Math.abs(
+                        bird.y - center.y
+                    ) <= movement + 1
+
+                if (
+                    approachingCenter &&
+                    closeToCenter
+                ) {
+                    bird.x = center.x
+                    bird.y = center.y
+
+                    const options =
+                        getAvailableDirections(
+                            bird
+                        )
+
+                    if (
+                        options.length > 0
+                    ) {
+                        bird.direction =
+                            chooseGhostDirection(
+                                bird,
+                                options,
+                                vulnerable
+                            )
+                    }
+                }
+
+                const direction =
+                    DIRECTIONS[
+                        bird.direction
+                    ]
+
+                if (!direction) {
+                    return
+                }
+
+                const nextX =
+                    bird.x +
+                    direction.x *
+                    movement
+
+                const nextY =
+                    bird.y +
+                    direction.y *
+                    movement
+
+                if (
+                    canOccupyPixel(
+                        nextX,
+                        nextY,
+                        bird.radius
+                    )
+                ) {
+                    bird.x = nextX
+                    bird.y = nextY
+                } else {
+                    snapToCenter(bird)
+
+                    const options =
+                        getAvailableDirections(
+                            bird
+                        )
+
+                    if (
+                        options.length > 0
+                    ) {
+                        bird.direction =
+                            chooseGhostDirection(
+                                bird,
+                                options,
+                                vulnerable
+                            )
+                    }
+                }
+            })
+        }
+
+        function getAvailableDirections(
+            entity
+        ) {
+            const tile =
+                tileAtPixel(
+                    entity.x,
+                    entity.y
+                )
+
+            let options =
+                Object.keys(
+                    DIRECTIONS
+                ).filter(
+                    direction =>
+                        canMoveFromTile(
+                            tile.x,
+                            tile.y,
+                            direction
+                        )
+                )
+
+            const reverse =
+                oppositeDirection(
+                    entity.direction
+                )
+
+            const nonReverse =
+                options.filter(
+                    direction =>
+                        direction !== reverse
+                )
+
+            if (
+                nonReverse.length > 0
+            ) {
+                options = nonReverse
+            }
+
+            return options
+        }
+
+        function chooseGhostDirection(
+            ghost,
+            directions,
+            vulnerable
+        ) {
+            if (
+                directions.length === 1
+            ) {
+                return directions[0]
+            }
+
+            if (
+                Math.random() < 0.28
+            ) {
+                return directions[
+                    Math.floor(
+                        Math.random() *
+                        directions.length
+                    )
+                ]
+            }
+
+            let bestDirection =
+                directions[0]
+
+            let bestDistance =
+                vulnerable
+                    ? -Infinity
+                    : Infinity
+
+            directions.forEach(
+                directionName => {
+                    const direction =
+                        DIRECTIONS[
+                            directionName
+                        ]
+
+                    const testX =
+                        ghost.x +
+                        direction.x *
+                        TILE_SIZE
+
+                    const testY =
+                        ghost.y +
+                        direction.y *
+                        TILE_SIZE
+
+                    const distance =
+                        Math.hypot(
+                            state.player.x -
+                            testX,
+
+                            state.player.y -
+                            testY
+                        )
+
+                    if (
+                        (
+                            !vulnerable &&
+                            distance <
+                            bestDistance
+                        ) ||
+                        (
+                            vulnerable &&
+                            distance >
+                            bestDistance
+                        )
+                    ) {
+                        bestDistance =
+                            distance
+
+                        bestDirection =
+                            directionName
+                    }
+                }
+            )
+
+            return bestDirection
+        }
+
+        function oppositeDirection(
+            direction
+        ) {
+            const opposite = {
+                left: 'right',
+                right: 'left',
+                up: 'down',
+                down: 'up'
+            }
+
+            return opposite[direction]
+        }
+
+        function checkClueCollision() {
+            clues.forEach(clue => {
+                if (clue.collected) {
+                    return
+                }
+
+                const center =
+                    tileCenter(
+                        clue.x,
+                        clue.y
+                    )
+
+                if (
+                    Math.hypot(
+                        state.player.x -
+                        center.x,
+
+                        state.player.y -
+                        center.y
+                    ) < 21
+                ) {
+                    clue.collected = true
+                    state.cluesCollected++
+                    state.score += 100
+
+                    addConsole(
+                        'success',
+                        `Clue collected: ${clue.text}`
+                    )
+                }
+            })
+        }
+
+        function checkPowerCollision() {
+            powerPellets.forEach(
+                power => {
+                    if (
+                        power.collected
+                    ) {
+                        return
+                    }
+
+                    const center =
+                        tileCenter(
+                            power.x,
+                            power.y
+                        )
+
+                    if (
+                        Math.hypot(
+                            state.player.x -
+                            center.x,
+
+                            state.player.y -
+                            center.y
+                        ) < 22
+                    ) {
+                        power.collected = true
+
+                        state.powerUntil =
+                            Date.now() +
+                            7000
+
+                        state.score += 50
+
+                        addConsole(
+                            'hint',
+                            'Power mode active. Security birds are temporarily vulnerable.'
+                        )
+                    }
+                }
+            )
+        }
+
+        function checkGhostCollisions() {
+            if (
+                Date.now() <
+                state.collisionLockedUntil
+            ) {
+                return
+            }
+
+            for (
+                const ghost of ghosts
+            ) {
+                const collision =
+                    Math.hypot(
+                        state.player.x -
+                        ghost.x,
+
+                        state.player.y -
+                        ghost.y
+                    ) <
+                    state.player.radius +
+                    ghost.radius -
+                    3
+
+                if (!collision) {
+                    continue
+                }
+
+                if (
+                    Date.now() <
+                    state.powerUntil
+                ) {
+                    resetGhost(ghost)
+                    state.score += 200
+
+                    addConsole(
+                        'success',
+                        `${ghost.name} disabled.`
+                    )
+                } else {
+                    loseLife()
+                    break
+                }
+            }
+        }
+
+        function resetGhost(ghost) {
+            ghost.x = ghost.homeX
+            ghost.y = ghost.homeY
+
+            const options =
+                getAvailableDirections(
+                    ghost
+                )
+
+            ghost.direction =
+                options.length > 0
+                    ? options[
+                        Math.floor(
+                            Math.random() *
+                            options.length
+                        )
+                    ]
+                    : 'left'
+        }
+
+        function loseLife() {
+            HackoAudio.play("wrong");
+            if (state.gameOver) {
+                return
+            }
+
+            state.lives--
+
+            if (state.lives <= 0) {
+                explodeBomb(
+                    'Hacko was caught by the security birds.'
+                )
+
+                return
+            }
+
+            state.collisionLockedUntil =
+                Date.now() + 1800
+
+            resetPlayerPosition()
+
+            ghosts.forEach(
+                (ghost, index) => {
+                    const start =
+                        BIRD_STARTS[index]
+
+                    ghost.x =
+                        start.x *
+                        TILE_SIZE +
+                        TILE_SIZE / 2
+
+                    ghost.y =
+                        start.y *
+                        TILE_SIZE +
+                        TILE_SIZE / 2
+
+                    ghost.direction =
+                        [
+                            'left',
+                            'right',
+                            'up',
+                            'down'
+                        ][index % 4]
+                }
+            )
+
+            addConsole(
+                'error',
+                `Hacko lost a life. ${state.lives} remaining.`
+            )
+        }
+
+        function canOpenBomb() {
+            return (
+                state.cluesCollected >=
+                currentLevel().requiredClues
+            )
+        }
+
+        function nearBomb() {
+            const bombCenter =
+                tileCenter(
+                    BOMB_POSITION.x,
+                    BOMB_POSITION.y
+                )
+
+            return (
+                Math.hypot(
+                    state.player.x -
+                    bombCenter.x,
+
+                    state.player.y -
+                    bombCenter.y
+                ) <
+                TILE_SIZE * 1.25
+            )
+        }
+
+        function openBombModal() {
+            const commandInput =
+                document.getElementById(
+                    'commandInput'
+                )
+
+            commandInput.blur()
+
+            if (
+                state.gameOver ||
+                state.gameWon
+            ) {
+                return
+            }
+
+            if (!nearBomb()) {
+                addConsole(
+                    'hint',
+                    'Hacko must be beside the bomb chamber.'
+                )
+
+                return
+            }
+
+            if (!canOpenBomb()) {
+                addConsole(
+                    'error',
+                    `Collect ${currentLevel().requiredClues} required clues first.`
+                )
+
+                return
+            }
+
+            state.bombOpen = true
+            selectedWire = null
+
+            document.getElementById(
+                'bombSubtitle'
+            ).textContent =
+                `${formatTime(state.timeRemaining)} remaining`
+
+            const collectedClues =
+                clues
+                    .filter(
+                        clue =>
+                            clue.collected
+                    )
+                    .map(
+                        clue =>
+                            clue.text
+                    )
+                    .join('<br>')
+
+            document.getElementById(
+                'conditionBox'
+            ).innerHTML = `
+                <strong>Scenario</strong><br>
+                ${currentLevel().scenario}
+
+                <br><br>
+
+                <strong>Collected clues</strong><br>
+                ${collectedClues || 'No clues collected'}
+            `
+
+            renderWires()
+            updateCodePreview()
+
+            document
+                .getElementById(
+                    'bombModal'
+                )
+                .classList.add(
+                    'visible'
+                )
+        }
+
+        function closeBombModal() {
+            state.bombOpen = false
+
+            document
+                .getElementById(
+                    'bombModal'
+                )
+                .classList.remove(
+                    'visible'
+                )
+        }
+
+        function renderWires() {
+            const grid =
+                document.getElementById(
+                    'wireGrid'
+                )
+
+            grid.innerHTML = ''
+
+            currentLevel().wires.forEach(
+                color => {
+                    const button =
+                        document.createElement(
+                            'button'
+                        )
+
+                    button.type = 'button'
+
+                    button.className =
+                        `wire ${color}`
+
+                    button.textContent =
+                        `${color.toUpperCase()} WIRE`
+
+                    button.onclick = () => {
+                        selectedWire = color
+
+                        document
+                            .querySelectorAll(
+                                '.wire'
+                            )
+                            .forEach(
+                                wire =>
+                                    wire.classList
+                                        .remove(
+                                            'selected'
+                                        )
+                            )
+
+                        button.classList.add(
+                            'selected'
+                        )
+
+                        updateCodePreview()
+                    }
+
+                    grid.appendChild(
+                        button
+                    )
+                }
+            )
+        }
+
+        function updateCodePreview() {
+            const level =
+                currentLevel()
+
+            const selected =
+                selectedWire
+                    ? `cutWire("${selectedWire.toUpperCase()}");`
+                    : '???'
+
+            if (level.customCode) {
+                document.getElementById(
+                    'codePreview'
+                ).textContent =
+`${level.variables}
+
+${level.customCode}
+
+// Hacko selected:
+${selected}`
+
+                return
+            }
+
+            document.getElementById(
+                'codePreview'
+            ).textContent =
+`${level.variables}
+
+if (${level.condition}) {
+    cutWire("${level.trueWire.toUpperCase()}");
+} else {
+    cutWire("${level.falseWire.toUpperCase()}");
+}
+
+// Hacko selected:
+${selected}`
+        }
+
+        function attemptDefuse() {
+            if (!selectedWire) {
+                addConsole(
+                    'error',
+                    'Select a wire first.'
+                )
+
+                return
+            }
+
+            if (
+                selectedWire ===
+                currentLevel().correctWire
+            ) {
+                HackoAudio.play("correct")
+                defuseBomb()
+                return
+            }
+
+            HackoAudio.play("wrong")
+
+            state.timeRemaining =
+                Math.max(
+                    1,
+                    state.timeRemaining -
+                    currentLevel().wrongPenalty
+                )
+
+            addConsole(
+                'error',
+                `Incorrect branch. ${currentLevel().wrongPenalty} seconds removed.`
+            )
+
+            closeBombModal()
+
+            if (
+                state.timeRemaining <= 1
+            ) {
+                explodeBomb(
+                    'The wrong wire triggered the final countdown.'
+                )
+            }
+        }
+
+        function defuseBomb() {
+            state.bombDefused = true
+            state.gameWon = true
+
+            clearInterval(
+                timerInterval
+            )
+
+            cancelAnimationFrame(
+                animationFrame
+            )
+
+            closeBombModal()
+
+            saveProgress(
+                currentLevel().id
+            )
+
+            document.getElementById(
+                'winTitle'
+            ).textContent =
+                currentLevel().id === 10
+                    ? 'ALL SYSTEMS SAVED'
+                    : `LEVEL ${currentLevel().id} COMPLETE`
+
+            document.getElementById(
+                'winSubtitle'
+            ).textContent =
+                `Bomb defused with ${formatTime(state.timeRemaining)} remaining.`
+
+            document.getElementById(
+                'resultBox'
+            ).textContent =
+                `CORRECT WIRE: ${currentLevel().correctWire.toUpperCase()}`
+
+            document.getElementById(
+                'summaryBox'
+            ).innerHTML =
+                `<strong>Conditional explanation:</strong><br><br>${currentLevel().summary}`
+
+            document.getElementById(
+                'nextButton'
+            ).style.display =
+                currentLevel().id === 10
+                    ? 'none'
+                    : 'inline-block'
+
+            document
+                .getElementById(
+                    'winModal'
+                )
+                .classList.add(
+                    'visible'
+                )
+        }
+
+        function explodeBomb(reason) {
+            if (state.gameOver) {
+                return
+            }
+
+            state.gameOver = true
+            state.timeRemaining = 0
+
+            clearInterval(
+                timerInterval
+            )
+
+            cancelAnimationFrame(
+                animationFrame
+            )
+
+            closeBombModal()
+
+            document.body.classList.add(
+                'explosion'
+            )
+
+            setTimeout(() => {
+                document.body.classList.remove(
+                    'explosion'
+                )
+            }, 1600)
+
+            document.getElementById(
+                'gameOverReason'
+            ).textContent = reason
+
+            document
+                .getElementById(
+                    'gameOverModal'
+                )
+                .classList.add(
+                    'visible'
+                )
+
+            updateUI()
+        }
+
+        function draw() {
+            ctx.clearRect(
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            )
+
+            drawMaze()
+            drawPowerPellets()
+            drawClues()
+            drawBomb()
+            drawGhosts()
+            drawPlayer()
+        }
+
+        function drawMaze() {
+            ctx.fillStyle = '#000'
+
+            ctx.fillRect(
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            )
+
+            for (
+                let y = 0;
+                y < ROWS;
+                y++
+            ) {
+                for (
+                    let x = 0;
+                    x < COLS;
+                    x++
+                ) {
+                    const pixelX =
+                        x * TILE_SIZE
+
+                    const pixelY =
+                        y * TILE_SIZE
+
+                    if (
+                        maze[y][x] ===
+                        TILE.WALL
+                    ) {
+                        ctx.fillStyle =
+                            '#071c58'
+
+                        ctx.fillRect(
+                            pixelX + 3,
+                            pixelY + 3,
+                            TILE_SIZE - 6,
+                            TILE_SIZE - 6
+                        )
+
+                        ctx.strokeStyle =
+                            '#1e70ff'
+
+                        ctx.lineWidth = 3
+
+                        ctx.strokeRect(
+                            pixelX + 5,
+                            pixelY + 5,
+                            TILE_SIZE - 10,
+                            TILE_SIZE - 10
+                        )
+
+                        ctx.strokeStyle =
+                            'rgba(0,229,255,0.45)'
+
+                        ctx.lineWidth = 1
+
+                        ctx.strokeRect(
+                            pixelX + 9,
+                            pixelY + 9,
+                            TILE_SIZE - 18,
+                            TILE_SIZE - 18
+                        )
+                    }
+                }
+            }
+        }
+
+        function drawPowerPellets() {
+            powerPellets.forEach(
+                power => {
+                    if (
+                        power.collected
+                    ) {
+                        return
+                    }
+
+                    const pulse =
+                        7 +
+                        Math.sin(
+                            Date.now() /
+                            120
+                        ) * 2
+
+                    const center =
+                        tileCenter(
+                            power.x,
+                            power.y
+                        )
+
+                    ctx.save()
+                    ctx.shadowBlur = 18
+                    ctx.shadowColor = '#fff'
+                    ctx.fillStyle = '#fff'
+
+                    ctx.beginPath()
+
+                    ctx.arc(
+                        center.x,
+                        center.y,
+                        pulse,
+                        0,
+                        Math.PI * 2
+                    )
+
+                    ctx.fill()
+                    ctx.restore()
+                }
+            )
+        }
+
+        function drawClues() {
+            clues.forEach(clue => {
+                if (clue.collected) {
+                    return
+                }
+
+                const center =
+                    tileCenter(
+                        clue.x,
+                        clue.y
+                    )
+
+                ctx.save()
+                ctx.shadowBlur = 20
+                ctx.shadowColor =
+                    '#ffe600'
+                ctx.fillStyle =
+                    '#ffe600'
+
+                ctx.beginPath()
+
+                ctx.arc(
+                    center.x,
+                    center.y,
+                    13,
+                    0,
+                    Math.PI * 2
+                )
+
+                ctx.fill()
+
+                ctx.fillStyle =
+                    '#0b0b00'
+
+                ctx.font =
+                    'bold 15px Orbitron'
+
+                ctx.textAlign =
+                    'center'
+
+                ctx.textBaseline =
+                    'middle'
+
+                ctx.fillText(
+                    '?',
+                    center.x,
+                    center.y
+                )
+
+                ctx.restore()
+            })
+        }
+
+        function drawBomb() {
+            const center =
+                tileCenter(
+                    BOMB_POSITION.x,
+                    BOMB_POSITION.y
+                )
+
+            ctx.save()
+            ctx.shadowBlur = 30
+
+            ctx.shadowColor =
+                state.bombDefused
+                    ? '#00ff88'
+                    : '#ff3158'
+
+            ctx.fillStyle =
+                state.bombDefused
+                    ? '#00ff88'
+                    : '#ff3158'
+
+            ctx.beginPath()
+
+            ctx.arc(
+                center.x,
+                center.y,
+                20,
+                0,
+                Math.PI * 2
+            )
+
+            ctx.fill()
+
+            ctx.fillStyle = '#0c0c0c'
+
+            ctx.fillRect(
+                center.x - 14,
+                center.y - 8,
+                28,
+                16
+            )
+
+            ctx.fillStyle =
+                state.bombDefused
+                    ? '#00ff88'
+                    : '#ffe600'
+
+            ctx.font =
+                'bold 9px Orbitron'
+
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+
+            ctx.fillText(
+                state.bombDefused
+                    ? 'SAFE'
+                    : 'BOMB',
+                center.x,
+                center.y
+            )
+
+            ctx.restore()
+        }
+
+        function lightenColor(hex, amount) {
+            const clean =
+                hex.replace('#', '')
+
+            const number =
+                parseInt(clean, 16)
+
+            const red =
+                Math.min(
+                    255,
+                    (number >> 16) + amount
+                )
+
+            const green =
+                Math.min(
+                    255,
+                    ((number >> 8) & 0x00ff) +
+                        amount
+                )
+
+            const blue =
+                Math.min(
+                    255,
+                    (number & 0x0000ff) +
+                        amount
+                )
+
+            return (
+                '#' +
+                (
+                    blue |
+                    (green << 8) |
+                    (red << 16)
+                )
+                    .toString(16)
+                    .padStart(6, '0')
+            )
+        }
+
+        function drawGhosts() {
+            ghosts.forEach(bird => {
+                const vulnerable =
+                    Date.now() <
+                    state.powerUntil
+
+                const bodyColor =
+                    vulnerable
+                        ? '#2846ff'
+                        : bird.color
+
+                const flap =
+                    Math.sin(
+                        Date.now() / 100 +
+                        bird.x
+                    ) * 5
+
+                const facingLeft =
+                    bird.direction === 'left'
+
+                ctx.save()
+
+                ctx.translate(
+                    bird.x,
+                    bird.y
+                )
+
+                if (facingLeft) {
+                    ctx.scale(-1, 1)
+                }
+
+                ctx.shadowBlur = 18
+                ctx.shadowColor = bodyColor
+                ctx.fillStyle = bodyColor
+
+                ctx.beginPath()
+                ctx.moveTo(-12, 5)
+                ctx.lineTo(-25, -3)
+                ctx.lineTo(-20, 9)
+                ctx.lineTo(-27, 15)
+                ctx.lineTo(-10, 13)
+                ctx.closePath()
+                ctx.fill()
+
+                ctx.beginPath()
+                ctx.ellipse(
+                    0,
+                    3,
+                    17,
+                    13,
+                    0,
+                    0,
+                    Math.PI * 2
+                )
+                ctx.fill()
+
+                ctx.beginPath()
+                ctx.arc(
+                    11,
+                    -8,
+                    11,
+                    0,
+                    Math.PI * 2
+                )
+                ctx.fill()
+
+                ctx.fillStyle =
+                    vulnerable
+                        ? '#7990ff'
+                        : lightenColor(
+                            bird.color,
+                            35
+                        )
+
+                ctx.beginPath()
+                ctx.ellipse(
+                    -3,
+                    3 + flap * 0.15,
+                    12,
+                    7,
+                    -0.35,
+                    0,
+                    Math.PI * 2
+                )
+                ctx.fill()
+
+                ctx.fillStyle = '#ffe600'
+
+                ctx.beginPath()
+                ctx.moveTo(20, -8)
+                ctx.lineTo(31, -3)
+                ctx.lineTo(20, 1)
+                ctx.closePath()
+                ctx.fill()
+
+                ctx.fillStyle = '#ffffff'
+
+                ctx.beginPath()
+                ctx.arc(
+                    14,
+                    -11,
+                    4.5,
+                    0,
+                    Math.PI * 2
+                )
+                ctx.fill()
+
+                ctx.fillStyle = '#101010'
+
+                ctx.beginPath()
+                ctx.arc(
+                    16,
+                    -11,
+                    2,
+                    0,
+                    Math.PI * 2
+                )
+                ctx.fill()
+
+                ctx.strokeStyle = '#ffe600'
+                ctx.lineWidth = 2
+
+                ctx.beginPath()
+                ctx.moveTo(-2, 14)
+                ctx.lineTo(-2, 20)
+                ctx.moveTo(7, 14)
+                ctx.lineTo(7, 20)
+                ctx.stroke()
+
+                ctx.restore()
+            })
+        }
+
+        function drawPlayer() {
+            ctx.save()
+            ctx.shadowBlur = 22
+            ctx.shadowColor = '#ffe600'
+
+            if (
+                playerImage.complete &&
+                playerImage.naturalWidth > 0
+            ) {
+                ctx.drawImage(
+                    playerImage,
+                    state.player.x - 19,
+                    state.player.y - 21,
+                    38,
+                    42
+                )
+            } else {
+                const angle =
+                    Math.sin(
+                        Date.now() / 75
+                    ) * 0.18 + 0.25
+
+                const rotation = {
+                    right: 0,
+                    down:
+                        Math.PI / 2,
+                    left:
+                        Math.PI,
+                    up:
+                        -Math.PI / 2
+                }[
+                    state.player.direction
+                ]
+
+                ctx.translate(
+                    state.player.x,
+                    state.player.y
+                )
+
+                ctx.rotate(rotation)
+
+                ctx.fillStyle =
+                    '#ffe600'
+
+                ctx.beginPath()
+
+                ctx.arc(
+                    0,
+                    0,
+                    state.player.radius,
+                    angle,
+                    Math.PI * 2 -
+                    angle
+                )
+
+                ctx.lineTo(0, 0)
+                ctx.closePath()
+                ctx.fill()
+
+                ctx.fillStyle = '#111'
+
+                ctx.font =
+                    'bold 8px Orbitron'
+
+                ctx.textAlign =
+                    'center'
+
+                ctx.textBaseline =
+                    'middle'
+
+                ctx.fillText(
+                    'H',
+                    -3,
+                    0
+                )
+            }
+
+            ctx.restore()
+        }
+
+        function updateUI() {
+            const level =
+                currentLevel()
+
+            document.getElementById(
+                'conceptText'
+            ).textContent =
+                `Programming Concept: ${level.concept}`
+
+            document.getElementById(
+                'levelTextTop'
+            ).textContent =
+                `LEVEL ${level.id} / 10 • ${level.difficulty}`
+
+            document.getElementById(
+                'missionName'
+            ).textContent =
+                `LEVEL ${level.id}: ${level.name}`
+
+            document.getElementById(
+                'missionDescription'
+            ).textContent =
+                level.description
+
+            document.getElementById(
+                'conceptBox'
+            ).textContent =
+                level.lesson
+
+            document.getElementById(
+                'scenarioBox'
+            ).textContent =
+                level.scenario
+
+            document.getElementById(
+                'hudLevel'
+            ).textContent =
+                `${level.id} / 10`
+
+            document.getElementById(
+                'timerText'
+            ).textContent =
+                formatTime(
+                    state.timeRemaining
+                )
+
+            document.getElementById(
+                'timerCard'
+            ).classList.toggle(
+                'warning',
+                state.timeRemaining <= 30
+            )
+
+            document.getElementById(
+                'livesText'
+            ).textContent =
+                state.lives
+
+            document.getElementById(
+                'clueText'
+            ).textContent =
+                `${state.cluesCollected} / ${level.requiredClues}`
+
+            const bombText =
+                document.getElementById(
+                    'bombText'
+                )
+
+            bombText.textContent =
+                state.bombDefused
+                    ? 'SAFE'
+                    : 'ARMED'
+
+            bombText.style.color =
+                state.bombDefused
+                    ? '#00ff88'
+                    : '#ff3158'
+
+            updateObjective()
+            updateTasks()
+            updateClueList()
+            updateZoneName()
+        }
+
+        function updateObjective() {
+            const objective =
+                document.getElementById(
+                    'objectiveText'
+                )
+
+            if (state.bombDefused) {
+                objective.textContent =
+                    'Bomb successfully defused.'
+
+                return
+            }
+
+            if (!canOpenBomb()) {
+                objective.textContent =
+                    `Collect ${currentLevel().requiredClues} required clues.`
+
+                return
+            }
+
+            objective.textContent =
+                'Reach the bomb chamber and press E or tap the yellow action button.'
+        }
+
+        function updateTasks() {
+            const tasks = [
+                {
+                    label:
+                        `Collect ${currentLevel().requiredClues} clues`,
+
+                    done:
+                        state.cluesCollected >=
+                        currentLevel()
+                            .requiredClues
+                },
+
+                {
+                    label:
+                        'Reach bomb chamber',
+
+                    done:
+                        nearBomb() ||
+                        state.bombDefused
+                },
+
+                {
+                    label:
+                        'Choose correct conditional branch',
+
+                    done:
+                        state.bombDefused
+                }
+            ]
+
+            const container =
+                document.getElementById(
+                    'taskList'
+                )
+
+            container.innerHTML = ''
+
+            tasks.forEach(task => {
+                const row =
+                    document.createElement(
+                        'div'
+                    )
+
+                row.className =
+                    `task${task.done ? ' done' : ''}`
+
+                row.innerHTML = `
+                    <span>${task.label}</span>
+                    <strong>${task.done ? '✓' : '○'}</strong>
+                `
+
+                container.appendChild(
+                    row
+                )
+            })
+        }
+
+        function updateClueList() {
+            const container =
+                document.getElementById(
+                    'clueList'
+                )
+
+            container.innerHTML = ''
+
+            clues.forEach(
+                (clue, index) => {
+                    const item =
+                        document.createElement(
+                            'div'
+                        )
+
+                    item.className =
+                        `clue-item${clue.collected ? '' : ' locked'}`
+
+                    item.innerHTML =
+                        clue.collected
+                            ? `
+                                <strong>Clue ${index + 1}</strong><br>
+                                ${clue.text}
+                            `
+                            : `
+                                <strong>Clue ${index + 1}</strong><br>
+                                Not collected
+                            `
+
+                    container.appendChild(
+                        item
+                    )
+                }
+            )
+        }
+
+        function updateZoneName() {
+            const tile =
+                tileAtPixel(
+                    state.player.x,
+                    state.player.y
+                )
+
+            let name =
+                'Logic Tunnel'
+
+            if (
+                tile.y <= 3 &&
+                tile.x <= 6
+            ) {
+                name =
+                    'Entry Tunnel'
+            } else if (
+                tile.y <= 3
+            ) {
+                name =
+                    'Condition Arcade'
+            } else if (
+                tile.y <= 7 &&
+                tile.x <= 6
+            ) {
+                name =
+                    'Logic Circuit'
+            } else if (
+                tile.y <= 7
+            ) {
+                name =
+                    'Bird Core'
+            } else if (
+                tile.x < 8
+            ) {
+                name =
+                    'Else Passage'
+            } else {
+                name =
+                    'Bomb Sector'
+            }
+
+            document.getElementById(
+                'zoneName'
+            ).textContent = name
+        }
+
+        function formatTime(seconds) {
+            const safeSeconds =
+                Math.max(0, seconds)
+
+            const minutes =
+                Math.floor(
+                    safeSeconds / 60
+                )
+
+            const remaining =
+                safeSeconds % 60
+
+            return (
+                `${String(minutes).padStart(2, '0')}:` +
+                `${String(remaining).padStart(2, '0')}`
+            )
+        }
+
+        function addConsole(type, text) {
+            const container =
+                document.getElementById(
+                    'console'
+                )
+
+            const message =
+                document.createElement(
+                    'div'
+                )
+
+            message.className =
+                `console-message ${type}`
+
+            message.textContent = text
+
+            container.appendChild(
+                message
+            )
+
+            container.scrollTop =
+                container.scrollHeight
+        }
+
+        function clearConsole() {
+            document.getElementById(
+                'console'
+            ).innerHTML = ''
+        }
+
+        function processCommand() {
+            const input =
+                document.getElementById(
+                    'commandInput'
+                )
+
+            const command =
+                input.value
+                    .trim()
+                    .toLowerCase()
+
+            if (!command) {
+                return
+            }
+
+            input.value = ''
+
+            switch (command) {
+                case 'help':
+                    addConsole(
+                        'system',
+                        'COMMANDS:\nhelp\nstatus\nclues\nbomb\nrestart'
+                    )
+                    break
+
+                case 'status':
+                    addConsole(
+                        'system',
+                        `Level: ${currentLevel().id}/10\nTimer: ${formatTime(state.timeRemaining)}\nLives: ${state.lives}\nClues: ${state.cluesCollected}/${currentLevel().requiredClues}`
+                    )
+                    break
+
+                case 'clues':
+                    addConsole(
+                        'system',
+                        clues
+                            .filter(
+                                clue =>
+                                    clue.collected
+                            )
+                            .map(
+                                (
+                                    clue,
+                                    index
+                                ) =>
+                                    `${index + 1}. ${clue.text}`
+                            )
+                            .join('\n') ||
+                        'No clues collected.'
+                    )
+                    break
+
+                case 'bomb':
+                    openBombModal()
+                    break
+
+                case 'restart':
+                    restartLevel()
+                    break
+
+                default:
+                    addConsole(
+                        'error',
+                        "Unknown command. Type 'help'."
+                    )
+            }
+        }
+
+        function restartLevel() {
+            loadLevel(
+                currentLevelIndex
+            )
+        }
+
+        function nextLevel() {
+            /* tell the mission map this level is cleared */
+            if (window.HackoStore) {
+                HackoStore.completeLevel(3, currentLevelIndex, 100);
+            }
+
+            HackoAudio.play("win");
+            if (
+                currentLevelIndex <
+                LEVELS.length - 1
+            ) {
+                loadLevel(
+                    currentLevelIndex + 1
+                )
+            } else {
+                openLevelSelectFromWin()
+            }
+        }
+
+        function openLevelSelect() {
+            document
+                .getElementById(
+                    'commandInput'
+                )
+                .blur()
+
+            renderLevelSelect()
+
+            document
+                .getElementById(
+                    'levelModal'
+                )
+                .classList.add(
+                    'visible'
+                )
+        }
+
+        function renderLevelSelect() {
+            const progress =
+                getProgress()
+
+            const grid =
+                document.getElementById(
+                    'levelGrid'
+                )
+
+            grid.innerHTML = ''
+
+            LEVELS.forEach(
+                (level, index) => {
+                    const unlocked =
+                        level.id <=
+                        progress.unlockedLevel
+
+                    const complete =
+                        progress
+                            .completedLevels
+                            .includes(
+                                level.id
+                            )
+
+                    const card =
+                        document.createElement(
+                            'div'
+                        )
+
+                    card.className =
+                        'level-card ' +
+                        (
+                            unlocked
+                                ? 'unlocked'
+                                : 'locked'
+                        ) +
+                        (
+                            complete
+                                ? ' complete'
+                                : ''
+                        )
+
+                    card.innerHTML = `
+                        <div class="level-number">
+                            ${complete ? '✓ ' : ''}${level.id}
+                        </div>
+
+                        <div class="level-name">
+                            ${level.name}
+                        </div>
+
+                        <div class="difficulty">
+                            ${level.difficulty}
+                        </div>
+                    `
+
+                    if (unlocked) {
+                        card.onclick =
+                            () => {
+                                closeLevelSelect()
+
+                                loadLevel(
+                                    index
+                                )
+                            }
+                    }
+
+                    grid.appendChild(
+                        card
+                    )
+                }
+            )
+        }
+
+        function closeLevelSelect() {
+            document
+                .getElementById(
+                    'levelModal'
+                )
+                .classList.remove(
+                    'visible'
+                )
+        }
+
+        function resetProgress() {
+            localStorage.removeItem(
+                'hackoPacConditionalProgress'
+            )
+
+            renderLevelSelect()
+        }
+
+        function openHelp() {
+            document
+                .getElementById(
+                    'commandInput'
+                )
+                .blur()
+
+            document
+                .getElementById(
+                    'helpModal'
+                )
+                .classList.add(
+                    'visible'
+                )
+        }
+
+        function closeHelp() {
+            document
+                .getElementById(
+                    'helpModal'
+                )
+                .classList.remove(
+                    'visible'
+                )
+        }
+
+        function openLevelSelectFromWin() {
+            document
+                .getElementById(
+                    'winModal'
+                )
+                .classList.remove(
+                    'visible'
+                )
+
+            openLevelSelect()
+        }
+
+        function openLevelSelectFromGameOver() {
+            document
+                .getElementById(
+                    'gameOverModal'
+                )
+                .classList.remove(
+                    'visible'
+                )
+
+            openLevelSelect()
+        }
+
+        function hideModals() {
+            document
+                .querySelectorAll(
+                    '.modal'
+                )
+                .forEach(
+                    modal =>
+                        modal
+                            .classList
+                            .remove(
+                                'visible'
+                            )
+                )
+        }
+
+        function isAnyModalOpen() {
+            return Boolean(
+                document.querySelector(
+                    '.modal.visible'
+                )
+            )
+        }
+
+        function setDirection(
+            directionName
+        ) {
+            if (
+                !DIRECTIONS[
+                    directionName
+                ]
+            ) {
+                return
+            }
+
+            state.player.nextDirection =
+                directionName
+        }
+
+        function handleDirectionInput(direction) {
+            if (
+                isAnyModalOpen() ||
+                state.gameOver ||
+                state.gameWon
+            ) {
+                return
+            }
+
+            document
+                .getElementById(
+                    'commandInput'
+                )
+                .blur()
+
+            setDirection(direction)
+        }
+
+        function bindControllerButtons() {
+            if (controllerBound) {
+                return
+            }
+
+            controllerBound = true
+
+            const directionButtons =
+                document.querySelectorAll(
+                    '.control-button[data-direction]'
+                )
+
+            directionButtons.forEach(button => {
+                const activate =
+                    event => {
+                        event.preventDefault()
+                        event.stopPropagation()
+
+                        handleDirectionInput(
+                            button.dataset.direction
+                        )
+
+                        button.classList.add(
+                            'pressed'
+                        )
+
+                        if (
+                            button.setPointerCapture &&
+                            event.pointerId !==
+                                undefined
+                        ) {
+                            try {
+                                button.setPointerCapture(
+                                    event.pointerId
+                                )
+                            } catch (error) {
+                                // Pointer capture is optional.
+                            }
+                        }
+                    }
+
+                const release =
+                    event => {
+                        if (event) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+
+                        button.classList.remove(
+                            'pressed'
+                        )
+                    }
+
+                button.addEventListener(
+                    'pointerdown',
+                    activate
+                )
+
+                button.addEventListener(
+                    'pointerup',
+                    release
+                )
+
+                button.addEventListener(
+                    'pointercancel',
+                    release
+                )
+
+                button.addEventListener(
+                    'lostpointercapture',
+                    release
+                )
+
+                button.addEventListener(
+                    'click',
+                    event => {
+                        event.preventDefault()
+                        event.stopPropagation()
+
+                        handleDirectionInput(
+                            button.dataset.direction
+                        )
+                    }
+                )
+
+                button.addEventListener(
+                    'touchstart',
+                    event => {
+                        event.preventDefault()
+
+                        handleDirectionInput(
+                            button.dataset.direction
+                        )
+
+                        button.classList.add(
+                            'pressed'
+                        )
+                    },
+                    {
+                        passive: false
+                    }
+                )
+
+                button.addEventListener(
+                    'touchend',
+                    event => {
+                        event.preventDefault()
+
+                        button.classList.remove(
+                            'pressed'
+                        )
+                    },
+                    {
+                        passive: false
+                    }
+                )
+            })
+
+            const actionButton =
+                document.getElementById(
+                    'actionButton'
+                )
+
+            const activateAction =
+                event => {
+                    event.preventDefault()
+                    event.stopPropagation()
+
+                    document
+                        .getElementById(
+                            'commandInput'
+                        )
+                        .blur()
+
+                    actionButton.classList.add(
+                        'pressed'
+                    )
+
+                    if (
+                        !isAnyModalOpen() &&
+                        !state.gameOver &&
+                        !state.gameWon
+                    ) {
+                        openBombModal()
+                    }
+                }
+
+            const releaseAction =
+                event => {
+                    if (event) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+
+                    actionButton.classList.remove(
+                        'pressed'
+                    )
+                }
+
+            actionButton.addEventListener(
+                'pointerdown',
+                activateAction
+            )
+
+            actionButton.addEventListener(
+                'pointerup',
+                releaseAction
+            )
+
+            actionButton.addEventListener(
+                'pointercancel',
+                releaseAction
+            )
+
+            actionButton.addEventListener(
+                'lostpointercapture',
+                releaseAction
+            )
+
+            actionButton.addEventListener(
+                'click',
+                event => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+            )
+
+            actionButton.addEventListener(
+                'touchstart',
+                activateAction,
+                {
+                    passive: false
+                }
+            )
+
+            actionButton.addEventListener(
+                'touchend',
+                releaseAction,
+                {
+                    passive: false
+                }
+            )
+        }
+
+        function bindEvents() {
+            if (eventsBound) {
+                return
+            }
+
+            eventsBound = true
+
+            document.addEventListener(
+                'keydown',
+                event => {
+                    const key =
+                        event.key.toLowerCase()
+
+                    const commandInput =
+                        document.getElementById(
+                            'commandInput'
+                        )
+
+                    const movementMap = {
+                        arrowleft:
+                            'left',
+                        a:
+                            'left',
+
+                        arrowright:
+                            'right',
+                        d:
+                            'right',
+
+                        arrowup:
+                            'up',
+                        w:
+                            'up',
+
+                        arrowdown:
+                            'down',
+                        s:
+                            'down'
+                    }
+
+                    const movementDirection =
+                        movementMap[key]
+
+                    if (
+                        movementDirection
+                    ) {
+                        event.preventDefault()
+
+                        handleDirectionInput(
+                            movementDirection
+                        )
+
+                        return
+                    }
+
+                    if (
+                        event.key ===
+                            'Enter' &&
+                        document.activeElement ===
+                            commandInput
+                    ) {
+                        event.preventDefault()
+                        processCommand()
+                        return
+                    }
+
+                    if (
+                        event.key ===
+                        'Escape'
+                    ) {
+                        commandInput.blur()
+                        closeBombModal()
+                        closeHelp()
+                        closeLevelSelect()
+                        return
+                    }
+
+                    if (key === 'e') {
+                        event.preventDefault()
+                        commandInput.blur()
+
+                        if (
+                            !isAnyModalOpen()
+                        ) {
+                            openBombModal()
+                        }
+                    }
+                }
+            )
+
+            canvas.addEventListener(
+                'pointerdown',
+                event => {
+                    event.preventDefault()
+
+                    document
+                        .getElementById(
+                            'commandInput'
+                        )
+                        .blur()
+                }
+            )
+        }
+
+        window.addEventListener(
+            'load',
+            initializeGame
+        )
+    
+/* =====================================================
+   RESUME + AUTOSAVE
+
+   Progress used to be written only when a level was
+   finished, and no page in the project listened for
+   pagehide or visibilitychange. Leaving mid-level threw
+   that level's work away - which is what the client meant
+   by "pag na back mawawala".
+
+   Every cleared level is now recorded as it happens, and
+   coming back drops the player at the start of the level
+   they had reached.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoStore || !HackoStore.isLoggedIn()) {
+        return;
+    }
+
+    HackoStore.registerTotalLevels(3, 10);
+
+    /* The jump has to happen AFTER the game has booted.
+       theescaperoom builds itself in window.onload, so doing
+       this at parse time meant its own loadLevel(0) ran
+       afterwards and silently sent the player back to level 1.
+       A load listener registered here fires after any onload
+       the page assigned earlier. */
+    function goToSavedLevel() {
+
+        var resume = HackoStore.getResumeLevel(3);
+
+        if (resume > 0 && resume < 10) {
+            try {
+                loadLevel(resume);
+            } catch (e) {
+                /* a game that cannot jump just starts at the top */
+            }
+        }
+    }
+
+    if (document.readyState === "complete") {
+        setTimeout(goToSavedLevel, 0);
+    } else {
+        window.addEventListener("load", function () {
+            setTimeout(goToSavedLevel, 0);
+        });
+    }
+
+    HackoStore.bindAutosave(function () {
+        try {
+            return { mission: 3, level: currentLevelIndex };
+        } catch (e) {
+            return null;
+        }
+    });
+
+}());
+
+/* =====================================================
+   SOUND LAYER
+
+   Sound used to fire only on a few discrete events, so a
+   game could sit in silence for long stretches. Every page
+   now carries a quiet background track and a visible
+   SOUND ON / SOUND OFF button, so a player can always tell
+   whether audio is working.
+
+   Browsers will not start audio until the player has
+   interacted, so the track is requested here and actually
+   begins on the first key press or click.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoAudio) {
+        return;
+    }
+
+    function begin() {
+        HackoAudio.music.play("defuse");
+        HackoAudio.mountToggle(document.body);
+        if (window.HackoStore) {
+            HackoStore.mountMapLink();
+        }
+    }
+
+    if (document.readyState === "complete") {
+        begin();
+    } else {
+        window.addEventListener("load", begin);
+    }
+
+}());
+</script>
+</body>
+</html>

@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HACKO Dashboard - The Coding Hero</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(
+                135deg,
+                #0a0e27 0%,
+                #1a1f3a 50%,
+                #0d1228 100%
+            );
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* =========================
+           BACKGROUND
+        ========================= */
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #00d4ff;
+            border-radius: 50%;
+            animation: float 15s infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.5;
+            }
+
+            90% {
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translateY(-100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .circuit-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(
+                    90deg,
+                    rgba(0,212,255,0.03) 1px,
+                    transparent 1px
+                ),
+                linear-gradient(
+                    rgba(0,212,255,0.03) 1px,
+                    transparent 1px
+                );
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* =========================
+           DASHBOARD
+        ========================= */
+
+        .dashboard {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(
+                135deg,
+                rgba(16,24,48,0.9) 0%,
+                rgba(10,14,39,0.95) 100%
+            );
+
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            box-shadow: 0 0 30px rgba(0,212,255,0.2);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+
+            background: linear-gradient(
+                135deg,
+                #ff6b00 0%,
+                #ff9900 100%
+            );
+
+            border-radius: 50%;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 30px;
+
+            border: 3px solid #00d4ff;
+
+            box-shadow:
+                0 0 20px rgba(0,212,255,0.5);
+        }
+
+        .user-details h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: #00d4ff;
+            margin-bottom: 5px;
+        }
+
+        .level-badge {
+            background: linear-gradient(
+                135deg,
+                #ffd700 0%,
+                #ffaa00 100%
+            );
+
+            color: #0a0e27;
+
+            padding: 5px 15px;
+            border-radius: 20px;
+
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8em;
+            color: #00d4ff;
+
+            text-shadow:
+                0 0 10px rgba(0,212,255,0.5);
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #8899aa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* =========================
+           BADGES
+        ========================= */
+
+        .badge-progression {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-direction: column;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .badge-progression:hover {
+            transform: scale(1.05);
+        }
+
+        .current-badge-img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+
+            filter:
+                drop-shadow(0 0 10px rgba(0,212,255,0.5));
+
+            animation: badgePulse 2s infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .badge-name {
+            font-size: 0.75em;
+            color: #ffd700;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .next-badge-preview {
+            font-size: 0.65em;
+            color: #00d4ff;
+            text-align: center;
+        }
+
+        /* =========================
+           REWARDS
+        ========================= */
+
+        .reward-system {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .reward-item {
+            background: rgba(0,212,255,0.1);
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+
+            padding: 8px 12px;
+
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            cursor: pointer;
+            transition: all 0.3s;
+
+            font-size: 0.9em;
+        }
+
+        .reward-item:hover {
+            background: rgba(0,212,255,0.2);
+
+            box-shadow:
+                0 0 15px rgba(0,212,255,0.3);
+
+            transform: scale(1.05);
+        }
+
+        .reward-icon {
+            font-size: 1.3em;
+        }
+
+        .reward-count {
+            font-weight: 700;
+            color: #ffd700;
+        }
+
+        /* =========================
+           LOGOUT
+        ========================= */
+
+        .logout-btn {
+            background: rgba(255,0,0,0.2);
+            border: 2px solid #ff4444;
+            color: #ff6666;
+
+            padding: 10px 25px;
+            border-radius: 8px;
+
+            cursor: pointer;
+
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,0,0,0.3);
+
+            box-shadow:
+                0 0 20px rgba(255,0,0,0.3);
+        }
+
+        /* =========================
+           MISSION MAP
+        ========================= */
+
+        .mission-map {
+            background: linear-gradient(
+                180deg,
+                rgba(135,206,235,0.1) 0%,
+                rgba(139,69,19,0.1) 100%
+            );
+
+            border-radius: 20px;
+            padding: 40px;
+
+            position: relative;
+            min-height: 800px;
+
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .map-title {
+            text-align: center;
+
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5em;
+
+            margin-bottom: 10px;
+
+            background: linear-gradient(
+                135deg,
+                #c0c0c0 0%,
+                #ffffff 50%,
+                #a0a0a0 100%
+            );
+
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .map-subtitle {
+            text-align: center;
+            color: #00d4ff;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .missions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            position: relative;
+        }
+
+        .mission-card {
+            background: linear-gradient(
+                145deg,
+                rgba(139,69,19,0.9) 0%,
+                rgba(101,67,33,0.95) 100%
+            );
+
+            border: 3px solid #8b4513;
+            border-radius: 15px;
+
+            padding: 20px;
+
+            position: relative;
+            cursor: pointer;
+
+            transition: all 0.3s;
+            overflow: hidden;
+        }
+
+        .mission-card:hover {
+            transform: translateY(-5px) scale(1.02);
+
+            box-shadow:
+                0 15px 40px rgba(0,0,0,0.4);
+
+            border-color: #00d4ff;
+        }
+
+        .mission-card.locked {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(0.8);
+        }
+
+        .mission-card.completed {
+            border-color: #00ff88;
+
+            box-shadow:
+                0 0 30px rgba(0,255,136,0.3);
+        }
+
+        .mission-card.active {
+            border-color: #ff6b00;
+
+            animation: missionPulse 2s infinite;
+
+            box-shadow:
+                0 0 30px rgba(255,107,0,0.4);
+        }
+
+        @keyframes missionPulse {
+            0%, 100% {
+                box-shadow:
+                    0 0 30px rgba(255,107,0,0.4);
+            }
+
+            50% {
+                box-shadow:
+                    0 0 50px rgba(255,107,0,0.6);
+            }
+        }
+
+        .mission-number {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+
+            background: linear-gradient(
+                135deg,
+                #ff6b00 0%,
+                #ff9900 100%
+            );
+
+            color: #0a0e27;
+
+            width: 40px;
+            height: 40px;
+
+            border-radius: 50%;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.2em;
+
+            border: 3px solid #fff;
+
+            box-shadow:
+                0 5px 15px rgba(0,0,0,0.3);
+
+            z-index: 10;
+        }
+
+        .mission-image {
+            width: 100%;
+            height: 120px;
+
+            background: linear-gradient(
+                135deg,
+                #2c3e50 0%,
+                #34495e 100%
+            );
+
+            border-radius: 10px;
+
+            margin-bottom: 15px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 60px;
+
+            border: 2px solid rgba(255,255,255,0.2);
+
+            overflow: hidden;
+        }
+
+        .mission-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+            display: block;
+        }
+
+        .mission-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1em;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .mission-topic {
+            font-size: 0.9em;
+            color: #aaa;
+
+            background: rgba(0,0,0,0.3);
+
+            padding: 5px 10px;
+            border-radius: 5px;
+
+            display: inline-block;
+        }
+
+        .mission-status {
+            position: absolute;
+
+            top: 10px;
+            right: 10px;
+
+            width: 30px;
+            height: 30px;
+
+            border-radius: 50%;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 16px;
+
+            z-index: 20;
+        }
+
+        .mission-status.locked {
+            background: #666;
+        }
+
+        .mission-status.active {
+            background: #ff6b00;
+            animation: spin 2s linear infinite;
+        }
+
+        .mission-status.completed {
+            background: #00ff88;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* =========================
+           SUCCESS ANIMATION
+        ========================= */
+
+        .success-animation {
+            display: none;
+
+            position: fixed;
+
+            top: 50%;
+            left: 50%;
+
+            transform: translate(-50%, -50%);
+
+            z-index: 2000;
+
+            text-align: center;
+
+            pointer-events: none;
+        }
+
+        .success-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3em;
+            color: #00ff88;
+
+            text-shadow:
+                0 0 30px rgba(0,255,136,0.8);
+
+            animation: successPop 0.5s ease-out;
+        }
+
+        @keyframes successPop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .confetti {
+            position: fixed;
+
+            width: 10px;
+            height: 10px;
+
+            background: #00ff88;
+
+            animation: confetti-fall 3s linear forwards;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* =========================
+           RESPONSIVE
+        ========================= */
+
+        @media (max-width: 1000px) {
+            .dashboard-header {
+                flex-wrap: wrap;
+                gap: 20px;
+            }
+
+            .missions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats-bar {
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .missions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard {
+                padding: 10px;
+            }
+
+            .mission-map {
+                padding: 20px;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+
+            .stats-bar {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .user-info {
+                flex-direction: column;
+            }
+
+            .map-title {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+
+<body data-username="">
+
+    <!-- =========================
+         BACKGROUND
+    ========================= -->
+
+    <div class="particles" id="particles"></div>
+    <div class="circuit-bg"></div>
+
+    <!-- =========================
+         DASHBOARD
+    ========================= -->
+
+    <div class="dashboard">
+
+        <div class="dashboard-header">
+
+            <div class="user-info">
+
+                <div class="user-avatar">
+                    ⚡
+                </div>
+
+                <div class="user-details">
+
+                    <h3 id="displayUsername">
+                        HACKO_WARRIOR
+                    </h3>
+
+                    <span class="level-badge">
+                        Level
+                        <span id="userLevel">1</span>
+                    </span>
+
+                </div>
+
+            </div>
+
+            <div class="stats-bar">
+
+                <!-- Badge -->
+
+                <div
+                    class="stat-item badge-progression"
+                    onclick="cycleBadge()"
+                    title="Click to view badges"
+                >
+
+                    <img
+                        id="currentBadgeImg"
+                        src="badge1.png"
+                        alt="Current Badge"
+                        class="current-badge-img"
+                    >
+
+                    <div
+                        class="badge-name"
+                        id="currentBadgeName"
+                    >
+                        Code Rookie
+                    </div>
+
+                    <div
+                        class="next-badge-preview"
+                        id="nextBadgePreview"
+                    >
+                        Next: Syntax Scout
+                    </div>
+
+                </div>
+
+                <!-- Missions -->
+
+                <div class="stat-item">
+
+                    <div
+                        class="stat-value"
+                        id="missionsCompleted"
+                    >
+                        0/10
+                    </div>
+
+                    <div class="stat-label">
+                        Missions
+                    </div>
+
+                </div>
+
+                <!-- Rewards -->
+
+                <div class="stat-item reward-system">
+
+                    <div
+                        class="reward-item"
+                        onclick="buyLife()"
+                        title="Buy Life - 50 XP"
+                    >
+
+                        <span class="reward-icon">
+                            ❤️
+                        </span>
+
+                        <span
+                            class="reward-count"
+                            id="lifeCount"
+                        >
+                            0
+                        </span>
+
+                    </div>
+
+                    <div
+                        class="reward-item"
+                        onclick="buyEnergy()"
+                        title="Buy Energy - 75 XP"
+                    >
+
+                        <span class="reward-icon">
+                            ⚡
+                        </span>
+
+                        <span
+                            class="reward-count"
+                            id="energyCount"
+                        >
+                            0
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <button
+                class="logout-btn"
+                onclick="logout()"
+            >
+                Abort Session
+            </button>
+
+        </div>
+
+        <!-- =========================
+             MISSION MAP
+        ========================= -->
+
+        <div class="mission-map">
+
+            <h2 class="map-title">
+                HACKO
+            </h2>
+
+            <p class="map-subtitle">
+                Mission Progression - Learn PHP Through Adventure
+            </p>
+
+            <div
+                class="missions-grid"
+                id="missionsGrid"
+            ></div>
+
+        </div>
+
+    </div>
+
+    <!-- =========================
+         SUCCESS
+    ========================= -->
+
+    <div
+        class="success-animation"
+        id="successAnim"
+    >
+        <div class="success-text">
+            MISSION COMPLETE! 🎉
+        </div>
+    </div>
+
+    <script>
+
+        /* =====================================================
+           MISSION DATA
+        ===================================================== */
+
+        const missions = [
+
+            {
+                id: 1,
+                title: "The Escape Room",
+                topic: "Variables & Data Types",
+                icon: "🚪",
+                color: "#8b4513",
+                file: "theescaperoom.php",
+                xp: 100
+            },
+
+            {
+                id: 2,
+                title: "The Secret Message",
+                topic: "Input / Output",
+                icon: "📨",
+                color: "#d2691e",
+                file: "thesecretmessage.php",
+                xp: 100
+            },
+
+            {
+                id: 3,
+                title: "Conditional Challenge",
+                topic: "If-Else Statements",
+                icon: "💣",
+                color: "#8b0000",
+                file: "conditionalchallenge.php",
+                xp: 100
+            },
+
+            {
+                id: 4,
+                title: "Loop Labyrinth",
+                topic: "Loops",
+                icon: "🌀",
+                color: "#4169e1",
+                file: "looplabyrinth.php",
+                xp: 100
+            },
+
+            {
+                id: 5,
+                title: "Array Adventure",
+                topic: "Arrays",
+                icon: "💎",
+                color: "#daa520",
+                file: "arrayadventure.php",
+                xp: 100
+            },
+
+            {
+                id: 6,
+                title: "Function Fortress",
+                topic: "Methods / Functions",
+                icon: "🏰",
+                color: "#228b22",
+                file: "functionfortress.php",
+                xp: 100
+            },
+
+            {
+                id: 7,
+                title: "Debugging Duel",
+                topic: "Debugging",
+                icon: "🐛",
+                color: "#4b0082",
+                file: "debugging.php",
+                xp: 100
+            },
+
+            {
+                id: 8,
+                title: "Classroom Rescue",
+                topic: "Classes & Objects",
+                icon: "🏫",
+                color: "#dc143c",
+                file: "classroomrescue.php",
+                xp: 100
+            },
+
+            {
+                id: 9,
+                title: "Conditional Labyrinth II",
+                topic: "Nested Conditionals",
+                icon: "🚪",
+                color: "#8b4513",
+                file: "conditionallabyrinth.php",
+                xp: 100
+            },
+
+            {
+                id: 10,
+                title: "Loop Boss Battle",
+                topic: "Nested Loops",
+                icon: "👹",
+                color: "#ff4500",
+                file: "loopbossbattle.php",
+                xp: 200,
+                isBoss: true
+            }
+
+        ];
+
+        /* =====================================================
+           BADGE DATA
+        ===================================================== */
+
+        const badges = [
+
+            {
+                level: "1-2",
+                name: "Code Rookie",
+                image: "badge1.png",
+                minLevel: 1,
+                maxLevel: 2
+            },
+
+            {
+                level: "3-4",
+                name: "Syntax Scout",
+                image: "badge2.png",
+                minLevel: 3,
+                maxLevel: 4
+            },
+
+            {
+                level: "5-6",
+                name: "Debug Hunter",
+                image: "badge3.png",
+                minLevel: 5,
+                maxLevel: 6
+            },
+
+            {
+                level: "7-8",
+                name: "Algorithm Elite",
+                image: "badge4.png",
+                minLevel: 7,
+                maxLevel: 8
+            },
+
+            {
+                level: "9",
+                name: "Code Champion",
+                image: "badge5.png",
+                minLevel: 9,
+                maxLevel: 9
+            },
+
+            {
+                level: "10",
+                name: "Escape Master",
+                image: "badge6.png",
+                minLevel: 10,
+                maxLevel: 10
+            }
+
+        ];
+
+        /* =====================================================
+           USER PROGRESS
+        ===================================================== */
+
+        let userProgress = {
+
+            completedMissions: [],
+
+            currentMission: 1,
+
+            totalXP: 0,
+
+            streak: 1,
+
+            lives: 0,
+
+            energy: 0,
+
+            badgeIndex: 0
+
+        };
+
+        /* =====================================================
+           PARTICLES
+        ===================================================== */
+
+        function createParticles() {
+
+            const container =
+                document.getElementById("particles");
+
+            container.innerHTML = "";
+
+            for (let i = 0; i < 50; i++) {
+
+                const particle =
+                    document.createElement("div");
+
+                particle.className = "particle";
+
+                particle.style.left =
+                    Math.random() * 100 + "%";
+
+                particle.style.animationDelay =
+                    Math.random() * 15 + "s";
+
+                particle.style.animationDuration =
+                    (Math.random() * 10 + 15) + "s";
+
+                container.appendChild(particle);
+
+            }
+
+        }
+
+        /* =====================================================
+           LEVEL
+        ===================================================== */
+
+        function getLevel() {
+
+            return Math.floor(
+                userProgress.totalXP / 100
+            ) + 1;
+
+        }
+
+        /* =====================================================
+           BADGE
+        ===================================================== */
+
+        function getCurrentBadge() {
+
+            const level = getLevel();
+
+            return badges.find(
+                badge =>
+                    level >= badge.minLevel &&
+                    level <= badge.maxLevel
+            ) || badges[badges.length - 1];
+
+        }
+
+        function getNextBadge() {
+
+            const currentBadge =
+                getCurrentBadge();
+
+            const index =
+                badges.indexOf(currentBadge);
+
+            if (index < badges.length - 1) {
+
+                return badges[index + 1];
+
+            }
+
+            return null;
+
+        }
+
+        function cycleBadge() {
+
+            userProgress.badgeIndex =
+                (userProgress.badgeIndex + 1)
+                % badges.length;
+
+            updateBadgeDisplay();
+
+            saveProgress();
+
+        }
+
+        function updateBadgeDisplay() {
+
+            const badge =
+                badges[userProgress.badgeIndex];
+
+            const image =
+                document.getElementById(
+                    "currentBadgeImg"
+                );
+
+            const name =
+                document.getElementById(
+                    "currentBadgeName"
+                );
+
+            const next =
+                document.getElementById(
+                    "nextBadgePreview"
+                );
+
+            image.src = badge.image;
+
+            image.onerror = function () {
+                this.style.display = "none";
+            };
+
+            name.textContent =
+                badge.name;
+
+            const nextBadge =
+                getNextBadge();
+
+            next.textContent =
+                nextBadge
+                    ? `Next: ${nextBadge.name}`
+                    : "MAX BADGE";
+        }
+
+        /* =====================================================
+           NORMALIZE DATA
+        ===================================================== */
+
+        function normalizeProgress() {
+
+            if (!Array.isArray(
+                userProgress.completedMissions
+            )) {
+
+                userProgress.completedMissions = [];
+
+            }
+
+            userProgress.completedMissions =
+                [...new Set(
+                    userProgress.completedMissions
+                        .map(Number)
+                        .filter(id =>
+                            missions.some(
+                                mission =>
+                                    mission.id === id
+                            )
+                        )
+                )]
+                .sort((a, b) => a - b);
+
+            userProgress.totalXP =
+                Math.max(
+                    0,
+                    Number(userProgress.totalXP) || 0
+                );
+
+            userProgress.lives =
+                Math.max(
+                    0,
+                    Number(userProgress.lives) || 0
+                );
+
+            userProgress.energy =
+                Math.max(
+                    0,
+                    Number(userProgress.energy) || 0
+                );
+
+            userProgress.badgeIndex =
+                Math.max(
+                    0,
+                    Math.min(
+                        badges.length - 1,
+                        Number(userProgress.badgeIndex) || 0
+                    )
+                );
+
+            const nextMission =
+                missions.find(
+                    mission =>
+                        !userProgress.completedMissions.includes(
+                            mission.id
+                        )
+                );
+
+            userProgress.currentMission =
+                nextMission
+                    ? nextMission.id
+                    : missions.length + 1;
+
+        }
+
+        /* =====================================================
+           SAVE
+        ===================================================== */
+
+        function saveProgress() {
+
+            normalizeProgress();
+
+            localStorage.setItem(
+                "hackoProgress",
+                JSON.stringify(userProgress)
+            );
+
+        }
+
+        /* =====================================================
+           LOAD
+        ===================================================== */
+
+        function loadProgress() {
+
+            const saved =
+                localStorage.getItem(
+                    "hackoProgress"
+                );
+
+            if (saved) {
+
+                try {
+
+                    const parsed =
+                        JSON.parse(saved);
+
+                    userProgress = {
+                        ...userProgress,
+                        ...parsed
+                    };
+
+                } catch (error) {
+
+                    console.warn(
+                        "Invalid progress data. Resetting.",
+                        error
+                    );
+
+                    localStorage.removeItem(
+                        "hackoProgress"
+                    );
+
+                }
+
+            }
+
+            const username =
+                document.body.dataset.username ||
+                localStorage.getItem(
+                    "hackoUsername"
+                ) ||
+                "HACKO_WARRIOR";
+
+            document.getElementById(
+                "displayUsername"
+            ).textContent = username;
+
+            normalizeProgress();
+
+            updateStats();
+
+            renderMissions();
+
+        }
+
+        /* =====================================================
+           STATS
+        ===================================================== */
+
+        function updateStats() {
+
+            document.getElementById(
+                "userLevel"
+            ).textContent =
+                getLevel();
+
+            document.getElementById(
+                "missionsCompleted"
+            ).textContent =
+                `${userProgress.completedMissions.length}/${missions.length}`;
+
+            document.getElementById(
+                "lifeCount"
+            ).textContent =
+                userProgress.lives;
+
+            document.getElementById(
+                "energyCount"
+            ).textContent =
+                userProgress.energy;
+
+            updateBadgeDisplay();
+
+        }
+
+        /* =====================================================
+           BUY LIFE
+        ===================================================== */
+
+        function buyLife() {
+
+            const cost = 50;
+
+            if (userProgress.totalXP < cost) {
+
+                alert(
+                    "Not enough XP! You need 50 XP to buy a Life."
+                );
+
+                return;
+
+            }
+
+            userProgress.totalXP -= cost;
+
+            userProgress.lives++;
+
+            saveProgress();
+
+            updateStats();
+
+            alert(
+                "❤️ Life purchased! Cost: 50 XP"
+            );
+
+        }
+
+        /* =====================================================
+           BUY ENERGY
+        ===================================================== */
+
+        function buyEnergy() {
+
+            const cost = 75;
+
+            if (userProgress.totalXP < cost) {
+
+                alert(
+                    "Not enough XP! You need 75 XP to buy Energy."
+                );
+
+                return;
+
+            }
+
+            userProgress.totalXP -= cost;
+
+            userProgress.energy++;
+
+            saveProgress();
+
+            updateStats();
+
+            alert(
+                "⚡ Energy purchased! Cost: 75 XP"
+            );
+
+        }
+
+        /* =====================================================
+           RENDER MISSIONS
+        ===================================================== */
+
+        function renderMissions() {
+
+            const grid =
+                document.getElementById(
+                    "missionsGrid"
+                );
+
+            grid.innerHTML = "";
+
+            missions.forEach(mission => {
+
+                const isCompleted =
+                    userProgress.completedMissions
+                        .includes(mission.id);
+
+                const isActive =
+                    userProgress.currentMission ===
+                        mission.id &&
+                    !isCompleted;
+
+                const isLocked =
+                    !isCompleted &&
+                    mission.id >
+                        userProgress.currentMission;
+
+                const card =
+                    document.createElement("div");
+
+                card.className =
+                    "mission-card" +
+                    (isCompleted
+                        ? " completed"
+                        : "") +
+                    (isActive
+                        ? " active"
+                        : "") +
+                    (isLocked
+                        ? " locked"
+                        : "");
+
+                card.style.background =
+                    `linear-gradient(
+                        145deg,
+                        ${mission.color}dd 0%,
+                        ${mission.color}99 100%
+                    )`;
+
+                /* Mission image */
+
+                const imageMap = {
+
+                    1: "theescaperoom.png",
+                    2: "thesecretmessage.png",
+                    3: "conditionalchallenge.png",
+                    4: "looplabyrinth.png",
+                    5: "arrayadventure.png",
+                    6: "functionfortress.png",
+                    7: "debugging.png",
+                    8: "classroomrescue.png",
+                    9: "conditionallabyrinth.png",
+                    10: "loopbossbattle.png"
+
+                };
+
+                const image =
+                    imageMap[mission.id] || "";
+
+                card.innerHTML = `
+
+                    <div class="mission-number">
+                        ${mission.id}
+                    </div>
+
+                    <div
+                        class="mission-status ${
+                            isCompleted
+                                ? "completed"
+                                : isActive
+                                    ? "active"
+                                    : "locked"
+                        }"
+                    >
+                        ${
+                            isCompleted
+                                ? "✓"
+                                : isActive
+                                    ? "⚡"
+                                    : "🔒"
+                        }
+                    </div>
+
+                    <div class="mission-image">
+
+                        ${
+                            image
+                                ? `<img
+                                    src="${image}"
+                                    alt="${mission.title}"
+                                    onerror="this.style.display='none'; this.parentElement.innerHTML='${mission.icon}'"
+                                   >`
+                                : mission.icon
+                        }
+
+                    </div>
+
+                    <div class="mission-title">
+                        ${mission.title}
+                    </div>
+
+                    <div class="mission-topic">
+                        ${mission.topic}
+                    </div>
+
+                `;
+
+                /* Only unlocked missions can be opened */
+
+                if (!isLocked) {
+
+                    card.style.cursor =
+                        "pointer";
+
+                    card.onclick = function () {
+
+                        window.location.href =
+                            mission.file;
+
+                    };
+
+                }
+
+                grid.appendChild(card);
+
+            });
+
+        }
+
+        /* =====================================================
+           COMPLETE MISSION
+           This can be called by mission PHP pages.
+        ===================================================== */
+
+        function completeMission(
+            missionId,
+            earnedXP = null
+        ) {
+
+            missionId =
+                Number(missionId);
+
+            const mission =
+                missions.find(
+                    m => m.id === missionId
+                );
+
+            if (!mission) {
+
+                console.error(
+                    "Invalid mission ID:",
+                    missionId
+                );
+
+                return false;
+
+            }
+
+            /* Already completed */
+
+            if (
+                userProgress.completedMissions
+                    .includes(missionId)
+            ) {
+
+                return false;
+
+            }
+
+            /* Mission must be current */
+
+            if (
+                missionId !==
+                userProgress.currentMission
+            ) {
+
+                alert(
+                    "Complete the previous mission first."
+                );
+
+                return false;
+
+            }
+
+            userProgress.completedMissions.push(
+                missionId
+            );
+
+            userProgress.totalXP +=
+                earnedXP !== null
+                    ? Number(earnedXP)
+                    : mission.xp;
+
+            normalizeProgress();
+
+            saveProgress();
+
+            updateStats();
+
+            renderMissions();
+
+            showSuccess();
+
+            return true;
+
+        }
+
+        /* =====================================================
+           SUCCESS
+        ===================================================== */
+
+        function showSuccess() {
+
+            const anim =
+                document.getElementById(
+                    "successAnim"
+                );
+
+            anim.innerHTML =
+                '<div class="success-text">MISSION COMPLETE! 🎉</div>';
+
+            anim.style.display =
+                "block";
+
+            for (let i = 0; i < 20; i++) {
+
+                const confetti =
+                    document.createElement("div");
+
+                confetti.className =
+                    "confetti";
+
+                confetti.style.left =
+                    Math.random() * 100 + "vw";
+
+                confetti.style.top =
+                    "-20px";
+
+                confetti.style.animationDelay =
+                    Math.random() * 2 + "s";
+
+                confetti.style.backgroundColor =
+                    [
+                        "#00ff88",
+                        "#00d4ff",
+                        "#ff6b00",
+                        "#ffd700"
+                    ][
+                        Math.floor(
+                            Math.random() * 4
+                        )
+                    ];
+
+                anim.appendChild(
+                    confetti
+                );
+
+            }
+
+            setTimeout(() => {
+
+                anim.style.display =
+                    "none";
+
+                anim.innerHTML =
+                    '<div class="success-text">MISSION COMPLETE! 🎉</div>';
+
+            }, 3000);
+
+        }
+
+        /* =====================================================
+           LOGOUT
+        ===================================================== */
+
+        function logout() {
+
+            if (
+                confirm(
+                    "End your coding session?"
+                )
+            ) {
+
+                window.location.href =
+                    "logout.php";
+
+            }
+
+        }
+
+        /* =====================================================
+           INITIALIZE
+        ===================================================== */
+
+        window.addEventListener(
+            "load",
+            function () {
+
+                createParticles();
+
+                loadProgress();
+
+            }
+        );
+
+    </script>
+
+</body>
+</html>

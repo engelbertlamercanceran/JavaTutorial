@@ -1,0 +1,20 @@
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# editors
+.vscode/
+.idea/
+*.swp
+
+# node (only used for the test tools)
+node_modules/
+npm-debug.log*
+
+# local scratch
+*.log
+.removed/
+
+# optional sound files dropped in by hand
+shared/sfx/

@@ -1,0 +1,2683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hacko: Array Adventure</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+    --ink: #07111f;
+    --panel: #102742;
+    --tile: #173d59;
+    --cyan: #42efff;
+    --lime: #91ff6f;
+    --amber: #ffd34e;
+    --red: #ff496f;
+    --violet: #b47aff;
+    --muted: #91adc0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+    color: #eefaff;
+    background:
+        radial-gradient(circle at 15% 10%, #164f70, transparent 30%),
+        radial-gradient(circle at 90% 12%, #4a2f70, transparent 28%),
+        #07111f;
+    font-family: Rajdhani, sans-serif;
+}
+
+body {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100vh;
+}
+
+button {
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font: 700 0.78rem Orbitron;
+    color: #06111c;
+    background: linear-gradient(135deg, var(--cyan), #66ffc5);
+    box-shadow: 0 5px 14px #0007;
+}
+
+button:hover:not(:disabled) {
+    filter: brightness(1.13);
+    transform: translateY(-1px);
+}
+
+button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.secondary {
+    color: white;
+    background: #1b4261;
+    border: 1px solid #4387a8;
+}
+
+.danger {
+    color: white;
+    background: linear-gradient(135deg, #ff416c, #ff8a3d);
+}
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 18px;
+    border-bottom: 2px solid var(--cyan);
+    background: #081526ee;
+    box-shadow: 0 0 25px #42efff33;
+}
+
+.brand {
+    font: 900 clamp(1.15rem, 3vw, 2rem) Orbitron;
+    color: var(--cyan);
+    text-shadow: 0 0 15px #42efff88;
+}
+
+.brand small {
+    display: block;
+    font-size: 0.52rem;
+    letter-spacing: 0.22em;
+    color: white;
+}
+
+.stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.chip {
+    padding: 7px 12px;
+    border: 1px solid #397c9c;
+    border-radius: 999px;
+    background: #102b47;
+    font: 700 0.72rem Orbitron;
+}
+
+.chip b {
+    color: var(--lime);
+}
+
+main {
+    display: grid;
+    grid-template-columns: minmax(500px, 1fr) 350px;
+    gap: 14px;
+    padding: 14px;
+    min-height: 0;
+}
+
+.game-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 560px;
+    border: 3px solid #3cd9e9;
+    border-radius: 20px;
+    background: #071321;
+    box-shadow:
+        0 0 35px #42efff2f,
+        inset 0 0 45px #000b;
+    overflow: hidden;
+}
+
+canvas {
+    display: block;
+    width: min(100%, 900px);
+    height: auto;
+}
+
+.side {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.panel {
+    padding: 14px;
+    border: 1px solid #367c9d;
+    border-radius: 15px;
+    background: linear-gradient(155deg, #163653, #0a1c32 75%);
+    box-shadow:
+        inset 0 0 22px #42efff0c,
+        0 7px 18px #0006;
+}
+
+.panel h2,
+.panel h3 {
+    margin: 0 0 8px;
+    font-family: Orbitron;
+    color: var(--cyan);
+}
+
+.panel h2 {
+    font-size: 1rem;
+}
+
+.panel h3 {
+    font-size: 0.82rem;
+}
+
+.mission {
+    line-height: 1.35;
+}
+
+.rule {
+    margin-top: 8px;
+    padding: 8px;
+    border-left: 3px solid var(--amber);
+    background: #071525;
+    color: #ffeaa3;
+    font-family: Consolas, monospace;
+    font-size: 0.78rem;
+}
+
+.lesson {
+    margin-top: 8px;
+    color: #abd4e3;
+}
+
+.inventory {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+}
+
+.slot {
+    min-height: 64px;
+    padding: 7px;
+    border: 1px dashed #54839c;
+    border-radius: 9px;
+    background: #071625;
+    cursor: pointer;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.slot:hover {
+    border-color: var(--cyan);
+}
+
+.slot.selected {
+    border: 2px solid var(--amber);
+    box-shadow: 0 0 15px #ffd34e55;
+}
+
+.slot .idx {
+    font: 700 0.62rem Orbitron;
+    color: var(--muted);
+}
+
+.slot .item {
+    font-weight: 700;
+    color: white;
+    overflow-wrap: anywhere;
+}
+
+.slot .val {
+    font-size: 0.75rem;
+    color: var(--lime);
+}
+
+.empty {
+    color: #537084;
+}
+
+.actions {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.status {
+    min-height: 42px;
+    margin-top: 9px;
+    padding: 9px;
+    border-radius: 8px;
+    background: #071421;
+    color: #c9e6f1;
+}
+
+.status.good {
+    border: 1px solid var(--lime);
+    color: var(--lime);
+}
+
+.status.bad {
+    border: 1px solid var(--red);
+    color: #ff9eb3;
+}
+
+.log {
+    max-height: 130px;
+    overflow: auto;
+    font-size: 0.84rem;
+}
+
+.log div {
+    padding: 5px 0;
+    border-bottom: 1px solid #ffffff10;
+}
+
+.levels {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+}
+
+.level-btn {
+    padding: 8px 3px;
+    background: #183d5b;
+    color: white;
+}
+
+.level-btn.active {
+    outline: 2px solid var(--cyan);
+}
+
+.level-btn.done {
+    color: var(--lime);
+    border: 1px solid var(--lime);
+}
+
+footer {
+    text-align: center;
+    padding: 8px;
+    background: #071526;
+    border-top: 1px solid #2d6580;
+    color: #b8d8e5;
+}
+
+.kbd {
+    padding: 2px 6px;
+    border: 1px solid #4b819d;
+    border-radius: 4px;
+    background: #193b57;
+    color: white;
+    font: 700 0.68rem Orbitron;
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: #02060dd9;
+    backdrop-filter: blur(7px);
+    z-index: 20;
+}
+
+.overlay.show {
+    display: flex;
+}
+
+.modal {
+    width: min(620px, 95vw);
+    padding: 24px;
+    border: 2px solid var(--cyan);
+    border-radius: 18px;
+    background: linear-gradient(145deg, #153b59, #07111f);
+    box-shadow: 0 0 55px #42efff55;
+    text-align: center;
+}
+
+.modal h1 {
+    color: var(--cyan);
+    font-family: Orbitron;
+}
+
+.code-demo {
+    text-align: left;
+    padding: 12px;
+    border-radius: 9px;
+    background: #02080e;
+    color: #a7ffc5;
+    font: 14px/1.5 Consolas, monospace;
+    white-space: pre-wrap;
+}
+
+@media (max-width: 900px) {
+    main {
+        grid-template-columns: 1fr;
+    }
+
+    .game-wrap {
+        min-height: auto;
+    }
+
+    .stats {
+        display: none;
+    }
+}
+
+@media (max-width: 560px) {
+    main {
+        padding: 6px;
+    }
+
+    .inventory {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+<script src="shared/audio.js" data-track="adventure"></script>
+<script src="shared/storage.js"></script>
+</head>
+
+<body>
+<header>
+    <div class="brand">
+        HACKO
+        <small>ARRAY ADVENTURE</small>
+    </div>
+
+    <div class="stats">
+        <div class="chip">
+            MISSION <b id="missionNum">1/10</b>
+        </div>
+
+        <div class="chip">
+            ENERGY <b id="hpStat">100</b>
+        </div>
+
+        <div class="chip">
+            ARRAY LENGTH <b id="lengthStat">0</b>
+        </div>
+
+        <div class="chip">
+            ITEMS FOUND <b id="foundStat">0</b>
+        </div>
+    </div>
+
+    <button
+        class="secondary"
+        onclick="restartMission()"
+    >
+        RESTART
+    </button>
+</header>
+
+<main>
+    <section class="game-wrap">
+        <canvas
+            id="game"
+            width="900"
+            height="600"
+            aria-label="Hacko Array Adventure game board"
+        ></canvas>
+    </section>
+
+    <aside class="side">
+        <section class="panel">
+            <h2 id="missionTitle"></h2>
+            <div id="missionGoal" class="mission"></div>
+            <div id="missionRule" class="rule"></div>
+            <div id="lesson" class="lesson"></div>
+        </section>
+
+        <section class="panel">
+            <h3>HACKO'S ARRAY</h3>
+
+            <div id="inventory" class="inventory"></div>
+
+            <div class="actions">
+                <button id="swapBtn" onclick="swapSlots()">
+                    SWAP SLOTS
+                </button>
+
+                <button
+                    id="discardBtn"
+                    class="danger"
+                    onclick="discardSelected()"
+                >
+                    DISCARD
+                </button>
+
+                <button
+                    id="useBtn"
+                    class="secondary"
+                    onclick="useOnPedestal()"
+                >
+                    USE ON PEDESTAL
+                </button>
+
+                <button
+                    id="sumBtn"
+                    class="secondary"
+                    onclick="calculateSum()"
+                >
+                    CALCULATE SUM
+                </button>
+            </div>
+
+            <div id="status" class="status">
+                Move Hacko to collect an item.
+            </div>
+
+            <div class="actions">
+                <button onclick="checkMission()">
+                    CHECK ARRAY
+                </button>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h3>MISSION MAP</h3>
+            <div id="levels" class="levels"></div>
+        </section>
+
+        <section class="panel log">
+            <h3>SYSTEM LOG</h3>
+            <div id="log"></div>
+        </section>
+    </aside>
+</main>
+
+<footer>
+    <span class="kbd">WASD</span> /
+    <span class="kbd">ARROWS</span> move
+    &nbsp; • &nbsp;
+    Avoid red glitches and violet traps
+    &nbsp; • &nbsp;
+    Build the correct array, unlock the portal, then escape
+</footer>
+
+<div id="overlay" class="overlay">
+    <div class="modal">
+        <h1 id="modalTitle"></h1>
+        <p id="modalText"></p>
+        <div id="modalCode" class="code-demo"></div>
+
+        <div class="actions" style="justify-content:center;margin-top:18px">
+            <button id="nextBtn">NEXT MISSION</button>
+
+            <button
+                class="secondary"
+                onclick="closeOverlay()"
+            >
+                KEEP EXPLORING
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const TILE = 60;
+const COLS = 15;
+const ROWS = 10;
+const MAX_SLOTS = 6;
+
+const hackoImage = new Image();
+let hackoReady = false;
+
+hackoImage.src = "hacko.png";
+hackoImage.onload = () => {
+    hackoReady = true;
+};
+
+/* Every item needs its own colour AND its own silhouette.
+ *
+ * This table used to hold 15 colours while the missions use
+ * 42 items, so 27 of them fell back to the same lime green
+ * diamond. That made several puzzles guesswork: mission 2
+ * asks you to pick up RedCrystal BEFORE BlueCrystal, and
+ * mission 10 asks you to sort Rune5/9/12/16 - none of which
+ * you could tell apart on screen.
+ *
+ * Shape carries the same information as colour so the game
+ * still works for a colour-blind player.
+ */
+const ITEM_STYLES = {
+
+    /* 1 - The Empty Backpack */
+    Apple:        { color: "#ff5a5f", shape: "orb" },
+    BlueGem:      { color: "#4da6ff", shape: "gem" },
+    Rope:         { color: "#c08a4a", shape: "ring" },
+
+    /* 2 - Red First */
+    RedCrystal:   { color: "#ff496f", shape: "crystal" },
+    BlueCrystal:  { color: "#4da6ff", shape: "crystal" },
+    Map:          { color: "#e8d6a0", shape: "scroll" },
+
+    /* 3 - Key in the Middle */
+    Potion:       { color: "#b47aff", shape: "flask" },
+    GoldenKey:    { color: "#ffd34e", shape: "key" },
+    Shield:       { color: "#7aa8ff", shape: "shield" },
+
+    /* 4 - Feed the Pedestal */
+    Torch:        { color: "#ff8a3d", shape: "torch" },
+    Rune:         { color: "#37d9c0", shape: "rune" },
+    MoonOrb:      { color: "#cfe4ff", shape: "orb" },
+    Feather:      { color: "#f2f6ff", shape: "feather" },
+
+    /* 5 - No Junk Allowed */
+    Compass:      { color: "#d9a441", shape: "compass" },
+    Gem:          { color: "#ff85d5", shape: "gem" },
+    Junk:         { color: "#6b7681", shape: "junk" },
+    Lantern:      { color: "#ffc247", shape: "lantern" },
+    Coin:         { color: "#ffd34e", shape: "coin" },
+
+    /* 6 - Perfect Pair */
+    AncientKey:   { color: "#d8af6b", shape: "key" },
+    Orb:          { color: "#45f3ff", shape: "orb" },
+    FlameCrystal: { color: "#ff763d", shape: "crystal" },
+    Tablet:       { color: "#9aa7b4", shape: "book" },
+
+    /* 7 - Search Mission */
+    Stone:        { color: "#8d8577", shape: "cube" },
+    MasterScroll: { color: "#b47aff", shape: "scroll" },
+    StarMap:      { color: "#6f7dff", shape: "star" },
+    Token:        { color: "#37d9c0", shape: "coin" },
+    Charm:        { color: "#ff9ad5", shape: "ring" },
+
+    /* 8 - Sort by Color: colour IS the puzzle, so these
+       deliberately share one shape and differ only in hue */
+    Red:          { color: "#ff496f", shape: "gem" },
+    Blue:         { color: "#4da6ff", shape: "gem" },
+    Green:        { color: "#65e582", shape: "gem" },
+    Yellow:       { color: "#ffd34e", shape: "gem" },
+
+    /* 9 - The Triple Lock */
+    CrystalA:     { color: "#ff85d5", shape: "crystal" },
+    CrystalB:     { color: "#7af0ff", shape: "crystal" },
+    CrystalC:     { color: "#b6ff72", shape: "crystal" },
+    Filler1:      { color: "#7b8790", shape: "cube" },
+    Filler2:      { color: "#9aa4ad", shape: "cube" },
+    Extra:        { color: "#5f8fa6", shape: "cube" },
+
+    /* 10 - The Living Array */
+    Rune5:        { color: "#65e582", shape: "rune" },
+    Rune9:        { color: "#45f3ff", shape: "rune" },
+    Rune12:       { color: "#ffd34e", shape: "rune" },
+    Rune16:       { color: "#b47aff", shape: "rune" },
+    Cursed:       { color: "#ff416c", shape: "skull" }
+};
+
+/* Deterministic fallback so a newly added item can never
+   silently share the old default lime green. */
+const FALLBACK_COLORS = [
+    "#ff9f43", "#26d9c7", "#c56cff", "#5fd3ff",
+    "#ff6fae", "#9ade5b", "#ffd166", "#7a9cff"
+];
+
+const FALLBACK_SHAPES = [
+    "gem", "orb", "cube", "star", "crystal", "coin"
+];
+
+function itemStyle(item) {
+
+    const known = ITEM_STYLES[item.name];
+
+    if (known) {
+        return known;
+    }
+
+    let hash = 0;
+
+    for (let i = 0; i < item.name.length; i++) {
+        hash = (hash * 31 + item.name.charCodeAt(i)) >>> 0;
+    }
+
+    return {
+        color: FALLBACK_COLORS[hash % FALLBACK_COLORS.length],
+        shape: FALLBACK_SHAPES[hash % FALLBACK_SHAPES.length]
+    };
+}
+
+/* A short caption that is unique within a mission.
+ * "CrystalA/B/C" used to all render as "CR", and every rune
+ * as "RU", which is what made those two missions guesswork.
+ */
+function itemLabel(item) {
+
+    if (item.value !== undefined) {
+        return String(item.value);
+    }
+
+    const suffix = item.name.match(/(\d+|[A-Z])$/);
+
+    if (suffix && item.name.length > suffix[1].length) {
+        return suffix[1];
+    }
+
+    return item.name.slice(0, 3).toUpperCase();
+}
+
+/* Draws one item silhouette centred on the origin, about
+ * 26px across. Every shape keeps a solid core so the caption
+ * drawn on top of it stays readable.
+ */
+function drawItemShape(ctx, shape) {
+
+    function poly(points) {
+        ctx.beginPath();
+        points.forEach((p, i) => {
+            if (i === 0) {
+                ctx.moveTo(p[0], p[1]);
+            } else {
+                ctx.lineTo(p[0], p[1]);
+            }
+        });
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    function disc(radius) {
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    switch (shape) {
+
+    case "gem":
+        poly([
+            [-13, -4], [-7, -12], [7, -12],
+            [13, -4], [0, 13]
+        ]);
+        break;
+
+    case "orb":
+        disc(13);
+        break;
+
+    case "coin":
+        disc(13);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = "#07111f";
+        disc(10);
+        ctx.globalAlpha = 1;
+        break;
+
+    case "cube":
+        ctx.beginPath();
+        ctx.rect(-12, -11, 24, 22);
+        ctx.fill();
+        break;
+
+    case "star":
+        (function () {
+            const points = [];
+            for (let i = 0; i < 10; i++) {
+                const r = i % 2 ? 6.5 : 14;
+                const a = (Math.PI / 5) * i - Math.PI / 2;
+                points.push([Math.cos(a) * r, Math.sin(a) * r]);
+            }
+            poly(points);
+        }());
+        break;
+
+    case "key":
+        ctx.beginPath();
+        ctx.arc(-6, 0, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(-2, -3.5, 15, 7);
+        ctx.fillRect(9, 2, 4, 7);
+        break;
+
+    case "scroll":
+        ctx.fillRect(-13, -8, 26, 16);
+        ctx.beginPath();
+        ctx.arc(-13, 0, 5, 0, Math.PI * 2);
+        ctx.arc(13, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+
+    case "flask":
+        poly([
+            [-4, -13], [4, -13], [4, -5],
+            [11, 10], [-11, 10], [-4, -5]
+        ]);
+        break;
+
+    case "shield":
+        poly([
+            [-11, -12], [11, -12], [11, 1],
+            [0, 13], [-11, 1]
+        ]);
+        break;
+
+    case "rune":
+        poly([
+            [-9, -13], [9, -13], [13, -6],
+            [13, 6], [9, 13], [-9, 13],
+            [-13, 6], [-13, -6]
+        ]);
+        break;
+
+    case "book":
+        ctx.fillRect(-12, -11, 24, 22);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = "#07111f";
+        ctx.fillRect(-2, -11, 3, 22);
+        ctx.globalAlpha = 1;
+        break;
+
+    case "ring":
+        disc(13);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = "#07111f";
+        disc(6);
+        ctx.globalAlpha = 1;
+        break;
+
+    case "torch":
+        ctx.fillRect(-3, -2, 6, 15);
+        poly([[0, -14], [8, -2], [-8, -2]]);
+        break;
+
+    case "feather":
+        poly([
+            [0, -14], [9, -2], [4, 12],
+            [0, 14], [-4, 12], [-9, -2]
+        ]);
+        break;
+
+    case "lantern":
+        ctx.fillRect(-9, -8, 18, 18);
+        ctx.fillRect(-5, -13, 10, 4);
+        break;
+
+    case "compass":
+        disc(13);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 0.45;
+        ctx.fillStyle = "#07111f";
+        poly([[0, -9], [4, 0], [0, 9], [-4, 0]]);
+        ctx.globalAlpha = 1;
+        break;
+
+    case "junk":
+        poly([
+            [-12, -6], [-4, -12], [6, -8],
+            [12, 2], [4, 12], [-8, 8]
+        ]);
+        break;
+
+    case "skull":
+        disc(12);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 0.6;
+        ctx.fillStyle = "#07111f";
+        ctx.beginPath();
+        ctx.arc(-4.5, -3, 3, 0, Math.PI * 2);
+        ctx.arc(4.5, -3, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+
+    case "crystal":
+    default:
+        poly([[0, -14], [12, 0], [0, 14], [-12, 0]]);
+        break;
+    }
+}
+
+const missions = [
+    {
+        title: "The Empty Backpack",
+        goal:
+            "Collect any 3 items. Walking over an item " +
+            "automatically pushes it into the array.",
+        rule: "items.length == 3",
+        lesson:
+            "An array stores several values. length tells you " +
+            "how many values it holds.",
+        items: ["Apple", "BlueGem", "Rope"],
+        check: state => state.items.length === 3
+    },
+    {
+        title: "Red First",
+        goal:
+            "Collect at least 2 items, with the Red Crystal " +
+            "collected first.",
+        rule:
+            'items[0] == "RedCrystal" && items.length >= 2',
+        lesson:
+            "Array positions start at index 0, not index 1.",
+        items: ["RedCrystal", "BlueCrystal", "Map"],
+        check: state => {
+            return (
+                state.items[0]?.name === "RedCrystal" &&
+                state.items.length >= 2
+            );
+        }
+    },
+    {
+        title: "Key in the Middle",
+        goal:
+            "Build an array of exactly 3 items with the Golden Key " +
+            "at index 1. Select two slots and swap them.",
+        rule:
+            'items[1] == "GoldenKey" && items.length == 3',
+        lesson:
+            "Each value has an exact numbered slot.",
+        items: ["Potion", "GoldenKey", "Shield"],
+        swap: true,
+        check: state => {
+            return (
+                state.items.length === 3 &&
+                state.items[1]?.name === "GoldenKey"
+            );
+        }
+    },
+    {
+        title: "Feed the Pedestal",
+        goal:
+            "Collect at least 3 items. Select index 2, " +
+            "then use it on the pedestal.",
+        rule: "use(items[2])",
+        lesson:
+            "items[2] retrieves the third value because indexing " +
+            "starts at zero.",
+        items: ["Torch", "Rune", "MoonOrb", "Feather"],
+        swap: true,
+        use: true,
+        check: state => state.usedIndex === 2
+    },
+    {
+        title: "No Junk Allowed",
+        goal:
+            "Finish with exactly 4 items and remove every Junk item.",
+        rule:
+            'items.length == 4 && !items.includes("Junk")',
+        lesson:
+            "Removing values keeps an array clean and useful.",
+        items: [
+            "Compass",
+            "Gem",
+            "Junk",
+            "Lantern",
+            "Junk",
+            "Coin"
+        ],
+        swap: true,
+        discard: true,
+        check: state => {
+            return (
+                state.items.length === 4 &&
+                !state.items.some(item => item.name === "Junk")
+            );
+        }
+    },
+    {
+        title: "Perfect Pair",
+        goal:
+            "Make Flame Crystal index 0 and Ancient Key index 3 " +
+            "in an array of length 4.",
+        rule:
+            'items[0] == "FlameCrystal" && ' +
+            'items[3] == "AncientKey" && items.length == 4',
+        lesson:
+            "Multiple index checks can describe a precise array layout.",
+        items: [
+            "AncientKey",
+            "Orb",
+            "FlameCrystal",
+            "Tablet"
+        ],
+        swap: true,
+        discard: true,
+        check: state => {
+            return (
+                state.items.length === 4 &&
+                state.items[0]?.name === "FlameCrystal" &&
+                state.items[3]?.name === "AncientKey"
+            );
+        }
+    },
+    {
+        title: "Search Mission",
+        goal:
+            "Keep the Master Scroll anywhere in the array, " +
+            "then use whatever is at index 1.",
+        rule:
+            'items.includes("MasterScroll") && use(items[1])',
+        lesson:
+            "A linear search checks values one by one until " +
+            "it finds a match.",
+        items: [
+            "Stone",
+            "MasterScroll",
+            "StarMap",
+            "Token",
+            "Charm"
+        ],
+        swap: true,
+        discard: true,
+        use: true,
+        check: state => {
+            return (
+                state.items.some(
+                    item => item.name === "MasterScroll"
+                ) &&
+                state.usedIndex === 1
+            );
+        }
+    },
+    {
+        title: "Sort by Color",
+        goal:
+            "Rearrange four colors into Red → Blue → Green → Yellow.",
+        rule:
+            'items == ["Red", "Blue", "Green", "Yellow"]',
+        lesson:
+            "Sorting places array values into a meaningful order.",
+        items: ["Green", "Red", "Yellow", "Blue"],
+        swap: true,
+        discard: true,
+        check: state => {
+            const sequence = [
+                "Red",
+                "Blue",
+                "Green",
+                "Yellow"
+            ];
+
+            return (
+                state.items.length === 4 &&
+                sequence.every(
+                    (name, index) => {
+                        return (
+                            state.items[index]?.name === name
+                        );
+                    }
+                )
+            );
+        }
+    },
+    {
+        title: "The Triple Lock",
+        goal:
+            "Create exactly 5 slots: Crystal A at index 0, " +
+            "Crystal B at index 2, and Crystal C at index 4.",
+        rule:
+            'length == 5 && items[0] == "CrystalA" && ' +
+            'items[2] == "CrystalB" && items[4] == "CrystalC"',
+        lesson:
+            "Length and several index checks can work together.",
+        items: [
+            "Filler1",
+            "CrystalB",
+            "CrystalC",
+            "Filler2",
+            "CrystalA",
+            "Extra"
+        ],
+        swap: true,
+        discard: true,
+        check: state => {
+            return (
+                state.items.length === 5 &&
+                state.items[0]?.name === "CrystalA" &&
+                state.items[2]?.name === "CrystalB" &&
+                state.items[4]?.name === "CrystalC"
+            );
+        }
+    },
+    {
+        title: "The Living Array",
+        goal:
+            "Collect all 6 items, discard both Cursed items, " +
+            "sort the values low to high, and calculate a total of 42.",
+        rule:
+            "length == 4 && first == lowest && " +
+            "last == highest && sum == 42",
+        lesson:
+            "This combines push, remove, indexing, sorting, " +
+            "length, and numeric reduction.",
+        items: [
+            { name: "Rune16", value: 16 },
+            { name: "Cursed", value: 30 },
+            { name: "Rune5", value: 5 },
+            { name: "Rune12", value: 12 },
+            { name: "Cursed", value: -5 },
+            { name: "Rune9", value: 9 }
+        ],
+        swap: true,
+        discard: true,
+        sum: true,
+        check: state => {
+            const values =
+                state.items.map(item => item.value);
+
+            return (
+                state.found === 6 &&
+                state.sumCalculated &&
+                values.length === 4 &&
+                !state.items.some(
+                    item => item.name === "Cursed"
+                ) &&
+                values.reduce(
+                    (total, value) => total + value,
+                    0
+                ) === 42 &&
+                values.every(
+                    (value, index) => {
+                        return (
+                            index === 0 ||
+                            values[index - 1] <= value
+                        );
+                    }
+                ) &&
+                values[0] === Math.min(...values) &&
+                values[3] === Math.max(...values)
+            );
+        }
+    }
+];
+
+const positions = [
+    [2, 2],
+    [12, 2],
+    [4, 7],
+    [10, 7],
+    [7, 2],
+    [7, 7],
+    [3, 4],
+    [11, 5]
+];
+
+let level = 0;
+let state;
+let selected = [];
+
+let progress = JSON.parse(
+    localStorage.getItem("hackoArrayProgress") ||
+    '{"unlocked":1,"done":[]}'
+);
+
+/* The "moving glitches" used to be one spider silhouette in
+ * two alternating colours, which made a busy board hard to
+ * read and let enemies blend into the collectables.
+ */
+const GLITCH_TYPES = [
+    { shape: "crawler", color: "#ff496f" },
+    { shape: "wraith",  color: "#ff8a3d" },
+    { shape: "sentry",  color: "#c56cff" }
+];
+
+function drawGlitch(ctx, shape, wobble) {
+
+    switch (shape) {
+
+    case "wraith":
+        /* a torn, flickering shard */
+        ctx.beginPath();
+        ctx.moveTo(0, -18);
+        ctx.lineTo(13, -4);
+        ctx.lineTo(7, 16);
+        ctx.lineTo(0, 9);
+        ctx.lineTo(-7, 16);
+        ctx.lineTo(-13, -4);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#07111f";
+        ctx.fillRect(-7, -6, 5, 5);
+        ctx.fillRect(2, -6, 5, 5);
+        break;
+
+    case "sentry":
+        /* a boxy bot with a sweeping eye */
+        ctx.fillRect(-14, -10, 28, 20);
+        ctx.fillRect(-2, -18, 4, 8);
+
+        ctx.beginPath();
+        ctx.arc(0, -19, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#07111f";
+        ctx.fillRect(-10, -4, 20, 8);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(
+            -8 + Math.sin(performance.now() / 260) * 6,
+            -2,
+            4,
+            4
+        );
+        break;
+
+    case "crawler":
+    default:
+        ctx.beginPath();
+        ctx.arc(0, 0, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "#07111f";
+        ctx.lineWidth = 4;
+
+        for (let leg = 0; leg < 4; leg++) {
+            ctx.rotate(Math.PI / 2);
+            ctx.beginPath();
+            ctx.moveTo(12, 0);
+            ctx.lineTo(24, -8 + wobble);
+            ctx.stroke();
+        }
+
+        ctx.fillStyle = "#07111f";
+        ctx.fillRect(-9, -5, 6, 6);
+        ctx.fillRect(3, -5, 6, 6);
+        break;
+    }
+}
+
+function normalizeItem(item) {
+    return typeof item === "string"
+        ? { name: item }
+        : item;
+}
+
+function loadMission(index) {
+    level = index;
+
+    const mission = missions[level];
+    const walls = makeWalls(level);
+
+    state = {
+        player: {
+            x: 1,
+            y: 1
+        },
+        items: [],
+        world: mission.items.map(
+            (item, itemIndex) => {
+                return {
+                    ...normalizeItem(item),
+                    x: positions[itemIndex][0],
+                    y: positions[itemIndex][1],
+                    taken: false
+                };
+            }
+        ),
+        found: 0,
+        usedIndex: null,
+        sumCalculated: false,
+        walls,
+        hp: 100,
+        moves: 0,
+        gateOpen: false,
+        won: false,
+        hazards: makeHazards(level, walls),
+        enemies: makeEnemies(level, walls),
+        battery: {
+            x: 1,
+            y: 8,
+            taken: false
+        }
+    };
+
+    selected = [];
+
+    document.getElementById("missionTitle").textContent =
+        `Mission ${level + 1}: ${mission.title}`;
+
+    document.getElementById("missionGoal").textContent =
+        mission.goal +
+        " Survive the board, validate the array, then reach the portal.";
+
+    document.getElementById("missionRule").textContent =
+        mission.rule;
+
+    document.getElementById("lesson").innerHTML =
+        `<strong>Array lesson:</strong> ${mission.lesson}`;
+
+    document.getElementById("missionNum").textContent =
+        `${level + 1}/10`;
+
+    document.getElementById("log").innerHTML = "";
+
+    setStatus(
+        "Collect items, avoid threats, and build the required array."
+    );
+
+    renderLevels();
+    updateUI();
+
+    log(
+        `Threat level ${level + 1}: ` +
+        `${state.enemies.length} moving glitches, ` +
+        `${state.hazards.length} traps.`
+    );
+}
+
+function makeWalls(missionIndex) {
+    const walls = new Set();
+
+    for (let x = 0; x < COLS; x++) {
+        walls.add(`${x},0`);
+        walls.add(`${x},${ROWS - 1}`);
+    }
+
+    for (let y = 0; y < ROWS; y++) {
+        walls.add(`0,${y}`);
+        walls.add(`${COLS - 1},${y}`);
+    }
+
+    if (missionIndex > 1) {
+        for (let y = 2; y < 8; y++) {
+            if (y !== 4) {
+                walls.add(`5,${y}`);
+            }
+        }
+    }
+
+    if (missionIndex > 4) {
+        for (let x = 7; x < 13; x++) {
+            if (x !== 10) {
+                walls.add(`${x},5`);
+            }
+        }
+    }
+
+    if (missionIndex > 7) {
+        for (let y = 1; y < 6; y++) {
+            if (y !== 3) {
+                walls.add(`9,${y}`);
+            }
+        }
+    }
+
+    positions.forEach(position => {
+        walls.delete(
+            `${position[0]},${position[1]}`
+        );
+    });
+
+    walls.delete("1,1");
+
+    return walls;
+}
+
+function makeHazards(missionIndex, walls) {
+    const spots = [
+        [3, 3],
+        [7, 4],
+        [11, 6],
+        [4, 5],
+        [8, 3],
+        [12, 7],
+        [2, 6],
+        [10, 2]
+    ];
+
+    return spots
+        .filter(position => {
+            return (
+                !walls.has(
+                    `${position[0]},${position[1]}`
+                ) &&
+                !positions.some(itemPosition => {
+                    return (
+                        itemPosition[0] === position[0] &&
+                        itemPosition[1] === position[1]
+                    );
+                })
+            );
+        })
+        .slice(
+            0,
+            Math.min(
+                1 + Math.floor(missionIndex * 0.7),
+                7
+            )
+        )
+        .map(position => {
+            return {
+                x: position[0],
+                y: position[1]
+            };
+        });
+}
+
+function makeEnemies(missionIndex, walls) {
+    const spots = [
+        [13, 7],
+        [8, 8],
+        [12, 4],
+        [6, 6],
+        [3, 8]
+    ];
+
+    return spots
+        .filter(position => {
+            return !walls.has(
+                `${position[0]},${position[1]}`
+            );
+        })
+        .slice(
+            0,
+            Math.min(
+                1 + Math.floor(missionIndex / 2),
+                5
+            )
+        )
+        .map((position, index) => {
+            return {
+                x: position[0],
+                y: position[1],
+                type: index % 3,
+                phase: index
+            };
+        });
+}
+
+function move(dx, dy) {
+    if (state.won) {
+        return;
+    }
+
+    const oldPosition = {
+        ...state.player
+    };
+
+    const newX = oldPosition.x + dx;
+    const newY = oldPosition.y + dy;
+
+    if (
+        state.walls.has(
+            `${newX},${newY}`
+        )
+    ) {
+        return;
+    }
+
+    HackoAudio.play("step");
+
+    const blockingEnemy =
+        state.enemies.find(enemy => {
+            return (
+                enemy.x === newX &&
+                enemy.y === newY
+            );
+        });
+
+    if (blockingEnemy) {
+        blockingEnemy.x = oldPosition.x;
+        blockingEnemy.y = oldPosition.y;
+
+        damage(
+            4 + level,
+            "slipping past a glitch"
+        );
+    }
+
+    state.player = {
+        x: newX,
+        y: newY
+    };
+
+    state.moves++;
+
+    const item =
+        state.world.find(worldItem => {
+            return (
+                !worldItem.taken &&
+                worldItem.x === newX &&
+                worldItem.y === newY
+            );
+        });
+
+    if (item) {
+        if (
+            state.items.length >= MAX_SLOTS
+        ) {
+            setStatus(
+                "The array is full. Discard an item first.",
+                false
+            );
+        } else {
+            item.taken = true;
+            HackoAudio.play("pickup");
+
+            state.items.push({
+                name: item.name,
+                value: item.value
+            });
+
+            state.found++;
+
+            log(
+                `push("${item.name}") → ` +
+                `index ${state.items.length - 1}`
+            );
+
+            setStatus(
+                `${item.name} pushed into the array.`,
+                true
+            );
+
+            selected = [];
+        }
+    }
+
+    if (
+        !state.battery.taken &&
+        newX === state.battery.x &&
+        newY === state.battery.y
+    ) {
+        state.battery.taken = true;
+        HackoAudio.play("unlock");
+        state.hp = Math.min(
+            100,
+            state.hp + 30
+        );
+
+        log(
+            "Energy battery restored 30 HP."
+        );
+    }
+
+    if (
+        state.hazards.some(hazard => {
+            return (
+                hazard.x === newX &&
+                hazard.y === newY
+            );
+        })
+    ) {
+        damage(
+            7 + level,
+            "data spikes"
+        );
+    }
+
+    enemyTurn();
+
+    if (
+        state.gateOpen &&
+        newX === 13 &&
+        newY === 8
+    ) {
+        finishMission();
+    } else if (
+        !state.gateOpen &&
+        newX === 13 &&
+        newY === 8
+    ) {
+        setStatus(
+            "Portal locked. Build the correct array and press CHECK ARRAY.",
+            false
+        );
+    }
+
+    updateUI();
+}
+
+function enemyTurn() {
+    const moveEvery =
+        level < 2
+            ? 3
+            : level < 5
+                ? 2
+                : 1;
+
+    if (
+        state.moves % moveEvery !== 0
+    ) {
+        return;
+    }
+
+    state.enemies.forEach(
+        (enemy, enemyIndex) => {
+            const distanceX =
+                state.player.x - enemy.x;
+
+            const distanceY =
+                state.player.y - enemy.y;
+
+            const distance =
+                Math.abs(distanceX) +
+                Math.abs(distanceY);
+
+            const chase =
+                distance <= 4 + level;
+
+            const horizontal = {
+                x: Math.sign(distanceX),
+                y: 0
+            };
+
+            const vertical = {
+                x: 0,
+                y: Math.sign(distanceY)
+            };
+
+            const towardPlayer =
+                Math.abs(distanceX) >
+                Math.abs(distanceY)
+                    ? [horizontal, vertical]
+                    : [vertical, horizontal];
+
+            const patrol = [
+                { x: 1, y: 0 },
+                { x: 0, y: 1 },
+                { x: -1, y: 0 },
+                { x: 0, y: -1 }
+            ];
+
+            const patrolOffset =
+                (
+                    state.moves +
+                    enemyIndex
+                ) % 4;
+
+            const options =
+                chase
+                    ? [
+                        ...towardPlayer,
+                        ...patrol
+                    ]
+                    : patrol
+                        .slice(patrolOffset)
+                        .concat(
+                            patrol.slice(
+                                0,
+                                patrolOffset
+                            )
+                        );
+
+            const step =
+                options.find(option => {
+                    if (
+                        option.x === 0 &&
+                        option.y === 0
+                    ) {
+                        return false;
+                    }
+
+                    const x =
+                        enemy.x + option.x;
+
+                    const y =
+                        enemy.y + option.y;
+
+                    const occupied =
+                        state.enemies.some(
+                            otherEnemy => {
+                                return (
+                                    otherEnemy !== enemy &&
+                                    otherEnemy.x === x &&
+                                    otherEnemy.y === y
+                                );
+                            }
+                        );
+
+                    return (
+                        !state.walls.has(
+                            `${x},${y}`
+                        ) &&
+                        !(x === 13 && y === 8) &&
+                        !occupied
+                    );
+                });
+
+            if (!step) {
+                return;
+            }
+
+            const newX =
+                enemy.x + step.x;
+
+            const newY =
+                enemy.y + step.y;
+
+            if (
+                newX === state.player.x &&
+                newY === state.player.y
+            ) {
+                damage(
+                    5 + level * 2,
+                    "moving glitch"
+                );
+
+                return;
+            }
+
+            enemy.x = newX;
+            enemy.y = newY;
+        }
+    );
+}
+
+function damage(amount, source) {
+    HackoAudio.play("hit");
+
+    state.hp = Math.max(
+        0,
+        state.hp - amount
+    );
+
+    log(
+        `-${amount} energy from ${source}.`
+    );
+
+    setStatus(
+        `Hacko took ${amount} damage from ${source}!`,
+        false
+    );
+
+    if (state.hp <= 0) {
+        state.won = true;
+        HackoAudio.play("gameover");
+
+        setTimeout(() => {
+            alert(
+                "Hacko ran out of energy. " +
+                "The mission will restart."
+            );
+
+            restartMission();
+        }, 80);
+    }
+}
+
+function renderInventory() {
+    const inventory =
+        document.getElementById(
+            "inventory"
+        );
+
+    inventory.innerHTML = "";
+
+    for (
+        let index = 0;
+        index < MAX_SLOTS;
+        index++
+    ) {
+        const slot =
+            document.createElement(
+                "div"
+            );
+
+        const item =
+            state.items[index];
+
+        slot.className =
+            "slot" +
+            (
+                selected.includes(index)
+                    ? " selected"
+                    : ""
+            );
+
+        slot.innerHTML =
+            `<span class="idx">INDEX ${index}</span>` +
+            (
+                item
+                    ? (
+                        `<span class="item">${item.name}</span>` +
+                        (
+                            item.value !== undefined
+                                ? `<span class="val">VALUE ${item.value}</span>`
+                                : ""
+                        )
+                    )
+                    : `<span class="empty">empty</span>`
+            );
+
+        slot.onclick = () => {
+            selectSlot(index);
+        };
+
+        inventory.appendChild(slot);
+    }
+}
+
+function selectSlot(index) {
+    if (!state.items[index]) {
+        return;
+    }
+
+    if (
+        selected.includes(index)
+    ) {
+        selected =
+            selected.filter(
+                selectedIndex => {
+                    return (
+                        selectedIndex !== index
+                    );
+                }
+            );
+    } else {
+        selected.push(index);
+
+        if (
+            selected.length > 2
+        ) {
+            selected.shift();
+        }
+    }
+
+    renderInventory();
+
+    setStatus(
+        selected.length === 2
+            ? "Two slots selected—press Swap Slots."
+            : `Selected index ${index}.`
+    );
+}
+
+function swapSlots() {
+    if (!missions[level].swap) {
+        setStatus(
+            "Swapping unlocks in Mission 3.",
+            false
+        );
+
+        return;
+    }
+
+    if (
+        selected.length !== 2
+    ) {
+        setStatus(
+            "Select exactly two occupied slots.",
+            false
+        );
+
+        return;
+    }
+
+    const [first, second] = selected;
+
+    [
+        state.items[first],
+        state.items[second]
+    ] = [
+        state.items[second],
+        state.items[first]
+    ];
+
+    log(
+        `Swapped index ${first} ` +
+        `with index ${second}.`
+    );
+
+    selected = [];
+    updateUI();
+}
+
+function discardSelected() {
+    if (
+        !missions[level].discard
+    ) {
+        setStatus(
+            "Discarding unlocks in Mission 5.",
+            false
+        );
+
+        return;
+    }
+
+    if (
+        selected.length !== 1
+    ) {
+        setStatus(
+            "Select one slot to discard.",
+            false
+        );
+
+        return;
+    }
+
+    const index = selected[0];
+
+    const removed =
+        state.items.splice(
+            index,
+            1
+        )[0];
+
+    log(
+        `Removed ${removed.name} ` +
+        `from index ${index}.`
+    );
+
+    selected = [];
+    state.sumCalculated = false;
+
+    updateUI();
+}
+
+function useOnPedestal() {
+    if (!missions[level].use) {
+        setStatus(
+            "The pedestal is not active in this mission.",
+            false
+        );
+
+        return;
+    }
+
+    if (
+        selected.length !== 1
+    ) {
+        setStatus(
+            "Select the slot you want to retrieve.",
+            false
+        );
+
+        return;
+    }
+
+    state.usedIndex = selected[0];
+
+    log(
+        `Retrieved items[${state.usedIndex}] = ` +
+        `${state.items[state.usedIndex].name}.`
+    );
+
+    setStatus(
+        `Placed ${state.items[state.usedIndex].name} ` +
+        "on the pedestal.",
+        true
+    );
+
+    updateUI();
+}
+
+function calculateSum() {
+    if (!missions[level].sum) {
+        setStatus(
+            "Calculate Sum unlocks in Mission 10.",
+            false
+        );
+
+        return;
+    }
+
+    const total =
+        state.items.reduce(
+            (sum, item) => {
+                return (
+                    sum +
+                    (item.value || 0)
+                );
+            },
+            0
+        );
+
+    state.sumCalculated = true;
+
+    log(
+        `reduce(sum) = ${total}`
+    );
+
+    setStatus(
+        `Current numeric sum: ${total}`,
+        total === 42
+    );
+
+    updateUI();
+}
+
+function checkMission() {
+    const success =
+        missions[level].check(state);
+
+    if (!success) {
+        setStatus(
+            "Not quite. Compare your array with the required condition.",
+            false
+        );
+
+        log(
+            "Array check failed. Keep experimenting."
+        );
+
+        return;
+    }
+
+    state.gateOpen = true;
+
+    setStatus(
+        "ARRAY ACCEPTED! The portal at the lower-right is open.",
+        true
+    );
+
+    log(
+        "Validation passed. Escape through the portal to finish."
+    );
+}
+
+function finishMission() {
+    /* tell the mission map this level is cleared */
+    if (window.HackoStore) {
+        HackoStore.completeLevel(5, level, 100);
+    }
+
+    if (state.won) {
+        return;
+    }
+
+    state.won = true;
+    HackoAudio.play("win");
+
+    progress.unlocked =
+        Math.max(
+            progress.unlocked,
+            Math.min(
+                10,
+                level + 2
+            )
+        );
+
+    if (
+        !progress.done.includes(level)
+    ) {
+        progress.done.push(level);
+    }
+
+    localStorage.setItem(
+        "hackoArrayProgress",
+        JSON.stringify(progress)
+    );
+
+    document.getElementById(
+        "modalTitle"
+    ).textContent =
+        level === 9
+            ? "ARRAY MASTER!"
+            : "MISSION COMPLETE";
+
+    document.getElementById(
+        "modalText"
+    ).textContent =
+        level === 9
+            ? (
+                "Hacko survived the Living Array " +
+                "and mastered all ten missions."
+            )
+            : (
+                "Array validated and portal reached. " +
+                "Mission accomplished!"
+            );
+
+    document.getElementById(
+        "modalCode"
+    ).textContent =
+        arrayCode();
+
+    const nextButton =
+        document.getElementById(
+            "nextBtn"
+        );
+
+    nextButton.textContent =
+        level === 9
+            ? "PLAY AGAIN"
+            : "NEXT MISSION";
+
+    nextButton.onclick = () => {
+        closeOverlay();
+
+        loadMission(
+            level === 9
+                ? 0
+                : level + 1
+        );
+    };
+
+    document.getElementById(
+        "overlay"
+    ).classList.add("show");
+
+    renderLevels();
+}
+
+function arrayCode() {
+    const values =
+        state.items.map(item => {
+            return (
+                item.value !== undefined
+                    ? item.value
+                    : `"${item.name}"`
+            );
+        }).join(", ");
+
+    return (
+        `const items = [${values}];\n` +
+        `// length: ${state.items.length}` +
+        (
+            state.usedIndex !== null
+                ? (
+                    `\n// retrieved: ` +
+                    `items[${state.usedIndex}]`
+                )
+                : ""
+        )
+    );
+}
+
+function updateUI() {
+    renderInventory();
+
+    const hpStat =
+        document.getElementById(
+            "hpStat"
+        );
+
+    hpStat.textContent =
+        state.hp;
+
+    hpStat.style.color =
+        state.hp < 35
+            ? "#ff496f"
+            : "#91ff6f";
+
+    document.getElementById(
+        "lengthStat"
+    ).textContent =
+        state.items.length;
+
+    document.getElementById(
+        "foundStat"
+    ).textContent =
+        `${state.found}/${state.world.length}`;
+
+    document.getElementById(
+        "swapBtn"
+    ).disabled =
+        !missions[level].swap;
+
+    document.getElementById(
+        "discardBtn"
+    ).disabled =
+        !missions[level].discard;
+
+    document.getElementById(
+        "useBtn"
+    ).disabled =
+        !missions[level].use;
+
+    document.getElementById(
+        "sumBtn"
+    ).disabled =
+        !missions[level].sum;
+}
+
+function setStatus(
+    text,
+    good = null
+) {
+    const status =
+        document.getElementById(
+            "status"
+        );
+
+    status.textContent = text;
+
+    status.className =
+        "status" +
+        (
+            good === true
+                ? " good"
+                : good === false
+                    ? " bad"
+                    : ""
+        );
+}
+
+function log(text) {
+    const container =
+        document.getElementById(
+            "log"
+        );
+
+    const line =
+        document.createElement(
+            "div"
+        );
+
+    line.textContent = text;
+    container.prepend(line);
+}
+
+function renderLevels() {
+    const container =
+        document.getElementById(
+            "levels"
+        );
+
+    container.innerHTML = "";
+
+    missions.forEach(
+        (mission, index) => {
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+            button.className =
+                "level-btn" +
+                (
+                    index === level
+                        ? " active"
+                        : ""
+                ) +
+                (
+                    progress.done.includes(index)
+                        ? " done"
+                        : ""
+                );
+
+            button.textContent =
+                index + 1;
+
+            button.title =
+                mission.title;
+
+            button.disabled =
+                index >= progress.unlocked;
+
+            button.onclick = () => {
+                loadMission(index);
+            };
+
+            container.appendChild(button);
+        }
+    );
+}
+
+function restartMission() {
+    loadMission(level);
+}
+
+function closeOverlay() {
+    document.getElementById(
+        "overlay"
+    ).classList.remove("show");
+}
+
+function draw() {
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    const background =
+        ctx.createLinearGradient(
+            0,
+            0,
+            900,
+            600
+        );
+
+    background.addColorStop(
+        0,
+        "#0c2942"
+    );
+
+    background.addColorStop(
+        1,
+        "#191b40"
+    );
+
+    ctx.fillStyle = background;
+
+    ctx.fillRect(
+        0,
+        0,
+        900,
+        600
+    );
+
+    for (
+        let y = 0;
+        y < ROWS;
+        y++
+    ) {
+        for (
+            let x = 0;
+            x < COLS;
+            x++
+        ) {
+            const wall =
+                state.walls.has(
+                    `${x},${y}`
+                );
+
+            ctx.fillStyle =
+                wall
+                    ? "#193650"
+                    : (x + y) % 2
+                        ? "#173e58"
+                        : "#14364f";
+
+            ctx.fillRect(
+                x * TILE,
+                y * TILE,
+                TILE,
+                TILE
+            );
+
+            ctx.strokeStyle =
+                wall
+                    ? "#3d7894"
+                    : "#27617a44";
+
+            ctx.strokeRect(
+                x * TILE + 2,
+                y * TILE + 2,
+                TILE - 4,
+                TILE - 4
+            );
+        }
+    }
+
+    state.hazards.forEach(
+        hazard => {
+            ctx.save();
+
+            ctx.translate(
+                hazard.x * TILE + 30,
+                hazard.y * TILE + 30
+            );
+
+            ctx.fillStyle = "#b47aff";
+            ctx.shadowBlur = 16;
+            ctx.shadowColor = "#b47aff";
+
+            for (
+                let spike = 0;
+                spike < 4;
+                spike++
+            ) {
+                ctx.rotate(
+                    Math.PI / 2
+                );
+
+                ctx.beginPath();
+                ctx.moveTo(-8, 14);
+                ctx.lineTo(0, -17);
+                ctx.lineTo(8, 14);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+    );
+
+    const portalPulse =
+        18 +
+        Math.sin(
+            performance.now() / 180
+        ) * 4;
+
+    ctx.save();
+
+    ctx.strokeStyle =
+        state.gateOpen
+            ? "#91ff6f"
+            : "#ff496f";
+
+    ctx.shadowBlur = 22;
+    ctx.shadowColor =
+        ctx.strokeStyle;
+
+    ctx.lineWidth = 5;
+
+    ctx.beginPath();
+
+    ctx.arc(
+        13 * TILE + 30,
+        8 * TILE + 30,
+        portalPulse,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.stroke();
+
+    ctx.fillStyle =
+        state.gateOpen
+            ? "#91ff6f55"
+            : "#ff496f33";
+
+    ctx.fill();
+    ctx.restore();
+
+    if (!state.battery.taken) {
+        ctx.save();
+
+        ctx.fillStyle = "#ffd34e";
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = "#ffd34e";
+
+        ctx.fillRect(
+            state.battery.x * TILE + 19,
+            state.battery.y * TILE + 12,
+            22,
+            36
+        );
+
+        ctx.fillStyle = "#07111f";
+
+        ctx.fillRect(
+            state.battery.x * TILE + 27,
+            state.battery.y * TILE + 18,
+            6,
+            24
+        );
+
+        ctx.fillRect(
+            state.battery.x * TILE + 21,
+            state.battery.y * TILE + 27,
+            18,
+            6
+        );
+
+        ctx.restore();
+    }
+
+    state.world.forEach(
+        item => {
+            if (item.taken) {
+                return;
+            }
+
+            const centerX =
+                item.x * TILE + 30;
+
+            const centerY =
+                item.y * TILE + 30;
+
+            const bob =
+                Math.sin(
+                    performance.now() / 250 +
+                    item.x
+                ) * 3;
+
+            const style = itemStyle(item);
+
+            ctx.save();
+
+            ctx.translate(
+                centerX,
+                centerY + bob
+            );
+
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = style.color;
+            ctx.fillStyle = style.color;
+            ctx.strokeStyle = style.color;
+
+            drawItemShape(ctx, style.shape);
+
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "#07111f";
+            ctx.font = "bold 9px Orbitron";
+            ctx.textAlign = "center";
+
+            ctx.fillText(
+                itemLabel(item),
+                0,
+                4
+            );
+
+            ctx.restore();
+        }
+    );
+
+    state.enemies.forEach(
+        (enemy, enemyIndex) => {
+            const centerX =
+                enemy.x * TILE + 30;
+
+            const centerY =
+                enemy.y * TILE + 30;
+
+            const wobble =
+                Math.sin(
+                    performance.now() / 140 +
+                    enemyIndex
+                ) * 3;
+
+            ctx.save();
+
+            ctx.translate(
+                centerX,
+                centerY + wobble
+            );
+
+            /* Three glitch types instead of one spider in
+               two colours, so a crowded board reads at a
+               glance and enemies never blend into items. */
+            const kind = GLITCH_TYPES[enemyIndex % GLITCH_TYPES.length];
+
+            ctx.fillStyle = kind.color;
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = kind.color;
+
+            drawGlitch(ctx, kind.shape, wobble);
+
+            ctx.restore();
+        }
+    );
+
+    const playerX =
+        state.player.x * TILE + 30;
+
+    const playerY =
+        state.player.y * TILE + 30;
+
+    ctx.save();
+
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = "#42efff";
+
+    if (hackoReady) {
+        ctx.drawImage(
+            hackoImage,
+            playerX - 24,
+            playerY - 27,
+            48,
+            54
+        );
+    } else {
+        ctx.fillStyle = "#42efff";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            playerX,
+            playerY,
+            20,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        ctx.fillStyle = "#07111f";
+        ctx.font = "bold 14px Orbitron";
+        ctx.textAlign = "center";
+
+        ctx.fillText(
+            "H",
+            playerX,
+            playerY + 5
+        );
+    }
+
+    ctx.restore();
+
+    requestAnimationFrame(draw);
+}
+
+window.addEventListener(
+    "keydown",
+    event => {
+        const direction = {
+            ArrowUp: [0, -1],
+            w: [0, -1],
+            W: [0, -1],
+
+            ArrowDown: [0, 1],
+            s: [0, 1],
+            S: [0, 1],
+
+            ArrowLeft: [-1, 0],
+            a: [-1, 0],
+            A: [-1, 0],
+
+            ArrowRight: [1, 0],
+            d: [1, 0],
+            D: [1, 0]
+        }[event.key];
+
+        if (direction) {
+            event.preventDefault();
+
+            move(
+                ...direction
+            );
+        }
+    }
+);
+
+loadMission(
+    Math.min(
+        progress.unlocked - 1,
+        9
+    )
+);
+
+draw();
+
+/* =====================================================
+   RESUME + AUTOSAVE
+
+   Progress used to be written only when a level was
+   finished, and no page in the project listened for
+   pagehide or visibilitychange. Leaving mid-level threw
+   that level's work away - which is what the client meant
+   by "pag na back mawawala".
+
+   Every cleared level is now recorded as it happens, and
+   coming back drops the player at the start of the level
+   they had reached.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoStore || !HackoStore.isLoggedIn()) {
+        return;
+    }
+
+    HackoStore.registerTotalLevels(5, 10);
+
+    /* The jump has to happen AFTER the game has booted.
+       theescaperoom builds itself in window.onload, so doing
+       this at parse time meant its own loadLevel(0) ran
+       afterwards and silently sent the player back to level 1.
+       A load listener registered here fires after any onload
+       the page assigned earlier. */
+    function goToSavedLevel() {
+
+        var resume = HackoStore.getResumeLevel(5);
+
+        if (resume > 0 && resume < 10) {
+            try {
+                loadMission(resume);
+            } catch (e) {
+                /* a game that cannot jump just starts at the top */
+            }
+        }
+    }
+
+    if (document.readyState === "complete") {
+        setTimeout(goToSavedLevel, 0);
+    } else {
+        window.addEventListener("load", function () {
+            setTimeout(goToSavedLevel, 0);
+        });
+    }
+
+    HackoStore.bindAutosave(function () {
+        try {
+            return { mission: 5, level: level };
+        } catch (e) {
+            return null;
+        }
+    });
+
+}());
+
+/* =====================================================
+   SOUND LAYER
+
+   Sound used to fire only on a few discrete events, so a
+   game could sit in silence for long stretches. Every page
+   now carries a quiet background track and a visible
+   SOUND ON / SOUND OFF button, so a player can always tell
+   whether audio is working.
+
+   Browsers will not start audio until the player has
+   interacted, so the track is requested here and actually
+   begins on the first key press or click.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoAudio) {
+        return;
+    }
+
+    function begin() {
+        HackoAudio.music.play("adventure");
+        HackoAudio.mountToggle(document.body);
+        if (window.HackoStore) {
+            HackoStore.mountMapLink();
+        }
+    }
+
+    if (document.readyState === "complete") {
+        begin();
+    } else {
+        window.addEventListener("load", begin);
+    }
+
+}());
+</script>
+</body>
+</html>

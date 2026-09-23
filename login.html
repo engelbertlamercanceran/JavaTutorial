@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HACKO - Sign In</title>
+
+<link rel="stylesheet" href="shared/hacko.css">
+<script src="shared/audio.js" data-track="menu"></script>
+<script src="shared/storage.js"></script>
+
+<style>
+body {
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.wrap {
+    width: min(560px, 100%);
+    display: grid;
+    gap: 16px;
+}
+
+.brand {
+    text-align: center;
+}
+
+.brand h1 {
+    margin: 0;
+    font: 900 clamp(2rem, 7vw, 3.2rem) var(--hk-display);
+    color: var(--hk-cyan);
+    text-shadow: 0 0 22px rgba(69, 243, 255, 0.45);
+}
+
+.brand p {
+    margin: 4px 0 0;
+    color: var(--hk-muted);
+    letter-spacing: 0.24em;
+    font-size: 0.72rem;
+}
+
+.row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.row > .hk-btn {
+    flex: 1;
+    min-width: 130px;
+}
+
+.users {
+    display: grid;
+    gap: 8px;
+    max-height: 210px;
+    overflow: auto;
+}
+
+.user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--hk-line);
+    border-radius: 10px;
+    background: #0b1c30;
+    cursor: pointer;
+    text-align: left;
+    color: var(--hk-text);
+    font-family: var(--hk-font);
+    font-size: 1rem;
+    width: 100%;
+}
+
+.user:hover {
+    border-color: var(--hk-cyan);
+}
+
+.user .who {
+    flex: 1;
+    font-weight: 700;
+}
+
+.user .meta {
+    color: var(--hk-muted);
+    font-size: 0.8rem;
+}
+
+.user .drop {
+    border: 0;
+    background: transparent;
+    color: #ff9eb3;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 6px;
+}
+
+.empty {
+    color: var(--hk-muted);
+    font-size: 0.9rem;
+    padding: 6px 2px;
+}
+
+.privacy {
+    border-left: 3px solid var(--hk-amber);
+    padding: 10px 12px;
+    background: rgba(255, 211, 78, 0.07);
+    border-radius: 0 8px 8px 0;
+}
+
+#fileInput {
+    display: none;
+}
+</style>
+</head>
+
+<body class="hk-body">
+
+<div class="wrap">
+
+    <div class="brand">
+        <h1>HACKO</h1>
+        <p>LEARN JAVA BY PLAYING</p>
+    </div>
+
+    <div class="hk-panel">
+        <h2>Who is playing?</h2>
+
+        <div class="users" id="users"></div>
+
+        <div style="margin-top:14px">
+            <label class="hk-label" for="name">NEW PLAYER</label>
+            <input class="hk-input" id="name" maxlength="24"
+                   placeholder="Type your name" autocomplete="off">
+            <p class="hk-error" id="error"></p>
+
+            <button class="hk-btn" id="start" style="width:100%">
+                START PLAYING
+            </button>
+        </div>
+    </div>
+
+    <div class="hk-panel">
+        <h3>Move your progress</h3>
+
+        <p class="hk-note">
+            Progress is saved in this browser on this computer only.
+            Download it to carry on somewhere else, or to keep a copy
+            before the machine is cleared.
+        </p>
+
+        <div class="row" style="margin-top:12px">
+            <button class="hk-btn hk-btn--ghost" id="export">
+                DOWNLOAD PROGRESS
+            </button>
+
+            <button class="hk-btn hk-btn--ghost" id="import">
+                RESTORE FROM FILE
+            </button>
+        </div>
+
+        <p class="hk-ok" id="status"></p>
+        <input type="file" id="fileInput" accept="application/json,.json">
+    </div>
+
+    <div class="hk-panel privacy">
+        <p class="hk-note" style="margin:0">
+            <b>Note:</b> this sign-in only keeps players' progress apart on
+            a shared computer. It is not a security feature and there is no
+            password - do not use it to protect anything private.
+        </p>
+    </div>
+
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    var $ = function (id) { return document.getElementById(id); };
+
+    function say(el, message, isError) {
+        el.textContent = message;
+        el.className = isError ? "hk-error" : "hk-ok";
+    }
+
+    function summarise(name) {
+
+        var raw = null;
+
+        try {
+            raw = JSON.parse(
+                localStorage.getItem("hacko:user:" + name)
+            );
+        } catch (e) {
+            raw = null;
+        }
+
+        if (!raw || !raw.missions) {
+            return "new player";
+        }
+
+        var done = Object.keys(raw.missions).filter(function (id) {
+            return (raw.missions[id].levelsDone || []).length > 0;
+        }).length;
+
+        return done
+            ? done + " of 10 missions started - " + (raw.totalXP || 0) + " XP"
+            : "new player";
+    }
+
+    function renderUsers() {
+
+        var box = $("users");
+        var users = HackoStore.listUsers();
+
+        box.innerHTML = "";
+
+        if (!users.length) {
+            var none = document.createElement("p");
+            none.className = "empty";
+            none.textContent =
+                "No players yet. Type a name below to begin.";
+            box.appendChild(none);
+            return;
+        }
+
+        users.forEach(function (name) {
+
+            var row = document.createElement("button");
+            row.className = "user";
+            row.type = "button";
+
+            var who = document.createElement("span");
+            who.className = "who";
+            who.textContent = name;
+
+            var meta = document.createElement("span");
+            meta.className = "meta";
+            meta.textContent = summarise(name);
+
+            var drop = document.createElement("span");
+            drop.className = "drop";
+            drop.textContent = "x";
+            drop.title = "Remove " + name;
+
+            row.appendChild(who);
+            row.appendChild(meta);
+            row.appendChild(drop);
+
+            row.addEventListener("click", function (event) {
+
+                if (event.target === drop) {
+
+                    event.stopPropagation();
+
+                    if (window.confirm(
+                        "Remove " + name + " and delete their progress " +
+                        "from this browser? This cannot be undone."
+                    )) {
+                        HackoStore.deleteUser(name);
+                        renderUsers();
+                    }
+
+                    return;
+                }
+
+                signIn(name);
+            });
+
+            box.appendChild(row);
+        });
+    }
+
+    function signIn(name) {
+
+        var clean = String(name || "").trim();
+
+        if (!clean) {
+            say($("error"), "Please type a name first.", true);
+            return;
+        }
+
+        if (clean.length > 24) {
+            say($("error"), "That name is too long.", true);
+            return;
+        }
+
+        HackoAudio.play("select");
+        HackoStore.login(clean);
+        window.location.href = "map.html";
+    }
+
+    $("start").addEventListener("click", function () {
+        signIn($("name").value);
+    });
+
+    $("name").addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+            signIn($("name").value);
+        }
+    });
+
+    $("export").addEventListener("click", function () {
+
+        if (!HackoStore.isLoggedIn()) {
+            say($("status"),
+                "Pick a player first, then come back to download.", true);
+            return;
+        }
+
+        HackoStore.exportToFile();
+        say($("status"), "Progress file downloaded.", false);
+    });
+
+    $("import").addEventListener("click", function () {
+        $("fileInput").click();
+    });
+
+    $("fileInput").addEventListener("change", function (event) {
+
+        var file = event.target.files && event.target.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        HackoStore.importFile(file).then(function (record) {
+
+            say($("status"),
+                "Restored " + record.username + "'s progress.", false);
+
+            renderUsers();
+            event.target.value = "";
+
+        }).catch(function (error) {
+            say($("status"), error.message, true);
+            event.target.value = "";
+        });
+    });
+
+    renderUsers();
+    $("name").focus();
+
+}());
+
+/* =====================================================
+   SOUND LAYER
+
+   Sound used to fire only on a few discrete events, so a
+   game could sit in silence for long stretches. Every page
+   now carries a quiet background track and a visible
+   SOUND ON / SOUND OFF button, so a player can always tell
+   whether audio is working.
+
+   Browsers will not start audio until the player has
+   interacted, so the track is requested here and actually
+   begins on the first key press or click.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoAudio) {
+        return;
+    }
+
+    function begin() {
+        HackoAudio.music.play("menu");
+        HackoAudio.mountToggle(document.body);
+    }
+
+    if (document.readyState === "complete") {
+        begin();
+    } else {
+        window.addEventListener("load", begin);
+    }
+
+}());
+</script>
+
+</body>
+</html>

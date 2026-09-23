@@ -1,0 +1,18 @@
+1. Escape room issue
+Dito po sa first game is need po may sounds (actually po lahat wala pa sound) tska question po is naka lagay yung answer na san ilalagay dpat clue lang po tska yung parang door po lagyan design
+
+2. The secret message issue
+Dito naman po sound ulit tapos yung enemy po sana may design po then tska yung sa pag answer po ulit pag na click yung hint sagot mismo lumalabas po pati sa part lvl 10 choke area po hindi maka daan tska yung life po 3 death lang dapat
+
+3 Conditional challenge issue
+Dito naman po sounds ulit
+
+4. Loop labyrinth
+Dito po sound ulit po tska yung hint nanaman po lumalabas yung sagot mismo po tska may choke area po na hindi makadaan
+
+5. CLASSROOM RESCUE issue/requirement (this is not yet complete i think)
+Dito naman po babaguhin mismo yung game po para style nya po yung alam nyo po yung pokemon emerald yung gym po nila ganon style nya po, na na-trap sa isang room Code Escape Room. Para makalabas, kailangan niyang malutas ang iba't ibang coding challenges at puzzles na nakakalat sa bawat silid.
+
+Sa bawat room, may mga naka-lock na pinto, bitag, clues, at programming questions tungkol sa Java tulad ng variables, conditions, loops, functions, at syntax. Kailangang hanapin ni HACKO ang tamang sagot upang mabuksan ang pinto at makapunta sa susunod na room.
+
+Kapag mali ang sagot, maaaring ma-activate ang isang bitag at mawalan siya ng isang buhay.

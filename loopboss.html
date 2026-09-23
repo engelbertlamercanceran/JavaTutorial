@@ -1,0 +1,2423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>HACKO: Loop Boss Battle</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+    margin:0;
+    background:#030711;
+    color:#fff;
+    font-family:Arial,sans-serif;
+    overflow:hidden;
+}
+
+button{
+    border:0;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+#game{
+    width:100vw;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+}
+
+#top{
+    height:60px;
+    flex-shrink:0;
+    background:#091221;
+    border-bottom:2px solid #00eaff;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 15px;
+}
+
+.logo{
+    color:#00eaff;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.stats{
+    display:flex;
+    gap:7px;
+}
+
+.stat{
+    background:#142238;
+    border:1px solid #263d58;
+    padding:7px 11px;
+    border-radius:6px;
+    font-size:12px;
+}
+
+#main{
+    flex:1;
+    min-height:0;
+    display:grid;
+    grid-template-columns:58% 42%;
+    gap:7px;
+    padding:7px;
+}
+
+/* =========================
+WORLD
+========================= */
+
+#world{
+    position:relative;
+    overflow:hidden;
+    border:2px solid #25415e;
+    border-radius:9px;
+    background:#07101d;
+}
+
+.floor{
+    position:absolute;
+    inset:0;
+    background:
+        linear-gradient(rgba(0,220,255,.05) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(0,220,255,.05) 1px,transparent 1px);
+    background-size:42px 42px;
+}
+
+.neon{
+    position:absolute;
+    background:#00eaff;
+    box-shadow:0 0 10px #00eaff;
+}
+
+.n1{
+    top:100px;
+    left:30px;
+    width:260px;
+    height:3px;
+}
+
+.n2{
+    top:100px;
+    right:30px;
+    width:220px;
+    height:3px;
+}
+
+.n3{
+    bottom:100px;
+    left:30px;
+    width:180px;
+    height:3px;
+}
+
+.room{
+    position:absolute;
+    border:2px solid #213b56;
+    background:rgba(10,24,42,.65);
+    border-radius:8px;
+}
+
+.roomTitle{
+    position:absolute;
+    top:7px;
+    left:10px;
+    color:#47728f;
+    font-size:10px;
+    font-weight:bold;
+}
+
+#lab{
+    left:25px;
+    top:130px;
+    width:240px;
+    height:180px;
+}
+
+#power{
+    right:30px;
+    top:130px;
+    width:220px;
+    height:180px;
+}
+
+#bossRoom{
+    left:30%;
+    top:58%;
+    width:390px;
+    height:190px;
+}
+
+/* terminal */
+
+.terminalObj{
+    position:absolute;
+    left:85px;
+    top:70px;
+    font-size:42px;
+    filter:drop-shadow(0 0 10px #00eaff);
+}
+
+.termLabel{
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    top:122px;
+    font-size:10px;
+    color:#55eaff;
+}
+
+/* power station */
+
+#powerStation{
+    position:absolute;
+    left:75px;
+    top:65px;
+    width:70px;
+    height:70px;
+    background:#102c38;
+    border:3px solid #00ff91;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:34px;
+    box-shadow:0 0 15px rgba(0,255,145,.3);
+}
+
+#powerText{
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    top:142px;
+    width:100%;
+    text-align:center;
+    font-size:10px;
+    color:#7affbc;
+}
+
+/* boss */
+
+#boss{
+    position:absolute;
+    width:100px;
+    height:100px;
+    left:50%;
+    top:55px;
+    transform:translateX(-50%);
+    border-radius:50%;
+    background:#551334;
+    border:5px solid #ff3d68;
+    box-shadow:0 0 30px #ff174f;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:52px;
+    z-index:15;
+}
+
+#bossName{
+    position:absolute;
+    top:-35px;
+    left:50%;
+    transform:translateX(-50%);
+    white-space:nowrap;
+    color:#ff607e;
+    font-size:13px;
+    font-weight:bold;
+}
+
+#bossBar{
+    position:absolute;
+    top:-20px;
+    left:50%;
+    transform:translateX(-50%);
+    width:200px;
+    height:13px;
+    background:#090909;
+    border:1px solid white;
+    border-radius:8px;
+    overflow:hidden;
+}
+
+#bossHP{
+    height:100%;
+    width:100%;
+    background:#ff3155;
+    transition:.3s;
+}
+
+/* characters */
+
+.character{
+    position:absolute;
+    width:50px;
+    height:58px;
+    border-radius:12px 12px 9px 9px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:27px;
+    z-index:25;
+    transition:.08s;
+}
+
+.character .name{
+    position:absolute;
+    top:59px;
+    left:50%;
+    transform:translateX(-50%);
+    white-space:nowrap;
+    font-size:9px;
+    background:#fff;
+    color:#111;
+    padding:2px 5px;
+    border-radius:4px;
+}
+
+#hacko{
+    left:80px;
+    bottom:50px;
+    background:#00bfe8;
+    border:3px solid #7bf4ff;
+    box-shadow:0 0 18px #00cfff;
+}
+
+#nova{
+    left:150px;
+    top:55px;
+    background:#b62de8;
+    border:3px solid #e88aff;
+}
+
+#byte{
+    right:70px;
+    bottom:45px;
+    background:#68777c;
+    border:3px solid #c6d5d8;
+}
+
+/* collectible */
+
+.item{
+    position:absolute;
+    width:42px;
+    height:42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:28px;
+    z-index:22;
+    filter:drop-shadow(0 0 8px #ffd700);
+}
+
+#chip{
+    left:185px;
+    top:340px;
+}
+
+#battery{
+    right:100px;
+    top:350px;
+}
+
+#key{
+    left:55%;
+    bottom:30px;
+}
+
+/* interaction */
+
+#interact{
+    position:absolute;
+    left:50%;
+    bottom:12px;
+    transform:translateX(-50%);
+    background:rgba(0,0,0,.9);
+    color:#00eaff;
+    border:1px solid #00eaff;
+    padding:8px 13px;
+    border-radius:5px;
+    font-size:11px;
+    display:none;
+    z-index:70;
+}
+
+/* controls */
+
+#controls{
+    position:absolute;
+    left:10px;
+    bottom:10px;
+    display:grid;
+    grid-template-columns:40px 40px 40px;
+    gap:4px;
+    z-index:80;
+}
+
+#controls button{
+    height:36px;
+    background:#101e31;
+    color:#fff;
+    border:1px solid #35516c;
+    border-radius:5px;
+}
+
+#up{grid-column:2}
+#left{grid-column:1}
+#down{grid-column:2}
+#right{grid-column:3}
+
+/* dialogue */
+
+#dialogue{
+    position:absolute;
+    left:15px;
+    right:15px;
+    bottom:15px;
+    background:rgba(3,8,16,.98);
+    border:2px solid #00eaff;
+    border-radius:8px;
+    padding:13px;
+    z-index:150;
+    display:none;
+}
+
+#speaker{
+    color:#ffd83d;
+    font-weight:bold;
+    margin-bottom:5px;
+}
+
+#dialogueText{
+    color:#d6e6f0;
+    font-size:12px;
+    line-height:1.5;
+}
+
+#dialogueBtn{
+    margin-top:8px;
+    background:#00eaff;
+    color:#00131a;
+    padding:7px 13px;
+    border-radius:5px;
+}
+
+/* start */
+
+.overlay{
+    position:absolute;
+    inset:0;
+    z-index:200;
+    background:rgba(2,5,12,.97);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:25px;
+}
+
+.overlay h1{
+    color:#00eaff;
+    font-size:34px;
+}
+
+.overlay p{
+    max-width:680px;
+    color:#b9cad8;
+    line-height:1.6;
+    white-space:pre-line;
+}
+
+.overlay button{
+    margin-top:15px;
+    background:#00eaff;
+    color:#00131a;
+    padding:12px 25px;
+    border-radius:6px;
+}
+
+#complete{
+    display:none;
+}
+
+/* =========================
+TERMINAL
+========================= */
+
+#terminal{
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    background:#09121e;
+    border:2px solid #263e58;
+    border-radius:9px;
+    overflow:hidden;
+}
+
+.thead{
+    background:#101c2c;
+    padding:10px;
+    border-bottom:1px solid #284159;
+}
+
+.thead h2{
+    margin:0;
+    font-size:17px;
+    color:#00eaff;
+}
+
+#mission{
+    color:#8fa9bc;
+    font-size:11px;
+    margin-top:4px;
+}
+
+#challenge{
+    background:#040a12;
+    padding:10px;
+    border-bottom:1px solid #243a50;
+}
+
+#levelTitle{
+    color:#ffd43b;
+    font-weight:bold;
+    font-size:14px;
+}
+
+#objective{
+    color:#d3e2ed;
+    font-size:12px;
+    line-height:1.45;
+    margin-top:5px;
+}
+
+#pattern{
+    margin:8px 0 0;
+    padding:8px;
+    background:#02060a;
+    border:1px solid #1d3448;
+    color:#71e6ff;
+    white-space:pre-wrap;
+    font:11px Consolas,monospace;
+    max-height:105px;
+    overflow:auto;
+}
+
+#editor{
+    flex:1;
+    min-height:150px;
+    resize:none;
+    border:0;
+    outline:0;
+    background:#02070c;
+    color:#dff6ff;
+    padding:10px;
+    font:13px/1.5 Consolas,monospace;
+}
+
+.actions{
+    display:flex;
+    gap:6px;
+    padding:8px;
+    background:#101d2d;
+}
+
+.actions button{
+    padding:9px 12px;
+    border-radius:5px;
+}
+
+#run{
+    background:#00eaff;
+    color:#00151c;
+}
+
+#hint{
+    background:#354b63;
+    color:white;
+}
+
+#reset{
+    background:#653747;
+    color:white;
+}
+
+#output{
+    height:115px;
+    overflow:auto;
+    background:#02060a;
+    padding:9px;
+    font:11px/1.5 Consolas,monospace;
+}
+
+.success{color:#00ff91}
+.error{color:#ff6078}
+.info{color:#6fe5ff}
+.warn{color:#ffd15c}
+
+@media(max-width:900px){
+    body{overflow:auto}
+    #main{
+        grid-template-columns:1fr;
+        overflow:auto;
+    }
+    #world{
+        height:530px;
+        min-height:530px;
+    }
+    #terminal{
+        height:520px;
+        min-height:520px;
+    }
+}
+</style>
+<script src="shared/audio.js" data-track="boss"></script>
+<script src="shared/storage.js"></script>
+</head>
+
+<body>
+
+<div id="game">
+
+<header id="top">
+
+<div class="logo">
+    ⚡ HACKO: LOOP BOSS BATTLE
+</div>
+
+<div class="stats">
+    <div class="stat">⭐ XP <span id="xp">0</span></div>
+    <div class="stat">❤️ <span id="lives">3</span></div>
+    <div class="stat">🔥 <span id="combo">0</span></div>
+    <div class="stat">LEVEL <span id="level">1</span>/10</div>
+</div>
+
+</header>
+
+
+<div id="main">
+
+
+<!-- =========================
+     WORLD
+========================= -->
+
+<section id="world">
+
+<div class="floor"></div>
+
+<div class="neon n1"></div>
+<div class="neon n2"></div>
+<div class="neon n3"></div>
+
+
+<!-- LAB -->
+
+<div id="lab" class="room">
+
+<div class="roomTitle">
+    HACK LAB
+</div>
+
+<div class="terminalObj">
+    💻
+</div>
+
+<div class="termLabel">
+    CODE TERMINAL
+</div>
+
+</div>
+
+
+<!-- POWER ROOM -->
+
+<div id="power" class="room">
+
+<div class="roomTitle">
+    POWER CORE
+</div>
+
+<div id="powerStation">
+    ⚡
+</div>
+
+<div id="powerText">
+    POWER STATION
+</div>
+
+</div>
+
+
+<!-- BOSS ROOM -->
+
+<div id="bossRoom" class="room">
+
+<div class="roomTitle">
+    LOOP OVERLORD CHAMBER
+</div>
+
+<div id="boss">
+
+    👾
+
+    <div id="bossName">
+        LOOP OVERLORD
+    </div>
+
+    <div id="bossBar">
+        <div id="bossHP"></div>
+    </div>
+
+</div>
+
+</div>
+
+
+<!-- CHARACTERS -->
+
+<div id="hacko" class="character">
+
+    🧑‍💻
+
+    <div class="name">
+        HACKO
+    </div>
+
+</div>
+
+
+<div id="nova" class="character">
+
+    👩‍💻
+
+    <div class="name">
+        NOVA
+    </div>
+
+</div>
+
+
+<div id="byte" class="character">
+
+    🤖
+
+    <div class="name">
+        BYTE
+    </div>
+
+</div>
+
+
+<!-- ITEMS -->
+
+<div id="chip" class="item">
+    💾
+</div>
+
+<div id="battery" class="item">
+    🔋
+</div>
+
+<div id="key" class="item">
+    🔑
+</div>
+
+
+<div id="interact">
+    PRESS E
+</div>
+
+
+<!-- CONTROLS -->
+
+<div id="controls">
+
+<button id="up">▲</button>
+<button id="left">◀</button>
+<button id="down">▼</button>
+<button id="right">▶</button>
+
+</div>
+
+
+<!-- DIALOGUE -->
+
+<div id="dialogue">
+
+<div id="speaker"></div>
+
+<div id="dialogueText"></div>
+
+<button id="dialogueBtn">
+    CONTINUE
+</button>
+
+</div>
+
+
+<!-- START -->
+
+<div id="start" class="overlay">
+
+<h1>⚡ HACKO</h1>
+
+<p>
+The Loop Overlord has invaded the coding academy.
+
+HACKO and his team must enter the corrupted
+Loop Dimension.
+
+Talk to NOVA.
+Activate BYTE.
+Collect the DATA CHIP.
+Then use your coding skills to defeat the boss.
+
+The challenges become harder every level.
+
+WASD / ARROWS = MOVE
+E = TALK / INTERACT
+CTRL + ENTER = RUN CODE
+</p>
+
+<button id="startBtn">
+    START ADVENTURE
+</button>
+
+</div>
+
+
+<!-- COMPLETE -->
+
+<div id="complete" class="overlay">
+
+<h1 id="completeTitle">
+    LEVEL COMPLETE!
+</h1>
+
+<p id="completeText"></p>
+
+<button id="nextBtn">
+    NEXT LEVEL →
+</button>
+
+</div>
+
+</section>
+
+
+<!-- =========================
+     TERMINAL
+========================= -->
+
+<section id="terminal">
+
+<div class="thead">
+
+<h2>
+    💻 HACKO CODE TERMINAL
+</h2>
+
+<div id="mission">
+    Mission loading...
+</div>
+
+</div>
+
+
+<div id="challenge">
+
+<div id="levelTitle"></div>
+
+<div id="objective"></div>
+
+<pre id="pattern"></pre>
+
+</div>
+
+
+<textarea id="editor" spellcheck="false"></textarea>
+
+
+<div class="actions">
+
+<button id="run">
+    ▶ RUN CODE
+</button>
+
+<button id="hint">
+    💡 HINT
+</button>
+
+<button id="reset">
+    ↻ RESET
+</button>
+
+</div>
+
+
+<div id="output">
+<span class="info">
+Terminal ready.
+</span>
+</div>
+
+</section>
+
+</div>
+</div>
+
+
+<script>
+
+/* =====================================================
+   LEVEL DATA
+===================================================== */
+
+const levels=[
+
+{
+title:"LEVEL 1 \u2014 FIRST LOOP",
+mission:"HACKO must break the first security wall.",
+objective:
+"Use a for loop to print the numbers 1 through 5.",
+pattern:
+`TARGET
+
+1
+2
+3
+4
+5`,
+starter:
+`for (int i = ___; i ___; i++) {
+    // print i
+}`,
+checks:[
+/for\s*\(/i,
+/int\s+i\s*=\s*1/i,
+/i\s*<=\s*5/i,
+/i\s*\+\+/i,
+/System\s*\.\s*out\s*\.\s*print/i
+],
+damage:10,
+xp:100,
+hints:[
+"A loop needs a starting point, a stopping test, and a step.",
+"The first number printed is 1, and 5 has to be printed too.",
+"Example counting to 3: for (int n = 1; n <= 3; n++)"
+]
+},
+
+{
+title:"LEVEL 2 \u2014 POWER COUNTDOWN",
+mission:"Nova needs a countdown to overload the shield.",
+objective:
+"Print 10 down to 1.",
+pattern:
+`TARGET
+
+10
+9
+8
+7
+6
+5
+4
+3
+2
+1`,
+starter:
+`for (int i = ___; i ___; i___) {
+    // print i
+}`,
+checks:[
+/for\s*\(/i,
+/int\s+i\s*=\s*10/i,
+/i\s*>=\s*1/i,
+/i\s*--/i,
+/System\s*\.\s*out\s*\.\s*print/i
+],
+damage:12,
+xp:120,
+hints:[
+"This loop runs backwards, so it starts at the high number.",
+"Counting down means the test and the step both reverse.",
+"Two minus signs subtract one, just as two plus signs add one."
+]
+},
+
+{
+title:"LEVEL 3 \u2014 EVEN CORE",
+mission:"Only even frequencies damage the core.",
+objective:
+"Print only the even numbers from 2 to 10.",
+pattern:
+`TARGET
+
+2
+4
+6
+8
+10`,
+starter:
+`for (int i = 1; i <= 10; i++) {
+
+    // only print i when it is even
+
+}`,
+checks:[
+/for\s*\(/i,
+/if\s*\(/i,
+/i\s*%\s*2\s*==\s*0/i,
+/System\s*\.\s*out\s*\.\s*print/i
+],
+damage:14,
+xp:150,
+hints:[
+"Walk every number, but only print some of them.",
+"A number is even when dividing it by 2 leaves nothing behind.",
+"The % operator gives the remainder: 7 % 2 is 1, and 8 % 2 is 0."
+]
+},
+
+{
+title:"LEVEL 4 \u2014 GRID ATTACK",
+mission:"The Loop Overlord creates a grid shield.",
+objective:
+"Use nested loops to create a 3 x 3 star grid.",
+pattern:
+`TARGET
+
+***
+***
+***`,
+starter:
+`for (int row = 1; row <= 3; row++) {
+
+    // an inner loop prints one row of stars
+
+    // then move to the next line
+}`,
+checks:[
+/System\s*\.\s*out\s*\.\s*print\s*\(\s*"\*"\s*\)/i,
+/row/i,
+/col/i
+],
+nested:true,
+damage:15,
+xp:180,
+hints:[
+"Nine stars in three rows means one loop is not enough.",
+"The outer loop counts rows; for each row the inner loop prints the columns.",
+"print stays on the line, println ends it - you need both."
+]
+},
+
+{
+title:"LEVEL 5 \u2014 TRIANGLE",
+mission:"Break the shield with a growing pattern.",
+objective:
+"Generate a 5-row triangle using nested loops.",
+pattern:
+`TARGET
+
+*
+**
+***
+****
+*****`,
+starter:
+`for (int row = 1; row <= 5; row++) {
+
+    // print as many stars as the row number
+
+    // then end the line
+}`,
+checks:[
+/col\s*<=\s*row/i,
+/System\s*\.\s*out\s*\.\s*print\s*\(\s*"\*"\s*\)/i
+],
+nested:true,
+damage:16,
+xp:200,
+hints:[
+"Each row is one star longer than the row above it.",
+"The inner loop should not always stop at the same number.",
+"Let the inner loop run up to whatever row it is currently on."
+]
+},
+
+{
+title:"LEVEL 6 \u2014 NUMBER WAVE",
+mission:"Numeric overload damages the Overlord.",
+objective:
+"Create the pattern 1, 12, 123, 1234, 12345.",
+pattern:
+`TARGET
+
+1
+12
+123
+1234
+12345`,
+starter:
+`for (int row = 1; row <= 5; row++) {
+
+    // print the counting numbers up to this row
+
+    // then end the line
+}`,
+checks:[
+/col\s*<=\s*row/i,
+/System\s*\.\s*out\s*\.\s*print\s*\(\s*col\s*\)/i
+],
+nested:true,
+damage:18,
+xp:220,
+hints:[
+"The shape is the same as the triangle, but the stars became numbers.",
+"Each row counts up from 1 to that row's number.",
+"Print the inner counter itself instead of a fixed character."
+]
+},
+
+{
+title:"LEVEL 7 \u2014 REVERSE ATTACK",
+mission:"Invert the pattern to confuse the shield.",
+objective:
+"Generate a decreasing 5-row triangle.",
+pattern:
+`TARGET
+
+*****
+****
+***
+**
+*`,
+starter:
+`for (int row = ___; row ___; row___) {
+
+    // print this row's stars
+
+    // then end the line
+}`,
+checks:[
+/row\s*=\s*5/i,
+/row\s*>=\s*1/i,
+/row\s*--/i,
+/col\s*<=\s*row/i
+],
+nested:true,
+damage:20,
+xp:240,
+hints:[
+"This is the triangle from before, walked in the opposite direction.",
+"Only the outer loop changes - the inner loop already knows what to do.",
+"Start at the widest row and step downwards."
+]
+},
+
+{
+title:"LEVEL 8 \u2014 MULTIPLICATION MATRIX",
+mission:"Overload the Overlord with arithmetic.",
+objective:
+"Generate a 5 x 5 multiplication table.",
+pattern:
+`TARGET
+
+1 2 3 4 5
+2 4 6 8 10
+3 6 9 12 15
+4 8 12 16 20
+5 10 15 20 25`,
+starter:
+`for (int row = 1; row <= 5; row++) {
+
+    for (int col = 1; col <= 5; col++) {
+        // print the product of the two counters
+    }
+
+    // end the line
+}`,
+checks:[
+/row\s*\*\s*col/i,
+/row\s*<=\s*5/i,
+/col\s*<=\s*5/i
+],
+nested:true,
+damage:22,
+xp:260,
+hints:[
+"Every cell is built from the two numbers that locate it.",
+"Row 3, column 4 holds 12 - what did those two numbers do?",
+"Add a space after each value so the columns stay readable."
+]
+},
+
+{
+title:"LEVEL 9 \u2014 HOLLOW SHIELD",
+mission:"Only the edges of the shield are solid.",
+objective:
+"Use nested loops and a condition to make a hollow square.",
+pattern:
+`TARGET
+
+*****
+*   *
+*   *
+*   *
+*****`,
+starter:
+`for (int row = 1; row <= 5; row++) {
+
+    for (int col = 1; col <= 5; col++) {
+
+        // a star on the border, a space inside
+
+    }
+
+    // end the line
+}`,
+checks:[
+/row\s*==\s*1/i,
+/row\s*==\s*5/i,
+/col\s*==\s*1/i,
+/col\s*==\s*5/i,
+/System\s*\.\s*out\s*\.\s*print/i
+],
+nested:true,
+damage:25,
+xp:300,
+hints:[
+"Every cell is visited, but only some of them get a star.",
+"A cell is on the border when it sits in the first or last row, or the first or last column.",
+"Four separate possibilities, any one of which is enough - that calls for ||."
+]
+},
+
+{
+title:"FINAL LEVEL \u2014 LOOP OVERLORD",
+mission:"Defeat the Loop Overlord for good.",
+objective:
+"Create a 4 x 4 checkerboard using nested loops and a condition.",
+pattern:
+`TARGET
+
+*.*.
+.*.*
+*.*.
+.*.*`,
+starter:
+`for (int row = 1; row <= 4; row++) {
+
+    for (int col = 1; col <= 4; col++) {
+
+        // alternate between a star and a dot
+
+    }
+
+    // end the line
+}`,
+checks:[
+/row\s*\+\s*col/i,
+/%\s*2\s*==\s*0/i,
+/System\s*\.\s*out\s*\.\s*print/i
+],
+nested:true,
+damage:30,
+xp:500,
+hints:[
+"The pattern flips every step, both across and downwards.",
+"Look at what the row and column numbers add up to on the starred squares.",
+"When that total is even you draw one character, when it is odd the other."
+]
+}
+
+];
+
+
+/* =====================================================
+   STATE
+===================================================== */
+
+let state={
+    level:1,
+    xp:0,
+    lives:3,
+    combo:0,
+    bossHP:100,
+    chip:false,
+    battery:false
+};
+
+let started=false;
+let paused=false;
+let keys={};
+let dialogueLines=[];
+let dialogueIndex=0;
+let nearby=null;
+
+
+/* =====================================================
+   HELPERS
+===================================================== */
+
+function $(id){
+    return document.getElementById(id);
+}
+
+
+/* =====================================================
+   SAVE / LOAD
+===================================================== */
+
+function save(){
+
+    localStorage.setItem(
+        "hackoLoopBattle",
+        JSON.stringify(state)
+    );
+
+}
+
+function load(){
+
+    const saved=
+        localStorage.getItem(
+            "hackoLoopBattle"
+        );
+
+    if(!saved)return;
+
+    try{
+
+        const s=JSON.parse(saved);
+
+        state.level=
+            Math.max(
+                1,
+                Math.min(
+                    10,
+                    Number(s.level)||1
+                )
+            );
+
+        state.xp=
+            Math.max(
+                0,
+                Number(s.xp)||0
+            );
+
+        state.lives=
+            Math.max(
+                1,
+                Math.min(
+                    3,
+                    Number(s.lives)||3
+                )
+            );
+
+        state.combo=
+            Math.max(
+                0,
+                Number(s.combo)||0
+            );
+
+    }catch(e){}
+
+}
+
+
+/* =====================================================
+   HUD
+===================================================== */
+
+function updateHUD(){
+
+    $("xp").textContent=state.xp;
+    $("lives").textContent=state.lives;
+    $("combo").textContent=state.combo;
+    $("level").textContent=state.level;
+
+}
+
+
+/* =====================================================
+   LEVEL
+===================================================== */
+
+function loadLevel(){
+
+    const L=
+        levels[state.level-1];
+
+    state.bossHP=100;
+    hintTier=0;
+
+    $("levelTitle").textContent=L.title;
+    $("mission").textContent=L.mission;
+    $("objective").textContent=L.objective;
+    $("pattern").textContent=L.pattern;
+    $("editor").value=L.starter;
+
+    $("bossHP").style.width="100%";
+
+    $("chip").style.display=
+        state.level>=3
+        ?"flex"
+        :"none";
+
+    $("battery").style.display=
+        state.level>=5
+        ?"flex"
+        :"none";
+
+    $("key").style.display=
+        state.level>=8
+        ?"flex"
+        :"none";
+
+    $("output").innerHTML=
+        `<span class="info">
+        ⚡ LEVEL ${state.level} READY.
+        </span>`;
+
+    updateHUD();
+    save();
+
+}
+
+
+/* =====================================================
+   OUTPUT
+===================================================== */
+
+function output(type,text){
+
+    $("output").innerHTML=
+        `<span class="${type}">${
+            text.replace(/\n/g,"<br>")
+        }</span>`;
+
+}
+
+
+/* =====================================================
+   DIALOGUE
+===================================================== */
+
+function talk(name,lines){
+
+    dialogueLines=lines;
+    dialogueIndex=0;
+
+    $("speaker").textContent=name;
+    $("dialogueText").textContent=
+        dialogueLines[0];
+
+    $("dialogue").style.display="block";
+
+    paused=true;
+
+}
+
+$("dialogueBtn").onclick=()=>{
+
+    dialogueIndex++;
+
+    if(
+        dialogueIndex<
+        dialogueLines.length
+    ){
+
+        $("dialogueText").textContent=
+            dialogueLines[dialogueIndex];
+
+    }else{
+
+        $("dialogue").style.display=
+            "none";
+
+        paused=false;
+
+    }
+
+};
+
+
+/* =====================================================
+   DISTANCE
+===================================================== */
+
+function distance(a,b){
+
+    const ax=
+        parseFloat(a.style.left)||0;
+
+    const ay=
+        parseFloat(a.style.top)||0;
+
+    const bx=
+        parseFloat(b.style.left)||0;
+
+    const by=
+        parseFloat(b.style.top)||0;
+
+    return Math.hypot(
+        ax-bx,
+        ay-by
+    );
+
+}
+
+
+/* =====================================================
+   INTERACTION CHECK
+===================================================== */
+
+function checkNearby(){
+
+    if(!started || paused)return;
+
+    nearby=null;
+
+    const objects=[
+
+        [$("nova"),"nova","NOVA"],
+        [$("byte"),"byte","BYTE"],
+        [$("chip"),"chip","DATA CHIP"],
+        [$("battery"),"battery","POWER CELL"],
+        [$("key"),"key","BOSS KEY"],
+        [$("powerStation"),"power","POWER STATION"],
+        [$("boss"),"boss","LOOP OVERLORD"]
+
+    ];
+
+    for(
+        const [obj,type,name]
+        of objects
+    ){
+
+        if(
+            getComputedStyle(obj).display
+            ==="none"
+        )continue;
+
+        if(
+            distance(
+                $("hacko"),
+                obj
+            )<90
+        ){
+
+            nearby={
+                type,
+                name,
+                obj
+            };
+
+            $("interact").style.display=
+                "block";
+
+            $("interact").textContent=
+                "PRESS E → "+name;
+
+            return;
+
+        }
+
+    }
+
+    $("interact").style.display=
+        "none";
+
+}
+
+
+/* =====================================================
+   INTERACT
+===================================================== */
+
+function interact(){
+    HackoAudio.play("select");
+
+    if(!nearby)return;
+
+    switch(nearby.type){
+
+        case"nova":
+
+            talk(
+                "NOVA",
+                [
+                    "HACKO! You made it!",
+
+                    "The Loop Overlord controls this dimension with nested loops.",
+
+                    "Every level will become more complicated.",
+
+                    "Start simple. Then combine loops with conditions.",
+
+                    "I'll guide you if you get stuck."
+                ]
+            );
+
+        break;
+
+
+        case"byte":
+
+            talk(
+                "BYTE",
+                [
+                    "BEEP... BOOP.",
+
+                    "I am BYTE, HACKO's coding companion.",
+
+                    "Nested loops are powerful.",
+
+                    "Outer loop = rows.",
+
+                    "Inner loop = columns.",
+
+                    "Together they can generate grids, patterns and matrices."
+                ]
+            );
+
+        break;
+
+
+        case"chip":
+
+            state.xp+=50;
+            state.chip=true;
+
+            nearby.obj.style.display="none";
+
+            updateHUD();
+            save();
+
+            output(
+                "success",
+                "💾 DATA CHIP COLLECTED!\n\n+50 XP"
+            );
+
+        break;
+
+
+        case"battery":
+
+            state.xp+=75;
+            state.battery=true;
+
+            nearby.obj.style.display="none";
+
+            updateHUD();
+            save();
+
+            output(
+                "success",
+                "🔋 POWER CELL COLLECTED!\n\n+75 XP"
+            );
+
+        break;
+
+
+        case"key":
+
+            state.xp+=100;
+
+            nearby.obj.style.display="none";
+
+            updateHUD();
+            save();
+
+            output(
+                "success",
+                "🔑 BOSS KEY COLLECTED!\n\n+100 XP"
+            );
+
+        break;
+
+
+        case"power":
+
+            talk(
+                "POWER STATION",
+                [
+                    "SYSTEM STATUS: ONLINE.",
+
+                    "The power station feeds energy to the coding terminal.",
+
+                    "Your code is the weapon.",
+
+                    "Move to the terminal area and solve the challenge."
+                ]
+            );
+
+        break;
+
+
+        case"boss":
+
+            if(state.bossHP>0){
+
+                talk(
+                    "LOOP OVERLORD",
+                    [
+                        "YOU THINK YOU CAN DEFEAT ME?",
+
+                        "Every level will test your loops.",
+
+                        "Nested loops will become your greatest weapon.",
+
+                        "Prove your code is stronger than mine."
+                    ]
+                );
+
+            }
+
+        break;
+
+    }
+
+}
+
+
+/* =====================================================
+   MOVEMENT
+===================================================== */
+
+function move(){
+    HackoAudio.play("step");
+
+    if(!started || paused)return;
+
+    const p=$("hacko");
+
+    let x=
+        parseFloat(p.style.left)||80;
+
+    let y=
+        parseFloat(p.style.top)||400;
+
+    const speed=4;
+
+    if(keys.w||keys.arrowup)
+        y-=speed;
+
+    if(keys.s||keys.arrowdown)
+        y+=speed;
+
+    if(keys.a||keys.arrowleft)
+        x-=speed;
+
+    if(keys.d||keys.arrowright)
+        x+=speed;
+
+    const maxX=
+        $("world").clientWidth-
+        p.offsetWidth;
+
+    const maxY=
+        $("world").clientHeight-
+        p.offsetHeight;
+
+    x=Math.max(
+        0,
+        Math.min(maxX,x)
+    );
+
+    y=Math.max(
+        0,
+        Math.min(maxY,y)
+    );
+
+    p.style.left=x+"px";
+    p.style.top=y+"px";
+
+}
+
+
+/* =====================================================
+   CODE VALIDATION
+===================================================== */
+
+function validate(code){
+
+    const L=
+        levels[state.level-1];
+
+    const clean=
+        code
+        .replace(/\/\/.*$/gm,"")
+        .replace(/#.*$/gm,"")
+        .replace(/\s+/g," ")
+        .trim();
+
+    if(L.nested){
+
+        const loops=
+            (clean.match(/for\s*\(/gi)||[])
+            .length;
+
+        if(loops<2)
+            return false;
+
+    }
+
+    for(
+        const check
+        of L.checks
+    ){
+
+        if(!check.test(clean))
+            return false;
+
+    }
+
+    return true;
+
+}
+
+
+/* =====================================================
+   RUN CODE
+===================================================== */
+
+function runCode(){
+
+    if(!started){
+
+        output(
+            "error",
+            "Start the HACKO adventure first."
+        );
+
+        return;
+
+    }
+
+    if(paused){
+
+        output(
+            "warn",
+            "Finish the current interaction first."
+        );
+
+        return;
+
+    }
+
+    const code=
+        $("editor").value.trim();
+
+    if(!code){
+
+        output(
+            "error",
+            "❌ No code entered."
+        );
+
+        return;
+
+    }
+
+    output(
+        "info",
+        "⚙️ HACKO COMPILER RUNNING..."
+    );
+
+    setTimeout(()=>{
+
+        if(validate(code)){
+
+            attack();
+
+        }else{
+
+            fail();
+
+        }
+
+    },450);
+
+}
+
+
+/* =====================================================
+   ATTACK
+===================================================== */
+
+function attack(){
+    HackoAudio.play("correct");
+
+    const L=
+        levels[state.level-1];
+
+    state.bossHP=
+        Math.max(
+            0,
+            state.bossHP-L.damage
+        );
+
+    state.combo++;
+
+    $("bossHP").style.width=
+        state.bossHP+"%";
+
+    $("boss").style.transform=
+        "translateX(-50%) scale(.8)";
+
+    setTimeout(()=>{
+        $("boss").style.transform=
+            "translateX(-50%) scale(1)";
+    },180);
+
+    const bonus=
+        state.combo>=3
+        ?50
+        :0;
+
+    state.xp+=
+        L.xp+
+        bonus;
+
+    if(state.bossHP<=0){
+
+        output(
+            "success",
+
+            "⚔️ HACKO ATTACK SUCCESSFUL!\n\n"+
+            "💥 BOSS PHASE DESTROYED!\n"+
+            "👾 HP: 0%\n"+
+            "⭐ +"+L.xp+" XP"+
+            (
+                bonus
+                ?"\n🔥 COMBO BONUS +50 XP"
+                :""
+            )
+        );
+
+        updateHUD();
+        save();
+
+        setTimeout(
+            completeLevel,
+            700
+        );
+
+    }else{
+
+        output(
+            "success",
+
+            "✅ CODE CORRECT!\n\n"+
+            "⚔️ DAMAGE: "+L.damage+
+            "\n👾 BOSS HP: "+
+            state.bossHP+"%"+
+            "\n⭐ +"+L.xp+" XP"
+        );
+
+        $("battleMessage").textContent=
+            "💥 HACKO HIT THE BOSS!";
+
+        updateHUD();
+        save();
+
+    }
+
+}
+
+
+/* =====================================================
+   FAILURE
+===================================================== */
+
+function fail(){
+    HackoAudio.play("wrong");
+
+    state.lives--;
+    state.combo=0;
+
+    if(state.lives<=0){
+
+        state.lives=3;
+
+        state.xp=
+            Math.max(
+                0,
+                state.xp-100
+            );
+
+        output(
+            "error",
+
+            "💀 HACKO WAS DEFEATED!\n\n"+
+            "The Loop Overlord counter-attacked.\n"+
+            "❤️ Lives restored.\n"+
+            "⭐ -100 XP"
+        );
+
+    }else{
+
+        output(
+            "error",
+
+            "❌ CODE FAILED!\n\n"+
+            "The boss detected the wrong pattern.\n"+
+            "❤️ Lives remaining: "+
+            state.lives+
+            "\n\n"+
+            "💡 Try the HINT."
+        );
+
+    }
+
+    updateHUD();
+    save();
+
+}
+
+
+/* =====================================================
+   HINT
+===================================================== */
+
+/* Hints are revealed one tier at a time: a nudge, then the
+ * structure, then a worked example that always uses
+ * different numbers from the answer. Each tier costs XP, so
+ * there is still a reason to think first.
+ *
+ * The editor is pre-filled with a skeleton rather than the
+ * finished code. It used to be pre-filled with the complete
+ * solution, which meant pressing RUN won the level without
+ * typing anything.
+ */
+let hintTier=0;
+
+function hint(){
+
+    const tiers=
+        levels[state.level-1].hints||
+        [levels[state.level-1].hint];
+
+    if(hintTier>=tiers.length){
+
+        output(
+            "info",
+            "💡 NOVA\n\nNo more hints for this level."
+        );
+
+        return;
+
+    }
+
+    if(state.xp<25){
+
+        output(
+            "error",
+            "You need 25 XP for a hint."
+        );
+
+        return;
+
+    }
+
+    state.xp-=25;
+
+    const label=
+        ["NUDGE","STRUCTURE","EXAMPLE"][hintTier]||
+        "HINT";
+
+    output(
+        "info",
+
+        "💡 NOVA'S HINT ("+label+")\n\n"+
+        tiers[hintTier]+
+        "\n\n⭐ -25 XP"
+    );
+
+    hintTier++;
+
+    updateHUD();
+    save();
+
+}
+
+
+/* =====================================================
+   RESET
+===================================================== */
+
+function resetCode(){
+
+    $("editor").value=
+        levels[state.level-1].starter;
+
+    output(
+        "info",
+        "↻ Starter code restored."
+    );
+
+}
+
+
+/* =====================================================
+   LEVEL COMPLETE
+===================================================== */
+
+function completeLevel(){
+    /* tell the mission map this level is cleared */
+    if (window.HackoStore) {
+        HackoStore.completeLevel(10, state.level - 1, levels[state.level-1].xp);
+    }
+
+    HackoAudio.play("win");
+
+    paused=true;
+
+    if(state.level===10){
+
+        $("completeTitle").textContent=
+            "🏆 LOOP OVERLORD DEFEATED!";
+
+        $("completeText").textContent=
+            "HACKO SAVED THE CODING DIMENSION!\n\n"+
+            "You mastered nested loops, patterns and problem-solving.\n\n"+
+            "⭐ FINAL XP: "+state.xp+
+            "\n🔥 COMBO: "+state.combo;
+
+        $("nextBtn").textContent=
+            "PLAY AGAIN";
+
+    }else{
+
+        $("completeTitle").textContent=
+            "⚔️ BOSS PHASE DEFEATED!";
+
+        $("completeText").textContent=
+            "HACKO cleared Level "+
+            state.level+
+            "!\n\n"+
+            "⭐ XP: "+state.xp+
+            "\n🔥 Combo: "+state.combo;
+
+        $("nextBtn").textContent=
+            "NEXT LEVEL →";
+
+    }
+
+    $("complete").style.display=
+        "flex";
+
+}
+
+
+/* =====================================================
+   NEXT LEVEL
+===================================================== */
+
+function nextLevel(){
+
+    if(state.level<10){
+
+        state.level++;
+
+        paused=false;
+
+        $("complete").style.display=
+            "none";
+
+        loadLevel();
+
+    }else{
+
+        localStorage.removeItem(
+            "hackoLoopBattle"
+        );
+
+        location.reload();
+
+    }
+
+}
+
+
+/* =====================================================
+   START
+===================================================== */
+
+function startGame(){
+
+    started=true;
+    paused=false;
+
+    $("start").style.display=
+        "none";
+
+    talk(
+        "NOVA",
+        [
+            "Welcome to the Loop Dimension, HACKO.",
+
+            "The Loop Overlord is waiting.",
+
+            "Explore the world and talk to the team.",
+
+            "When you're ready, use the terminal.",
+
+            "Good luck!"
+        ]
+    );
+
+}
+
+
+/* =====================================================
+   KEYBOARD
+===================================================== */
+
+document.addEventListener(
+    "keydown",
+    e=>{
+
+        const key=
+            e.key.toLowerCase();
+
+        keys[key]=true;
+
+        if(
+            key==="e" &&
+            !e.repeat
+        ){
+
+            interact();
+
+        }
+
+        if(
+            e.ctrlKey &&
+            e.key==="Enter"
+        ){
+
+            e.preventDefault();
+
+            runCode();
+
+        }
+
+    }
+);
+
+document.addEventListener(
+    "keyup",
+    e=>{
+
+        keys[
+            e.key.toLowerCase()
+        ]=false;
+
+    }
+);
+
+
+/* =====================================================
+   MOBILE CONTROLS
+===================================================== */
+
+function hold(button,key){
+
+    button.addEventListener(
+        "pointerdown",
+        e=>{
+            e.preventDefault();
+            keys[key]=true;
+        }
+    );
+
+    button.addEventListener(
+        "pointerup",
+        ()=>{
+            keys[key]=false;
+        }
+    );
+
+    button.addEventListener(
+        "pointerleave",
+        ()=>{
+            keys[key]=false;
+        }
+    );
+
+    button.addEventListener(
+        "pointercancel",
+        ()=>{
+            keys[key]=false;
+        }
+    );
+
+}
+
+hold($("up"),"arrowup");
+hold($("down"),"arrowdown");
+hold($("left"),"arrowleft");
+hold($("right"),"arrowright");
+
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+
+$("startBtn").onclick=
+    startGame;
+
+$("run").onclick=
+    runCode;
+
+$("hint").onclick=
+    hint;
+
+$("reset").onclick=
+    resetCode;
+
+$("nextBtn").onclick=
+    nextLevel;
+
+
+/* =====================================================
+   GAME LOOP
+===================================================== */
+
+function gameLoop(){
+
+    move();
+
+    checkNearby();
+
+    requestAnimationFrame(
+        gameLoop
+    );
+
+}
+
+
+/* =====================================================
+   INITIALIZE
+===================================================== */
+
+load();
+
+updateHUD();
+
+loadLevel();
+
+gameLoop();
+
+
+/* =====================================================
+   RESUME + AUTOSAVE
+
+   Progress used to be written only when a level was
+   finished, and no page in the project listened for
+   pagehide or visibilitychange. Leaving mid-level threw
+   that level's work away - which is what the client meant
+   by "pag na back mawawala".
+
+   Every cleared level is now recorded as it happens, and
+   coming back drops the player at the start of the level
+   they had reached.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoStore || !HackoStore.isLoggedIn()) {
+        return;
+    }
+
+    HackoStore.registerTotalLevels(10, 10);
+
+    /* The jump has to happen AFTER the game has booted.
+       theescaperoom builds itself in window.onload, so doing
+       this at parse time meant its own loadLevel(0) ran
+       afterwards and silently sent the player back to level 1.
+       A load listener registered here fires after any onload
+       the page assigned earlier. */
+    function goToSavedLevel() {
+
+        var resume = HackoStore.getResumeLevel(10);
+
+        if (resume > 0 && resume < 10) {
+            try {
+                state.level = resume + 1; loadLevel();
+            } catch (e) {
+                /* a game that cannot jump just starts at the top */
+            }
+        }
+    }
+
+    if (document.readyState === "complete") {
+        setTimeout(goToSavedLevel, 0);
+    } else {
+        window.addEventListener("load", function () {
+            setTimeout(goToSavedLevel, 0);
+        });
+    }
+
+    HackoStore.bindAutosave(function () {
+        try {
+            return { mission: 10, level: state.level - 1 };
+        } catch (e) {
+            return null;
+        }
+    });
+
+}());
+
+/* =====================================================
+   SOUND LAYER
+
+   Sound used to fire only on a few discrete events, so a
+   game could sit in silence for long stretches. Every page
+   now carries a quiet background track and a visible
+   SOUND ON / SOUND OFF button, so a player can always tell
+   whether audio is working.
+
+   Browsers will not start audio until the player has
+   interacted, so the track is requested here and actually
+   begins on the first key press or click.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoAudio) {
+        return;
+    }
+
+    function begin() {
+        HackoAudio.music.play("boss");
+        HackoAudio.mountToggle(document.body);
+        if (window.HackoStore) {
+            HackoStore.mountMapLink();
+        }
+    }
+
+    if (document.readyState === "complete") {
+        begin();
+    } else {
+        window.addEventListener("load", begin);
+    }
+
+}());
+</script>
+
+</body>
+</html>

@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HACKO: Conditional Labyrinth II</title>
+
+<link rel="stylesheet" href="shared/hacko.css">
+<script src="shared/audio.js" data-track="defuse"></script>
+<script src="shared/storage.js"></script>
+<script src="shared/hint.js"></script>
+
+<style>
+body {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100vh;
+    margin: 0;
+    overflow-x: hidden;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 18px;
+    border-bottom: 2px solid var(--hk-cyan);
+    background: rgba(8, 21, 38, 0.93);
+}
+
+.brand {
+    font: 900 clamp(1rem, 3vw, 1.7rem) var(--hk-display);
+    color: var(--hk-cyan);
+}
+
+.brand small {
+    display: block;
+    font-size: 0.5rem;
+    letter-spacing: 0.22em;
+    color: #fff;
+}
+
+main {
+    display: grid;
+    grid-template-columns: minmax(460px, 1fr) 380px;
+    gap: 14px;
+    padding: 14px;
+    min-height: 0;
+}
+
+.stage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #3cd9e9;
+    border-radius: 18px;
+    background: #071321;
+    overflow: hidden;
+}
+
+canvas { display: block; width: min(100%, 880px); height: auto; }
+
+.side { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+
+.code {
+    background: #02080e;
+    color: #a7ffc5;
+    font: 13px/1.55 Consolas, monospace;
+    padding: 12px;
+    border-radius: 9px;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+.vars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.var {
+    padding: 5px 10px;
+    border: 1px solid var(--hk-line);
+    border-radius: 999px;
+    background: #0b1c30;
+    font: 700 0.72rem Consolas, monospace;
+    color: var(--hk-amber);
+}
+
+#hintBox {
+    margin-top: 8px;
+    min-height: 2.6em;
+    color: #cfe6f2;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.log {
+    flex: 1;
+    min-height: 90px;
+    max-height: 190px;
+    overflow: auto;
+    font: 12px/1.6 Consolas, monospace;
+    background: #071421;
+    border: 1px solid var(--hk-line);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.log .ok { color: var(--hk-lime); }
+.log .bad { color: #ff9eb3; }
+.log .info { color: #8fb4cc; }
+
+footer {
+    text-align: center;
+    padding: 8px;
+    background: #071526;
+    border-top: 1px solid #2d6580;
+    color: #b8d8e5;
+    font-size: 0.85rem;
+}
+
+.kbd {
+    padding: 2px 6px;
+    border: 1px solid #4b819d;
+    border-radius: 4px;
+    background: #193b57;
+    font: 700 0.68rem var(--hk-display);
+}
+
+@media (max-width: 960px) {
+    main { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+
+<body class="hk-body">
+
+<header>
+    <div class="brand">HACKO<small>CONDITIONAL LABYRINTH II</small></div>
+
+    <div class="hk-hud">
+        <span class="hk-chip">LEVEL <b id="hudLevel">1</b>/10</span>
+        <span class="hk-chip hk-chip--lives">LIVES <b id="hudLives">3</b></span>
+        <span class="hk-chip">XP <b id="hudXP">0</b></span>
+    </div>
+</header>
+
+<main>
+    <div class="stage">
+        <canvas id="board" width="880" height="560"></canvas>
+    </div>
+
+    <div class="side">
+        <div class="hk-panel">
+            <h3 id="levelTitle">LEVEL 1</h3>
+            <p class="hk-note" id="levelGoal"></p>
+
+            <div class="vars" id="vars"></div>
+            <div class="code" id="code"></div>
+
+            <div id="hintBox"></div>
+
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+                <button class="hk-btn hk-btn--ghost" id="hintBtn">HINT</button>
+                <button class="hk-btn hk-btn--ghost" id="retryBtn">RESTART LEVEL</button>
+            </div>
+        </div>
+
+        <div class="log" id="log"></div>
+    </div>
+</main>
+
+<footer>
+    Move with <span class="kbd">WASD</span> or <span class="kbd">ARROWS</span>.
+    Trace the code, then walk into the gate holding what it prints.
+</footer>
+
+<script>
+(function () {
+    "use strict";
+
+    var MISSION = 9;
+    var TILE = 40;
+    var COLS = 22;
+    var ROWS = 14;
+
+    var canvas = document.getElementById("board");
+    var ctx = canvas.getContext("2d");
+
+    /* ---------------------------------------------------
+       LEVELS
+
+       Mission 3 teaches a single if-else. This one is about
+       tracing logic that nests: an if inside an if, a chain
+       of else-if, and conditions joined with && and ||.
+       Every puzzle is "read it, decide what it prints".
+    --------------------------------------------------- */
+
+    var LEVELS = [
+        {
+            title: "NESTED GATE",
+            goal: "An if inside an if. Both must hold for the inner line to run.",
+            vars: { power: 8, keycard: true },
+            code:
+"if (power > 5) {\n" +
+"    if (keycard) {\n" +
+"        System.out.println(\"OPEN\");\n" +
+"    } else {\n" +
+"        System.out.println(\"LOCKED\");\n" +
+"    }\n" +
+"} else {\n" +
+"    System.out.println(\"DEAD\");\n" +
+"}",
+            answer: "OPEN",
+            gates: ["OPEN", "LOCKED", "DEAD"],
+            hints: [
+                "Work outwards in. Which branch of the OUTER if is taken?",
+                "Once you are inside the outer if, only the inner if matters.",
+                "Example: with power = 2 the outer test fails and nothing inside it can run."
+            ]
+        },
+        {
+            title: "ELSE-IF CHAIN",
+            goal: "A chain stops at the FIRST test that is true.",
+            vars: { level: 4 },
+            code:
+"if (level >= 8) {\n" +
+"    System.out.println(\"ALPHA\");\n" +
+"} else if (level >= 5) {\n" +
+"    System.out.println(\"BETA\");\n" +
+"} else if (level >= 3) {\n" +
+"    System.out.println(\"GAMMA\");\n" +
+"} else {\n" +
+"    System.out.println(\"DELTA\");\n" +
+"}",
+            answer: "GAMMA",
+            gates: ["ALPHA", "BETA", "GAMMA", "DELTA"],
+            hints: [
+                "Read the tests top to bottom and stop at the first true one.",
+                "A later test is only reached when every test above it failed.",
+                "Example: with level = 9 the first test passes and the rest are skipped."
+            ]
+        },
+        {
+            title: "NESTED AND",
+            goal: "&& needs both sides. Inside a nested if, that is three conditions deep.",
+            vars: { online: true, trusted: false, ports: 3 },
+            code:
+"if (online && ports > 1) {\n" +
+"    if (trusted) {\n" +
+"        System.out.println(\"ROUTE A\");\n" +
+"    } else {\n" +
+"        System.out.println(\"ROUTE B\");\n" +
+"    }\n" +
+"} else {\n" +
+"    System.out.println(\"ROUTE C\");\n" +
+"}",
+            answer: "ROUTE B",
+            gates: ["ROUTE A", "ROUTE B", "ROUTE C"],
+            hints: [
+                "Check the outer condition first - both of its sides have to hold.",
+                "If the outer test passes, the answer depends only on the inner one.",
+                "&& is false as soon as either side is false."
+            ]
+        },
+        {
+            title: "NESTED OR",
+            goal: "|| needs only one side to be true.",
+            vars: { alarm: false, backup: true, breach: false },
+            code:
+"if (alarm || backup) {\n" +
+"    if (breach) {\n" +
+"        System.out.println(\"LOCKDOWN\");\n" +
+"    } else {\n" +
+"        System.out.println(\"WATCH\");\n" +
+"    }\n" +
+"} else {\n" +
+"    System.out.println(\"IDLE\");\n" +
+"}",
+            answer: "WATCH",
+            gates: ["LOCKDOWN", "WATCH", "IDLE"],
+            hints: [
+                "One true side is enough to enter the outer block.",
+                "Getting inside is not the whole answer - the inner test decides.",
+                "|| is true unless BOTH sides are false."
+            ]
+        },
+        {
+            title: "IF INSIDE ELSE",
+            goal: "Nesting can live in the else branch too.",
+            vars: { fuel: 2, solar: true },
+            code:
+"if (fuel > 5) {\n" +
+"    System.out.println(\"ENGINE\");\n" +
+"} else {\n" +
+"    if (solar) {\n" +
+"        System.out.println(\"SOLAR\");\n" +
+"    } else {\n" +
+"        System.out.println(\"STRANDED\");\n" +
+"    }\n" +
+"}",
+            answer: "SOLAR",
+            gates: ["ENGINE", "SOLAR", "STRANDED"],
+            hints: [
+                "The first test fails, so where does the program go?",
+                "The else branch has its own decision inside it.",
+                "Example: with fuel = 9 nothing in the else branch is ever reached."
+            ]
+        },
+        {
+            title: "THREE DEEP",
+            goal: "Three levels of nesting. Take them one at a time.",
+            vars: { depth: 7, sealed: true, oxygen: 12 },
+            code:
+"if (depth > 5) {\n" +
+"    if (sealed) {\n" +
+"        if (oxygen > 20) {\n" +
+"            System.out.println(\"SAFE\");\n" +
+"        } else {\n" +
+"            System.out.println(\"RATION\");\n" +
+"        }\n" +
+"    } else {\n" +
+"        System.out.println(\"FLOOD\");\n" +
+"    }\n" +
+"} else {\n" +
+"    System.out.println(\"SURFACE\");\n" +
+"}",
+            answer: "RATION",
+            gates: ["SAFE", "RATION", "FLOOD", "SURFACE"],
+            hints: [
+                "Answer one question at a time, outermost first.",
+                "Two tests pass here. The third is the one that decides.",
+                "Only the deepest branch you actually reach prints anything."
+            ]
+        },
+        {
+            title: "BRACKETS MATTER",
+            goal: "Parentheses change which comparison binds to which.",
+            vars: { speed: 40, shield: false, armour: true },
+            code:
+"if ((speed > 30 && shield) || armour) {\n" +
+"    if (speed > 60) {\n" +
+"        System.out.println(\"RAM\");\n" +
+"    } else {\n" +
+"        System.out.println(\"PUSH\");\n" +
+"    }\n" +
+"} else {\n" +
+"    System.out.println(\"HOLD\");\n" +
+"}",
+            answer: "PUSH",
+            gates: ["RAM", "PUSH", "HOLD"],
+            hints: [
+                "Evaluate what is inside the brackets before the ||.",
+                "The bracketed part is false here, so the whole test rests on what follows ||.",
+                "Then a second, simpler comparison decides the output."
+            ]
+        },
+        {
+            title: "NEGATION",
+            goal: "! flips a condition. Read it as 'not'.",
+            vars: { locked: false, admin: false },
+            code:
+"if (!locked) {\n" +
+"    if (!admin) {\n" +
+"        System.out.println(\"GUEST\");\n" +
+"    } else {\n" +
+"        System.out.println(\"ROOT\");\n" +
+"    }\n" +
+"} else {\n" +
+"    System.out.println(\"SEALED\");\n" +
+"}",
+            answer: "GUEST",
+            gates: ["GUEST", "ROOT", "SEALED"],
+            hints: [
+                "!false is true. Say each condition out loud with the word 'not'.",
+                "Both tests here are negations, so both invert their variable.",
+                "Example: !true is false, so an if(!true) block never runs."
+            ]
+        },
+        {
+            title: "CHAIN INSIDE IF",
+            goal: "An else-if chain nested inside an outer if.",
+            vars: { connected: true, signal: 62 },
+            code:
+"if (connected) {\n" +
+"    if (signal >= 90) {\n" +
+"        System.out.println(\"FULL\");\n" +
+"    } else if (signal >= 60) {\n" +
+"        System.out.println(\"GOOD\");\n" +
+"    } else if (signal >= 30) {\n" +
+"        System.out.println(\"WEAK\");\n" +
+"    } else {\n" +
+"        System.out.println(\"NONE\");\n" +
+"    }\n" +
+"} else {\n" +
+"    System.out.println(\"OFFLINE\");\n" +
+"}",
+            answer: "GOOD",
+            gates: ["FULL", "GOOD", "WEAK", "NONE", "OFFLINE"],
+            hints: [
+                "Clear the outer test first, then walk the chain from the top.",
+                "Stop at the first test in the chain that holds.",
+                "Watch the boundaries: >= includes the number itself."
+            ]
+        },
+        {
+            title: "THE CORE",
+            goal: "Everything at once. Trace carefully.",
+            vars: { code: 42, security: 4, override: false, timer: 25 },
+            code:
+"if (code == 42 && (security < 5 || override)) {\n" +
+"    if (timer <= 10) {\n" +
+"        System.out.println(\"CRITICAL\");\n" +
+"    } else if (timer <= 30) {\n" +
+"        if (override) {\n" +
+"            System.out.println(\"FORCED\");\n" +
+"        } else {\n" +
+"            System.out.println(\"STABLE\");\n" +
+"        }\n" +
+"    } else {\n" +
+"        System.out.println(\"IDLE\");\n" +
+"    }\n" +
+"} else {\n" +
+"    System.out.println(\"REJECTED\");\n" +
+"}",
+            answer: "STABLE",
+            gates: ["CRITICAL", "FORCED", "STABLE", "IDLE", "REJECTED"],
+            hints: [
+                "Split the outer test at the && and check each half on its own.",
+                "Inside, the chain narrows the range before one last decision.",
+                "The deepest if only matters once the chain has picked its branch."
+            ]
+        }
+    ];
+
+
+    /* ---------------------------------------------------
+       STATE
+    --------------------------------------------------- */
+
+    var state = {
+        level: 0,
+        lives: 3,
+        xp: 0,
+        player: { x: 1, y: 12 },
+        gates: [],
+        walls: [],
+        done: false,
+        flash: 0
+    };
+
+    var hint = null;
+
+    function $(id) { return document.getElementById(id); }
+
+    function log(text, cls) {
+        var line = document.createElement("div");
+        line.className = cls || "info";
+        line.textContent = text;
+        $("log").appendChild(line);
+        $("log").scrollTop = $("log").scrollHeight;
+    }
+
+    /* A simple room: solid border, a few pillars for texture. */
+    function buildWalls() {
+
+        var walls = {};
+
+        for (var x = 0; x < COLS; x++) {
+            walls[x + ",0"] = true;
+            walls[x + "," + (ROWS - 1)] = true;
+        }
+
+        for (var y = 0; y < ROWS; y++) {
+            walls["0," + y] = true;
+            walls[(COLS - 1) + "," + y] = true;
+        }
+
+        [[5, 6], [5, 7], [10, 4], [10, 5], [15, 8], [15, 9]]
+            .forEach(function (p) {
+                walls[p[0] + "," + p[1]] = true;
+            });
+
+        return walls;
+    }
+
+    function loadLevel(index) {
+
+        state.level = Math.max(0, Math.min(index, LEVELS.length - 1));
+        state.player = { x: 1, y: 12 };
+        state.done = false;
+        state.walls = buildWalls();
+
+        var level = LEVELS[state.level];
+
+        /* gates spaced along the top of the room */
+        var count = level.gates.length;
+        var span = Math.floor((COLS - 4) / count);
+
+        state.gates = level.gates.map(function (label, i) {
+            return {
+                label: label,
+                x: 2 + i * span + Math.floor(span / 2),
+                y: 2
+            };
+        });
+
+        hint = HackoHint.forPuzzle({
+            id: "m9-l" + (state.level + 1),
+            answer: level.answer,
+            tiers: level.hints
+        });
+
+        $("levelTitle").textContent =
+            "LEVEL " + (state.level + 1) + " - " + level.title;
+        $("levelGoal").textContent = level.goal;
+        $("code").textContent = level.code;
+        $("hintBox").textContent = "";
+
+        $("vars").innerHTML = "";
+        Object.keys(level.vars).forEach(function (name) {
+            var chip = document.createElement("span");
+            chip.className = "var";
+            chip.textContent = name + " = " + level.vars[name];
+            $("vars").appendChild(chip);
+        });
+
+        updateHUD();
+        log("Level " + (state.level + 1) + ": " + level.title, "info");
+        draw();
+    }
+
+    function updateHUD() {
+        $("hudLevel").textContent = state.level + 1;
+        $("hudLives").textContent = state.lives;
+        $("hudXP").textContent = state.xp;
+    }
+
+
+    /* ---------------------------------------------------
+       DRAWING
+    --------------------------------------------------- */
+
+    function draw() {
+
+        ctx.fillStyle = "#071321";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        /* floor grid */
+        ctx.strokeStyle = "rgba(69,243,255,.06)";
+        ctx.lineWidth = 1;
+
+        for (var gx = 0; gx <= COLS; gx++) {
+            ctx.beginPath();
+            ctx.moveTo(gx * TILE, 0);
+            ctx.lineTo(gx * TILE, ROWS * TILE);
+            ctx.stroke();
+        }
+
+        for (var gy = 0; gy <= ROWS; gy++) {
+            ctx.beginPath();
+            ctx.moveTo(0, gy * TILE);
+            ctx.lineTo(COLS * TILE, gy * TILE);
+            ctx.stroke();
+        }
+
+        /* walls */
+        Object.keys(state.walls).forEach(function (key) {
+            var p = key.split(",");
+            var x = Number(p[0]) * TILE;
+            var y = Number(p[1]) * TILE;
+
+            ctx.fillStyle = "#16233a";
+            ctx.fillRect(x, y, TILE, TILE);
+            ctx.strokeStyle = "#243b5c";
+            ctx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
+        });
+
+        /* gates */
+        state.gates.forEach(function (gate) {
+
+            var x = gate.x * TILE;
+            var y = gate.y * TILE;
+
+            ctx.fillStyle = "#0d2740";
+            ctx.strokeStyle = "#45f3ff";
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 14;
+            ctx.shadowColor = "#45f3ff";
+            ctx.fillRect(x - TILE, y - 4, TILE * 3, TILE + 8);
+            ctx.strokeRect(x - TILE, y - 4, TILE * 3, TILE + 8);
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "#eefaff";
+            ctx.font = "bold 13px Orbitron, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(gate.label, x + TILE / 2, y + TILE / 2 + 5);
+        });
+
+        /* player */
+        var px = state.player.x * TILE + TILE / 2;
+        var py = state.player.y * TILE + TILE / 2;
+
+        ctx.save();
+        ctx.translate(px, py);
+
+        if (state.flash > 0) {
+            ctx.globalAlpha = (Math.floor(state.flash / 4) % 2) ? 0.35 : 1;
+            state.flash -= 1;
+        }
+
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = "#91ff6f";
+        ctx.fillStyle = "#91ff6f";
+        ctx.beginPath();
+        ctx.arc(0, 0, 13, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#07111f";
+        ctx.fillRect(-6, -4, 4, 4);
+        ctx.fillRect(2, -4, 4, 4);
+        ctx.restore();
+
+        if (state.flash > 0) {
+            requestAnimationFrame(draw);
+        }
+    }
+
+
+    /* ---------------------------------------------------
+       MOVEMENT
+    --------------------------------------------------- */
+
+    function move(dx, dy) {
+
+        if (state.done) {
+            return;
+        }
+
+        var nx = state.player.x + dx;
+        var ny = state.player.y + dy;
+
+        if (state.walls[nx + "," + ny]) {
+            return;
+        }
+
+        if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) {
+            return;
+        }
+
+        state.player.x = nx;
+        state.player.y = ny;
+
+        HackoAudio.play("step");
+
+        var hit = state.gates.filter(function (gate) {
+            return ny === gate.y && Math.abs(nx - gate.x) <= 1;
+        })[0];
+
+        if (hit) {
+            chooseGate(hit);
+        }
+
+        draw();
+    }
+
+    function chooseGate(gate) {
+
+        var level = LEVELS[state.level];
+
+        if (gate.label === level.answer) {
+
+            state.done = true;
+            state.xp += 100;
+
+            HackoAudio.play("win");
+            log("Correct. The program prints " + gate.label + ".", "ok");
+            updateHUD();
+
+            if (window.HackoStore) {
+                HackoStore.completeLevel(MISSION, state.level, 100);
+            }
+
+            window.setTimeout(function () {
+
+                if (state.level + 1 < LEVELS.length) {
+                    loadLevel(state.level + 1);
+                } else {
+                    log("MISSION COMPLETE. Every gate traced.", "ok");
+                    HackoAudio.play("unlock");
+                }
+            }, 1100);
+
+            return;
+        }
+
+        HackoAudio.play("hit");
+        state.lives -= 1;
+        state.flash = 24;
+        state.player = { x: 1, y: 12 };
+
+        log("Trap. " + gate.label + " is not what this code prints.", "bad");
+        updateHUD();
+        draw();
+
+        if (state.lives <= 0) {
+            HackoAudio.play("gameover");
+            log("Out of lives. Restarting the level.", "bad");
+            state.lives = 3;
+            updateHUD();
+            loadLevel(state.level);
+        }
+    }
+
+    window.addEventListener("keydown", function (event) {
+
+        var key = event.key;
+
+        if (["ArrowUp", "w", "W"].indexOf(key) !== -1) { move(0, -1); }
+        else if (["ArrowDown", "s", "S"].indexOf(key) !== -1) { move(0, 1); }
+        else if (["ArrowLeft", "a", "A"].indexOf(key) !== -1) { move(-1, 0); }
+        else if (["ArrowRight", "d", "D"].indexOf(key) !== -1) { move(1, 0); }
+        else { return; }
+
+        event.preventDefault();
+    });
+
+    $("hintBtn").addEventListener("click", function () {
+        var next = hint.next();
+        $("hintBox").textContent = next.name.toUpperCase() + ": " + next.text;
+        HackoAudio.play("select");
+    });
+
+    $("retryBtn").addEventListener("click", function () {
+        HackoAudio.play("select");
+        loadLevel(state.level);
+    });
+
+    loadLevel(0);
+
+
+    /* ---------------------------------------------------
+       RESUME + AUTOSAVE
+    --------------------------------------------------- */
+
+    (function () {
+
+        if (!window.HackoStore || !HackoStore.isLoggedIn()) {
+            return;
+        }
+
+        HackoStore.registerTotalLevels(MISSION, LEVELS.length);
+
+        function goToSavedLevel() {
+
+            var resume = HackoStore.getResumeLevel(MISSION);
+
+            if (resume > 0 && resume < LEVELS.length) {
+                loadLevel(resume);
+            }
+        }
+
+        if (document.readyState === "complete") {
+            window.setTimeout(goToSavedLevel, 0);
+        } else {
+            window.addEventListener("load", function () {
+                window.setTimeout(goToSavedLevel, 0);
+            });
+        }
+
+        HackoStore.bindAutosave(function () {
+            return {
+                mission: MISSION,
+                level: state.level,
+                lives: state.lives
+            };
+        });
+    }());
+
+}());
+</script>
+</body>
+</html>

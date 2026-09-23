@@ -1,0 +1,3223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hacko: Function Fortress</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+    --cyan: #45f3ff;
+    --lime: #91ff70;
+    --amber: #ffd34e;
+    --red: #ff496f;
+    --violet: #b67aff;
+    --ink: #06101e;
+    --panel: #102944;
+    --line: #397e9e;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+    color: #effbff;
+    font-family: Rajdhani, sans-serif;
+    background:
+        radial-gradient(circle at 12% 10%, #1a5473, transparent 31%),
+        radial-gradient(circle at 88% 7%, #503371, transparent 27%),
+        #06101e;
+}
+
+body {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100vh;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 18px;
+    border-bottom: 2px solid var(--cyan);
+    background: #071426ee;
+    box-shadow: 0 0 28px #45f3ff35;
+}
+
+.brand {
+    font: 900 clamp(1.15rem, 3vw, 2rem) Orbitron;
+    color: var(--cyan);
+    text-shadow: 0 0 15px #45f3ff99;
+}
+
+.brand small {
+    display: block;
+    color: white;
+    font-size: 0.5rem;
+    letter-spacing: 0.2em;
+}
+
+.stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.chip {
+    padding: 7px 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #102c48;
+    font: 700 0.7rem Orbitron;
+}
+
+.chip b {
+    color: var(--lime);
+}
+
+button {
+    border: 0;
+    border-radius: 9px;
+    padding: 9px 12px;
+    cursor: pointer;
+    color: #05111a;
+    background: linear-gradient(135deg, var(--cyan), #65ffc6);
+    font: 700 0.73rem Orbitron;
+    box-shadow: 0 4px 12px #0007;
+}
+
+button:hover:not(:disabled) {
+    filter: brightness(1.13);
+    transform: translateY(-1px);
+}
+
+button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.secondary {
+    color: white;
+    background: #1d4767;
+    border: 1px solid #4787a7;
+}
+
+.danger {
+    color: white;
+    background: linear-gradient(135deg, #ff496f, #ff873e);
+}
+
+main {
+    display: grid;
+    grid-template-columns: minmax(560px, 1fr) 390px;
+    gap: 13px;
+    padding: 13px;
+    min-height: 0;
+}
+
+.stage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 575px;
+    overflow: hidden;
+    border: 3px solid #3bd9e8;
+    border-radius: 20px;
+    background: #06111f;
+    box-shadow:
+        0 0 38px #45f3ff35,
+        inset 0 0 45px #000b;
+}
+
+.stage canvas {
+    width: min(100%, 960px);
+    height: auto;
+    display: block;
+}
+
+.stage-message {
+    position: absolute;
+    left: 18px;
+    bottom: 16px;
+    max-width: 70%;
+    padding: 9px 13px;
+    border: 1px solid #4a89a7;
+    border-radius: 9px;
+    background: #06121ee8;
+    box-shadow: 0 5px 18px #0009;
+    font-weight: 700;
+}
+
+.side {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+}
+
+.panel {
+    padding: 13px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: linear-gradient(155deg, #173954, #0a1d33 75%);
+    box-shadow:
+        inset 0 0 22px #45f3ff0b,
+        0 6px 17px #0006;
+}
+
+.panel h2,
+.panel h3 {
+    margin: 0 0 7px;
+    color: var(--cyan);
+    font-family: Orbitron;
+}
+
+.panel h2 {
+    font-size: 0.98rem;
+}
+
+.panel h3 {
+    font-size: 0.78rem;
+}
+
+.goal {
+    line-height: 1.28;
+}
+
+.rule {
+    margin-top: 7px;
+    padding: 7px 9px;
+    border-left: 3px solid var(--amber);
+    background: #061523;
+    color: #ffe7a0;
+    font: 12px/1.45 Consolas, monospace;
+}
+
+.dialogue {
+    margin-top: 7px;
+    color: #b9dfec;
+    font-style: italic;
+}
+
+.builder {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.field.full {
+    grid-column: 1 / -1;
+}
+
+.field label {
+    font: 700 0.62rem Orbitron;
+    color: #9fc9d9;
+}
+
+select,
+input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #3c7d9c;
+    border-radius: 7px;
+    outline: none;
+    background: #061421;
+    color: #eaffff;
+    font: 13px Consolas, monospace;
+}
+
+select:focus,
+input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 10px #45f3ff33;
+}
+
+.code-preview {
+    margin-top: 8px;
+    padding: 9px;
+    border-radius: 8px;
+    background: #02080e;
+    color: #9dffc3;
+    font: 12px/1.45 Consolas, monospace;
+    white-space: pre-wrap;
+}
+
+.actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.saved,
+.calls {
+    max-height: 90px;
+    overflow: auto;
+    margin-top: 6px;
+}
+
+.token {
+    padding: 5px 7px;
+    margin-top: 4px;
+    border: 1px solid #315f79;
+    border-radius: 6px;
+    background: #071725;
+    font: 11px Consolas, monospace;
+}
+
+.token b {
+    color: var(--amber);
+}
+
+.feedback {
+    margin-top: 7px;
+    min-height: 36px;
+    padding: 8px;
+    border-radius: 7px;
+    background: #071522;
+}
+
+.feedback.good {
+    border: 1px solid var(--lime);
+    color: var(--lime);
+}
+
+.feedback.bad {
+    border: 1px solid var(--red);
+    color: #ff9db2;
+}
+
+.levels {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+}
+
+.level {
+    padding: 7px 2px;
+    background: #183e5c;
+    color: white;
+}
+
+.level.active {
+    outline: 2px solid var(--cyan);
+}
+
+.level.done {
+    color: var(--lime);
+    border: 1px solid var(--lime);
+}
+
+footer {
+    text-align: center;
+    padding: 8px;
+    border-top: 1px solid #2b6480;
+    background: #071526;
+    color: #bad9e5;
+}
+
+.kbd {
+    padding: 2px 6px;
+    border: 1px solid #4a819e;
+    border-radius: 4px;
+    background: #193b57;
+    color: white;
+    font: 700 0.65rem Orbitron;
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: #02060ddc;
+    backdrop-filter: blur(7px);
+    z-index: 30;
+}
+
+.overlay.show {
+    display: flex;
+}
+
+.modal {
+    width: min(620px, 95vw);
+    padding: 23px;
+    border: 2px solid var(--cyan);
+    border-radius: 18px;
+    background: linear-gradient(145deg, #173c59, #07111e);
+    box-shadow: 0 0 55px #45f3ff55;
+    text-align: center;
+}
+
+.modal h1 {
+    font-family: Orbitron;
+    color: var(--cyan);
+}
+
+@media (max-width: 980px) {
+    main {
+        grid-template-columns: 1fr;
+    }
+
+    .stage {
+        min-height: auto;
+    }
+
+    .stats {
+        display: none;
+    }
+}
+
+@media (max-width: 560px) {
+    main {
+        padding: 6px;
+    }
+
+    .builder {
+        grid-template-columns: 1fr;
+    }
+
+    .field.full {
+        grid-column: auto;
+    }
+
+    .stage-message {
+        max-width: 92%;
+        font-size: 0.8rem;
+    }
+}
+</style>
+<script src="shared/audio.js" data-track="fortress"></script>
+<script src="shared/storage.js"></script>
+</head>
+
+<body>
+<header>
+    <div class="brand">
+        HACKO
+        <small>FUNCTION FORTRESS</small>
+    </div>
+
+    <div class="stats">
+        <div class="chip">
+            MISSION <b id="levelStat">1/10</b>
+        </div>
+
+        <div class="chip">
+            ENERGY <b id="hpStat">100</b>
+        </div>
+
+        <div class="chip">
+            STONES <b id="stoneStat">0/3</b>
+        </div>
+
+        <div class="chip">
+            FUNCTIONS <b id="functionStat">0</b>
+        </div>
+    </div>
+
+    <button
+        class="secondary"
+        onclick="restartLevel()"
+    >
+        RESTART
+    </button>
+</header>
+
+<main>
+    <section class="stage">
+        <canvas
+            id="game"
+            width="960"
+            height="540"
+            aria-label="Function Fortress platform game"
+        ></canvas>
+
+        <div
+            id="stageMessage"
+            class="stage-message"
+        >
+            Find the glowing Code Console.
+        </div>
+    </section>
+
+    <aside class="side">
+        <section class="panel">
+            <h2 id="missionTitle"></h2>
+            <div id="missionGoal" class="goal"></div>
+            <div id="missionRule" class="rule"></div>
+            <div id="dialogue" class="dialogue"></div>
+        </section>
+
+        <section class="panel">
+            <h3>FUNCTION GAUNTLET</h3>
+
+            <div class="builder">
+                <div class="field">
+                    <label>FUNCTION NAME</label>
+                    <select
+                        id="fnName"
+                        onchange="previewCode()"
+                    ></select>
+                </div>
+
+                <div class="field">
+                    <label>PARAMETERS</label>
+                    <select
+                        id="fnParams"
+                        onchange="previewCode()"
+                    ></select>
+                </div>
+
+                <div class="field full">
+                    <label>ACTION BLOCK</label>
+                    <select
+                        id="fnAction"
+                        onchange="previewCode()"
+                    ></select>
+                </div>
+
+                <div class="field">
+                    <label>RETURN BLOCK</label>
+                    <select
+                        id="fnReturn"
+                        onchange="previewCode()"
+                    ></select>
+                </div>
+
+                <div class="field">
+                    <label>NESTED CALL</label>
+                    <select
+                        id="fnNested"
+                        onchange="previewCode()"
+                    ></select>
+                </div>
+            </div>
+
+            <div
+                id="codePreview"
+                class="code-preview"
+            ></div>
+
+            <div class="actions">
+                <button
+                    id="saveFnBtn"
+                    onclick="saveFunction()"
+                >
+                    SAVE FUNCTION
+                </button>
+
+                <button
+                    class="danger"
+                    onclick="clearFunctions()"
+                >
+                    CLEAR
+                </button>
+            </div>
+
+            <div
+                id="savedFunctions"
+                class="saved"
+            ></div>
+        </section>
+
+        <section class="panel">
+            <h3>CALL CONSOLE</h3>
+
+            <div class="builder">
+                <div class="field">
+                    <label>CALL FUNCTION</label>
+                    <select id="callName"></select>
+                </div>
+
+                <div class="field">
+                    <label>ARGUMENT 1</label>
+                    <input
+                        id="arg1"
+                        placeholder="none"
+                    >
+                </div>
+
+                <div class="field">
+                    <label>ARGUMENT 2</label>
+                    <input
+                        id="arg2"
+                        placeholder="none"
+                    >
+                </div>
+            </div>
+
+            <div class="actions">
+                <button
+                    id="addCallBtn"
+                    onclick="addCall()"
+                >
+                    ADD CALL
+                </button>
+
+                <button
+                    class="secondary"
+                    onclick="removeLastCall()"
+                >
+                    UNDO CALL
+                </button>
+
+                <button onclick="executeProgram()">
+                    RUN PROGRAM
+                </button>
+            </div>
+
+            <div
+                id="callList"
+                class="calls"
+            ></div>
+
+            <div
+                id="feedback"
+                class="feedback"
+            >
+                Reach the console to activate the Function Gauntlet.
+            </div>
+        </section>
+
+        <section class="panel">
+            <h3>MISSION SELECT</h3>
+            <div id="levels" class="levels"></div>
+        </section>
+    </aside>
+</main>
+
+<footer>
+    <span class="kbd">A D</span> /
+    <span class="kbd">← →</span> move
+
+    &nbsp;
+
+    <span class="kbd">SPACE</span> jump
+
+    &nbsp; • &nbsp;
+
+    Collect Function Stones
+
+    &nbsp; • &nbsp;
+
+    Build functions and escape
+</footer>
+
+<div
+    id="overlay"
+    class="overlay"
+>
+    <div class="modal">
+        <h1 id="modalTitle"></h1>
+        <p id="modalText"></p>
+
+        <div
+            id="solutionCode"
+            class="code-preview"
+            style="text-align:left"
+        ></div>
+
+        <div
+            class="actions"
+            style="justify-content:center;margin-top:16px"
+        >
+            <button id="nextBtn">
+                NEXT MISSION
+            </button>
+
+            <button
+                class="secondary"
+                onclick="closeOverlay()"
+            >
+                CLOSE
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas =
+    document.getElementById("game");
+
+const ctx =
+    canvas.getContext("2d");
+
+const hacko =
+    new Image();
+
+let hackoReady = false;
+
+hacko.src = "hacko.png";
+
+hacko.onload = () => {
+    hackoReady = true;
+};
+
+
+/* This fortress teaches methods, but the preview used to render
+ * JavaScript - "function name()" - which is not the language this
+ * course is about. Java needs a return type on every method and a
+ * type on every parameter, so the dropdown values are mapped onto
+ * real Java types here.
+ */
+const PARAM_TYPES = {
+    a: "int",
+    b: "int",
+    color: "String",
+    direction: "String",
+    distance: "int",
+    hasKey: "boolean",
+    power: "int",
+    mode: "String",
+    ready: "boolean",
+    token: "String"
+};
+
+function javaParams(params) {
+    if (!params || params === "none") {
+        return "";
+    }
+
+    return params
+        .split(",")
+        .map(part => {
+            const name = part.trim();
+            return (PARAM_TYPES[name] || "int") + " " + name;
+        })
+        .join(", ");
+}
+
+function javaReturnType(value) {
+    if (!value || value === "none") {
+        return "void";
+    }
+
+    if (value === "true" || value === "false") {
+        return "boolean";
+    }
+
+    if (value === "success") {
+        return "String";
+    }
+
+    return "int";
+}
+
+function javaReturnValue(value) {
+    return value === "success" ? '"success"' : value;
+}
+
+const missions = [
+    {
+        title: "The Sleeping Door",
+
+        goal:
+            "Create openDoor() with Open Door, then call it once.",
+
+        rule:
+            "void openDoor() { openDoorAction(); } openDoor();",
+
+        dialogue:
+            "Hacko: A function is a named spell. " +
+            "I define it once, then call it!",
+
+        names: [
+            "openDoor",
+            "unlock",
+            "door"
+        ],
+
+        params: [
+            "none"
+        ],
+
+        actions: [
+            "Open Door",
+            "Close Door"
+        ],
+
+        returns: [
+            "none"
+        ],
+
+        nested: [
+            "none"
+        ],
+
+        validate: gameState => {
+            return (
+                hasFn(
+                    gameState,
+                    "openDoor",
+                    "none",
+                    "Open Door"
+                ) &&
+                calls(
+                    gameState,
+                    "openDoor"
+                ).length === 1
+            );
+        },
+
+        solution:
+`void openDoor() {
+    openDoorAction();
+}
+
+openDoor();`
+    },
+
+    {
+        title: "Three Torches",
+
+        goal:
+            "Create lightTorch() and call it exactly three times.",
+
+        rule:
+            "lightTorch(); lightTorch(); lightTorch();",
+
+        dialogue:
+            "Hacko: One function can power many machines. " +
+            "Reuse saves work!",
+
+        names: [
+            "lightTorch",
+            "ignite",
+            "torch"
+        ],
+
+        params: [
+            "none"
+        ],
+
+        actions: [
+            "Light Torch",
+            "Open Door"
+        ],
+
+        returns: [
+            "none"
+        ],
+
+        nested: [
+            "none"
+        ],
+
+        validate: gameState => {
+            return (
+                hasFn(
+                    gameState,
+                    "lightTorch",
+                    "none",
+                    "Light Torch"
+                ) &&
+                calls(
+                    gameState,
+                    "lightTorch"
+                ).length === 3
+            );
+        },
+
+        solution:
+`void lightTorch() {
+    lightNextTorch();
+}
+
+lightTorch();
+lightTorch();
+lightTorch();`
+    },
+
+    {
+        title: "Color Bridge",
+
+        goal:
+            'Create setColor(color), then call setColor("blue").',
+
+        rule:
+            'setColor("blue")',
+
+        dialogue:
+            "Hacko: Parameters let the same function " +
+            "receive different information.",
+
+        names: [
+            "setColor",
+            "paintBridge",
+            "bridge"
+        ],
+
+        params: [
+            "color",
+            "none"
+        ],
+
+        actions: [
+            "Set Bridge Color",
+            "Open Door"
+        ],
+
+        returns: [
+            "none"
+        ],
+
+        nested: [
+            "none"
+        ],
+
+        validate: gameState => {
+            return (
+                hasFn(
+                    gameState,
+                    "setColor",
+                    "color",
+                    "Set Bridge Color"
+                ) &&
+                calls(
+                    gameState,
+                    "setColor"
+                ).some(call => {
+                    return clean(call.a) === "blue";
+                })
+            );
+        },
+
+        solution:
+`void setColor(String color) {
+    bridge.color = color;
+}
+
+setColor("blue");`
+    },
+
+    {
+        title: "Moving Platform",
+
+        goal:
+            "Create movePlatform(direction, distance), " +
+            "then send it right by 120.",
+
+        rule:
+            'movePlatform("right", 120)',
+
+        dialogue:
+            "Hacko: Two parameters let me control both " +
+            "direction and distance.",
+
+        names: [
+            "movePlatform",
+            "move",
+            "platform"
+        ],
+
+        params: [
+            "direction, distance",
+            "direction",
+            "none"
+        ],
+
+        actions: [
+            "Move Platform",
+            "Open Door"
+        ],
+
+        returns: [
+            "none"
+        ],
+
+        nested: [
+            "none"
+        ],
+
+        validate: gameState => {
+            return (
+                hasFn(
+                    gameState,
+                    "movePlatform",
+                    "direction, distance",
+                    "Move Platform"
+                ) &&
+                calls(
+                    gameState,
+                    "movePlatform"
+                ).some(call => {
+                    return (
+                        clean(call.a) === "right" &&
+                        Number(call.b) === 120
+                    );
+                })
+            );
+        },
+
+        solution:
+`void movePlatform(String direction, int distance) {
+    platform.move(direction, distance);
+}
+
+movePlatform("right", 120);`
+    },
+
+    {
+        title: "Power Meter",
+
+        goal:
+            "Create getPower() that charges the machine, " +
+            "returns 50, then call it.",
+
+        rule:
+            "return 50",
+
+        dialogue:
+            "Hacko: Return sends a value back to the machine " +
+            "that called the function.",
+
+        names: [
+            "getPower",
+            "charge",
+            "power"
+        ],
+
+        params: [
+            "none"
+        ],
+
+        actions: [
+            "Charge Machine",
+            "Read Meter"
+        ],
+
+        returns: [
+            "50",
+            "25",
+            "true",
+            "none"
+        ],
+
+        nested: [
+            "none"
+        ],
+
+        validate: gameState => {
+            return (
+                hasFn(
+                    gameState,
+                    "getPower",
+                    "none",
+                    "Charge Machine",
+                    "50"
+                ) &&
+                calls(
+                    gameState,
+                    "getPower"
+                ).length >= 1
+            );
+        },
+
+        solution:
+`int getPower() {
+    chargeMachine();
+    return 50;
+}
+
+int power = getPower();`
+    },
+
+    {
+        title: "Chain Reaction",
+
+        goal:
+            "Create unlockGate() containing disableLaser(), " +
+            "then call unlockGate().",
+
+        rule:
+            "unlockGate() → disableLaser()",
+
+        dialogue:
+            "Hacko: Functions can call other functions " +
+            "to create a chain reaction.",
+
+        names: [
+            "unlockGate",
+            "disableLaser",
+            "gate"
+        ],
+
+        params: [
+            "none"
+        ],
+
+        actions: [
+            "Unlock Gate",
+            "Disable Laser"
+        ],
+
+        returns: [
+            "none"
+        ],
+
+        nested: [
+            "disableLaser()",
+            "none"
+        ],
+
+        validate: gameState => {
+            return (
+                hasFn(
+                    gameState,
+                    "unlockGate",
+                    "none",
+                    "Unlock Gate",
+                    null,
+                    "disableLaser()"
+                ) &&
+                calls(
+                    gameState,
+                    "unlockGate"
+                ).length >= 1
+            );
+        },
+
+        solution:
+`void unlockGate() {
+    disableLaser();
+    gate.unlock();
+}
+
+unlockGate();`
+    },
+
+    {
+        title: "Smart Door",
+
+        goal:
+            "Create openIfReady(hasKey) with If True: Open Door, " +
+            "then call it with true.",
+
+        rule:
+            "openIfReady(true)",
+
+        dialogue:
+            "Hacko: Logic lets a function choose what to do.",
+
+        names: [
+            "openIfReady",
+            "smartDoor",
+            "openDoor"
+        ],
+
+        params: [
+            "hasKey",
+            "ready",
+            "none"
+        ],
+
+        actions: [
+            "If True: Open Door",
+            "Open Door"
+        ],
+
+        returns: [
+            "none"
+        ],
+
+        nested: [
+            "none"
+        ],
+
+        validate: gameState => {
+            return (
+                hasFn(
+                    gameState,
+                    "openIfReady",
+                    "hasKey",
+                    "If True: Open Door"
+                ) &&
+                calls(
+                    gameState,
+                    "openIfReady"
+                ).some(call => {
+                    return clean(call.a) === "true";
+                })
+            );
+        },
+
+        solution:
+`void openIfReady(boolean hasKey) {
+    if (hasKey) {
+        openDoor();
+    }
+}
+
+openIfReady(true);`
+    },
+
+    {
+        title: "The Elevator Sequence",
+
+        goal:
+            "Save lowerBridge(), powerElevator(), and " +
+            "callElevator(). Call them in that exact order.",
+
+        rule:
+            "lowerBridge(); powerElevator(); callElevator();",
+
+        dialogue:
+            "Hacko: Small focused functions are easier " +
+            "to organize and combine.",
+
+        names: [
+            "lowerBridge",
+            "powerElevator",
+            "callElevator",
+            "elevator"
+        ],
+
+        params: [
+            "none"
+        ],
+
+        actions: [
+            "Lower Bridge",
+            "Power Elevator",
+            "Call Elevator"
+        ],
+
+        returns: [
+            "none"
+        ],
+
+        nested: [
+            "none"
+        ],
+
+        validate: gameState => {
+            return (
+                hasFn(
+                    gameState,
+                    "lowerBridge",
+                    "none",
+                    "Lower Bridge"
+                ) &&
+                hasFn(
+                    gameState,
+                    "powerElevator",
+                    "none",
+                    "Power Elevator"
+                ) &&
+                hasFn(
+                    gameState,
+                    "callElevator",
+                    "none",
+                    "Call Elevator"
+                ) &&
+                gameState.calls
+                    .map(call => call.name)
+                    .join(",") ===
+                    "lowerBridge,powerElevator,callElevator"
+            );
+        },
+
+        solution:
+`void lowerBridge() {
+    bridge.lower();
+}
+
+void powerElevator() {
+    elevator.power();
+}
+
+void callElevator() {
+    elevator.call();
+}
+
+lowerBridge();
+powerElevator();
+callElevator();`
+    },
+
+    {
+        title: "Crystal Calculator",
+
+        goal:
+            "Create combineCrystals(a, b) returning a + b. " +
+            "Make two calls whose returned totals add to 42.",
+
+        rule:
+            "combineCrystals(a,b) → a+b; accumulated result = 42",
+
+        dialogue:
+            "Hacko: Arguments can change every call, while " +
+            "return values can be combined.",
+
+        names: [
+            "combineCrystals",
+            "add",
+            "crystals"
+        ],
+
+        params: [
+            "a, b",
+            "a",
+            "none"
+        ],
+
+        actions: [
+            "Combine Crystals",
+            "Charge Lock"
+        ],
+
+        returns: [
+            "a + b",
+            "42",
+            "none"
+        ],
+
+        nested: [
+            "none"
+        ],
+
+        validate: gameState => {
+            if (
+                !hasFn(
+                    gameState,
+                    "combineCrystals",
+                    "a, b",
+                    "Combine Crystals",
+                    "a + b"
+                )
+            ) {
+                return false;
+            }
+
+            const crystalCalls =
+                calls(
+                    gameState,
+                    "combineCrystals"
+                );
+
+            return (
+                crystalCalls.length >= 2 &&
+                crystalCalls.reduce(
+                    (total, call) => {
+                        return (
+                            total +
+                            Number(call.a || 0) +
+                            Number(call.b || 0)
+                        );
+                    },
+                    0
+                ) === 42
+            );
+        },
+
+        solution:
+`int combineCrystals(int a, int b) {
+    return a + b;
+}
+
+int total =
+    combineCrystals(8, 7) +
+    combineCrystals(12, 15);`
+    },
+
+    {
+        title: "The Core Function",
+
+        goal:
+            "Create activateCore(power, mode) with Mode Logic " +
+            "and return success. Also create shutdownDefense(token), " +
+            'then call activateCore(100, "fortress") followed by ' +
+            'shutdownDefense("success").',
+
+        rule:
+            'activateCore(100, "fortress") → ' +
+            '"success" → shutdownDefense("success")',
+
+        dialogue:
+            "Hacko: The final spell combines parameters, logic, " +
+            "return values, and function teamwork!",
+
+        names: [
+            "activateCore",
+            "shutdownDefense",
+            "core"
+        ],
+
+        params: [
+            "power, mode",
+            "token",
+            "none"
+        ],
+
+        actions: [
+            "Mode Logic",
+            "Shutdown Defense",
+            "Activate Core"
+        ],
+
+        returns: [
+            "success",
+            "true",
+            "none"
+        ],
+
+        nested: [
+            "none"
+        ],
+
+        validate: gameState => {
+            return (
+                hasFn(
+                    gameState,
+                    "activateCore",
+                    "power, mode",
+                    "Mode Logic",
+                    "success"
+                ) &&
+                hasFn(
+                    gameState,
+                    "shutdownDefense",
+                    "token",
+                    "Shutdown Defense"
+                ) &&
+                gameState.calls.length === 2 &&
+                gameState.calls[0].name ===
+                    "activateCore" &&
+                Number(
+                    gameState.calls[0].a
+                ) === 100 &&
+                clean(
+                    gameState.calls[0].b
+                ) === "fortress" &&
+                gameState.calls[1].name ===
+                    "shutdownDefense" &&
+                clean(
+                    gameState.calls[1].a
+                ) === "success"
+            );
+        },
+
+        solution:
+`String activateCore(int power, String mode) {
+    if (
+        mode.equals("fortress") &&
+        power == 100
+    ) {
+        return "success";
+    }
+
+    return "failed";
+}
+
+void shutdownDefense(String token) {
+    if (token.equals("success")) {
+        defenses.off();
+    }
+}
+
+String result =
+    activateCore(100, "fortress");
+
+shutdownDefense(result);`
+    }
+];
+
+let level = 0;
+let state;
+let keys = {};
+
+let progress =
+    JSON.parse(
+        localStorage.getItem(
+            "hackoFunctionProgress"
+        ) ||
+        '{"unlocked":1,"done":[]}'
+    );
+
+function clean(value) {
+    return String(
+        value ?? ""
+    )
+        .trim()
+        .replace(
+            /^['"]|['"]$/g,
+            ""
+        )
+        .toLowerCase();
+}
+
+function hasFn(
+    gameState,
+    name,
+    params,
+    action = null,
+    returnValue = null,
+    nested = null
+) {
+    return gameState.functions.some(
+        fn => {
+            return (
+                fn.name === name &&
+                fn.params === params &&
+                (
+                    action === null ||
+                    fn.action === action
+                ) &&
+                (
+                    returnValue === null ||
+                    fn.ret === returnValue
+                ) &&
+                (
+                    nested === null ||
+                    fn.nested === nested
+                )
+            );
+        }
+    );
+}
+
+function calls(
+    gameState,
+    name
+) {
+    return gameState.calls.filter(
+        call => {
+            return call.name === name;
+        }
+    );
+}
+
+function loadLevel(index) {
+    level = index;
+
+    const platforms =
+        makePlatforms(index);
+
+    state = {
+        player: {
+            x: 55,
+            y: 390,
+            w: 38,
+            h: 50,
+            vx: 0,
+            vy: 0,
+            onGround: false
+        },
+        platforms,
+        functions: [],
+        calls: [],
+        consoleActive: false,
+        solved: false,
+        won: false,
+        hp: 100,
+        stones: makeStones(index),
+        enemies: makeEnemies(index),
+        lasers: makeLasers(index),
+        mechanism: 0
+    };
+
+    keys = {};
+
+    populateBuilder();
+
+    document.getElementById(
+        "missionTitle"
+    ).textContent =
+        `Mission ${index + 1}: ` +
+        missions[index].title;
+
+    document.getElementById(
+        "missionGoal"
+    ).textContent =
+        missions[index].goal;
+
+    document.getElementById(
+        "missionRule"
+    ).textContent =
+        missions[index].rule;
+
+    document.getElementById(
+        "dialogue"
+    ).textContent =
+        missions[index].dialogue;
+
+    document.getElementById(
+        "levelStat"
+    ).textContent =
+        `${index + 1}/10`;
+
+    setFeedback(
+        "Reach the Code Console to activate the Function Gauntlet."
+    );
+
+    setMessage(
+        "Find the glowing Code Console. " +
+        "Collect stones for extra energy."
+    );
+
+    renderLevels();
+    updateUI();
+}
+
+function makePlatforms(index) {
+    const platforms = [
+        {
+            x: 0,
+            y: 485,
+            w: 960,
+            h: 55
+        },
+        {
+            x: 150,
+            y: 400,
+            w: 150,
+            h: 22
+        },
+        {
+            x: 370,
+            y: 345,
+            w: 150,
+            h: 22
+        },
+        {
+            x: 600,
+            y: 410,
+            w: 130,
+            h: 22
+        }
+    ];
+
+    if (index > 2) {
+        platforms.push({
+            x: 260,
+            y: 270,
+            w: 120,
+            h: 18
+        });
+    }
+
+    if (index > 5) {
+        platforms.push({
+            x: 540,
+            y: 245,
+            w: 125,
+            h: 18
+        });
+    }
+
+    return platforms;
+}
+
+function makeStones(index) {
+    const spots = [
+        [190, 360],
+        [420, 305],
+        [645, 370],
+        [300, 230],
+        [580, 205]
+    ];
+
+    return spots
+        .slice(
+            0,
+            Math.min(
+                3 + Math.floor(index / 4),
+                5
+            )
+        )
+        .map(position => {
+            return {
+                x: position[0],
+                y: position[1],
+                taken: false
+            };
+        });
+}
+
+function makeEnemies(index) {
+    const spots = [
+        [690, 455],
+        [420, 315],
+        [250, 455],
+        [570, 215]
+    ];
+
+    return spots
+        .slice(
+            0,
+            Math.min(
+                1 + Math.floor(index / 3),
+                4
+            )
+        )
+        .map(
+            (position, enemyIndex) => {
+                return {
+                    x: position[0],
+                    y: position[1],
+                    w: 34,
+                    h: 30,
+                    dir:
+                        enemyIndex % 2
+                            ? 1
+                            : -1,
+                    min:
+                        position[0] - 65,
+                    max:
+                        position[0] + 65,
+                    speed:
+                        1.1 + index * 0.12
+                };
+            }
+        );
+}
+
+function makeLasers(index) {
+    const spots = [
+        530,
+        340,
+        755,
+        225,
+        675
+    ];
+
+    return spots
+        .slice(
+            0,
+            Math.min(
+                Math.floor(
+                    (index + 1) / 2
+                ),
+                5
+            )
+        )
+        .map(
+            (x, laserIndex) => {
+                return {
+                    x,
+                    y:
+                        320 -
+                        (
+                            laserIndex % 2
+                        ) * 95,
+                    on: true,
+                    phase:
+                        laserIndex * 37
+                };
+            }
+        );
+}
+
+function populateBuilder() {
+    const mission =
+        missions[level];
+
+    fill(
+        "fnName",
+        mission.names
+    );
+
+    fill(
+        "fnParams",
+        mission.params
+    );
+
+    fill(
+        "fnAction",
+        mission.actions
+    );
+
+    fill(
+        "fnReturn",
+        mission.returns
+    );
+
+    fill(
+        "fnNested",
+        mission.nested
+    );
+
+    fill(
+        "callName",
+        mission.names
+    );
+
+    previewCode();
+    renderProgram();
+}
+
+function fill(id, values) {
+    document.getElementById(
+        id
+    ).innerHTML =
+        values.map(value => {
+            return (
+                `<option value="${value}">` +
+                `${value}</option>`
+            );
+        }).join("");
+}
+
+function value(id) {
+    return document.getElementById(
+        id
+    ).value;
+}
+
+function previewCode() {
+    const name =
+        value("fnName");
+
+    const params =
+        value("fnParams") === "none"
+            ? ""
+            : value("fnParams");
+
+    const action =
+        value("fnAction");
+
+    const returnValue =
+        value("fnReturn");
+
+    const nested =
+        value("fnNested");
+
+    let body =
+        `  ${action};`;
+
+    if (nested !== "none") {
+        body +=
+            `\n  ${nested};`;
+    }
+
+    if (
+        returnValue !== "none"
+    ) {
+        body +=
+            `\n  return ${javaReturnValue(returnValue)};`;
+    }
+
+    document.getElementById(
+        "codePreview"
+    ).textContent =
+        `${javaReturnType(returnValue)} ${name}` +
+        `(${javaParams(params)}) {\n` +
+        `${body}\n}`;
+}
+
+function saveFunction() {
+    HackoAudio.play("select");
+    if (!state.consoleActive) {
+        setFeedback(
+            "Reach the Code Console first.",
+            false
+        );
+
+        return;
+    }
+
+    const fn = {
+        name:
+            value("fnName"),
+        params:
+            value("fnParams"),
+        action:
+            value("fnAction"),
+        ret:
+            value("fnReturn"),
+        nested:
+            value("fnNested")
+    };
+
+    const existingIndex =
+        state.functions.findIndex(
+            savedFunction => {
+                return (
+                    savedFunction.name ===
+                    fn.name
+                );
+            }
+        );
+
+    if (existingIndex >= 0) {
+        state.functions[
+            existingIndex
+        ] = fn;
+    } else {
+        state.functions.push(fn);
+    }
+
+    setFeedback(
+        `${fn.name}() saved to the gauntlet.`,
+        true
+    );
+
+    renderProgram();
+    updateUI();
+}
+
+function clearFunctions() {
+    state.functions = [];
+    state.calls = [];
+    state.solved = false;
+
+    renderProgram();
+    updateUI();
+
+    setFeedback(
+        "Program cleared."
+    );
+}
+
+function addCall() {
+    HackoAudio.play("correct");
+    if (!state.consoleActive) {
+        setFeedback(
+            "Reach the Code Console first.",
+            false
+        );
+
+        return;
+    }
+
+    state.calls.push({
+        name:
+            value("callName"),
+        a:
+            value("arg1"),
+        b:
+            value("arg2")
+    });
+
+    document.getElementById(
+        "arg1"
+    ).value = "";
+
+    document.getElementById(
+        "arg2"
+    ).value = "";
+
+    renderProgram();
+
+    setFeedback(
+        "Function call added."
+    );
+}
+
+function removeLastCall() {
+    state.calls.pop();
+    renderProgram();
+}
+
+function renderProgram() {
+    const savedFunctions =
+        document.getElementById(
+            "savedFunctions"
+        );
+
+    const callList =
+        document.getElementById(
+            "callList"
+        );
+
+    savedFunctions.innerHTML =
+        state.functions.length
+            ? state.functions.map(fn => {
+                return (
+                    `<div class="token">` +
+                    `<b>ƒ</b> ` +
+                    `${fn.name}(` +
+                    `${fn.params === "none" ? "" : fn.params}` +
+                    `) → ${fn.action}` +
+                    `${
+                        fn.ret !== "none"
+                            ? ` → return ${fn.ret}`
+                            : ""
+                    }` +
+                    `${
+                        fn.nested !== "none"
+                            ? ` → ${fn.nested}`
+                            : ""
+                    }` +
+                    `</div>`
+                );
+            }).join("")
+            : (
+                `<div class="token">` +
+                `No saved functions` +
+                `</div>`
+            );
+
+    callList.innerHTML =
+        state.calls.length
+            ? state.calls.map(
+                (call, index) => {
+                    return (
+                        `<div class="token">` +
+                        `<b>${index + 1}.</b> ` +
+                        `${call.name}(` +
+                        `${
+                            [
+                                call.a,
+                                call.b
+                            ]
+                            .filter(Boolean)
+                            .join(", ")
+                        }` +
+                        `)</div>`
+                    );
+                }
+            ).join("")
+            : (
+                `<div class="token">` +
+                `No function calls` +
+                `</div>`
+            );
+}
+
+function executeProgram() {
+    if (!state.consoleActive) {
+        setFeedback(
+            "Reach the Code Console first.",
+            false
+        );
+
+        return;
+    }
+
+    if (
+        !missions[level].validate(
+            state
+        )
+    ) {
+        setFeedback(
+            "Program failed. Compare your blocks and call order with the mission rule.",
+            false
+        );
+
+        state.mechanism = 0;
+
+        return;
+    }
+
+    state.solved = true;
+    state.mechanism = 1;
+
+    state.lasers.forEach(
+        laser => {
+            laser.on = false;
+        }
+    );
+
+    setFeedback(
+        "PROGRAM SUCCESS! Fortress mechanism activated.",
+        true
+    );
+
+    setMessage(
+        "Mechanism online! Reach the green exit portal at the far right."
+    );
+}
+
+function update(deltaTime) {
+    if (state.won) {
+        return;
+    }
+
+    const player =
+        state.player;
+
+    const speed = 260;
+
+    const movingLeft =
+        keys.a ||
+        keys.A ||
+        keys.ArrowLeft;
+
+    const movingRight =
+        keys.d ||
+        keys.D ||
+        keys.ArrowRight;
+
+    player.vx =
+        (
+            movingRight
+                ? speed
+                : 0
+        ) -
+        (
+            movingLeft
+                ? speed
+                : 0
+        );
+
+    player.vy +=
+        1250 * deltaTime;
+
+    player.x +=
+        player.vx * deltaTime;
+
+    collideX(player);
+
+    player.y +=
+        player.vy * deltaTime;
+
+    player.onGround = false;
+
+    collideY(player);
+
+    player.x =
+        Math.max(
+            0,
+            Math.min(
+                922,
+                player.x
+            )
+        );
+
+    if (player.y > 560) {
+        respawn(
+            12,
+            "falling"
+        );
+    }
+
+    const jumping =
+        keys[" "] ||
+        keys.ArrowUp ||
+        keys.w ||
+        keys.W;
+
+    if (
+        jumping &&
+        player.onGround
+    ) {
+        player.vy = -520;
+        player.onGround = false;
+
+        keys[" "] = false;
+        keys.ArrowUp = false;
+        keys.w = false;
+        keys.W = false;
+    }
+
+    const consoleNear =
+        overlap(
+            player,
+            {
+                x: 210,
+                y: 340,
+                w: 55,
+                h: 60
+            }
+        );
+
+    if (
+        consoleNear &&
+        !state.consoleActive
+    ) {
+        state.consoleActive = true;
+
+        setMessage(
+            "Code Console linked! Build, save, call, and run your functions."
+        );
+
+        setFeedback(
+            "Function Gauntlet online.",
+            true
+        );
+    }
+
+    state.stones.forEach(
+        stone => {
+            if (
+                !stone.taken &&
+                overlap(
+                    player,
+                    {
+                        x: stone.x,
+                        y: stone.y,
+                        w: 22,
+                        h: 22
+                    }
+                )
+            ) {
+                stone.taken = true;
+
+                state.hp =
+                    Math.min(
+                        100,
+                        state.hp + 8
+                    );
+
+                setMessage(
+                    "Function Stone collected: +8 energy."
+                );
+            }
+        }
+    );
+
+    state.enemies.forEach(
+        enemy => {
+            enemy.x +=
+                enemy.dir *
+                enemy.speed;
+
+            if (
+                enemy.x < enemy.min ||
+                enemy.x > enemy.max
+            ) {
+                enemy.dir *= -1;
+            }
+
+            if (
+                overlap(
+                    player,
+                    enemy
+                )
+            ) {
+                respawn(
+                    7 + level,
+                    "fortress sentry"
+                );
+            }
+        }
+    );
+
+    state.lasers.forEach(
+        laser => {
+            const active =
+                Math.floor(
+                    performance.now() /
+                    650 +
+                    laser.phase
+                ) % 2 === 0;
+
+            if (
+                laser.on &&
+                active &&
+                overlap(
+                    player,
+                    {
+                        x: laser.x,
+                        y: laser.y,
+                        w: 8,
+                        h: 165
+                    }
+                )
+            ) {
+                respawn(
+                    5 + level,
+                    "laser grid"
+                );
+            }
+        }
+    );
+
+    if (
+        !state.solved &&
+        player.x + player.w > 790
+    ) {
+        player.x = 752;
+    }
+
+    if (
+        state.solved &&
+        player.x > 870
+    ) {
+        completeLevel();
+    }
+
+    updateUI();
+}
+
+function collideX(player) {
+    state.platforms.forEach(
+        platform => {
+            if (
+                overlap(
+                    player,
+                    platform
+                )
+            ) {
+                if (player.vx > 0) {
+                    player.x =
+                        platform.x -
+                        player.w;
+                } else if (
+                    player.vx < 0
+                ) {
+                    player.x =
+                        platform.x +
+                        platform.w;
+                }
+            }
+        }
+    );
+}
+
+function collideY(player) {
+    state.platforms.forEach(
+        platform => {
+            if (
+                overlap(
+                    player,
+                    platform
+                )
+            ) {
+                if (player.vy > 0) {
+                    player.y =
+                        platform.y -
+                        player.h;
+
+                    player.vy = 0;
+                    player.onGround = true;
+                } else if (
+                    player.vy < 0
+                ) {
+                    player.y =
+                        platform.y +
+                        platform.h;
+
+                    player.vy = 0;
+                }
+            }
+        }
+    );
+}
+
+function overlap(a, b) {
+    return (
+        a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y
+    );
+}
+
+let hurtTime = 0;
+
+function respawn(
+    amount,
+    source
+) {
+    if (
+        performance.now() <
+        hurtTime
+    ) {
+        return;
+    }
+
+    hurtTime =
+        performance.now() + 700;
+
+    state.hp =
+        Math.max(
+            0,
+            state.hp - amount
+        );
+
+    state.player.x = 55;
+    state.player.y = 390;
+    state.player.vx = 0;
+    state.player.vy = 0;
+
+    setMessage(
+        `-${amount} energy from ${source}. ` +
+        `Returned to checkpoint.`
+    );
+
+    if (state.hp <= 0) {
+        setTimeout(() => {
+            alert(
+                "Hacko lost all energy. Restarting the mission."
+            );
+
+            restartLevel();
+        }, 50);
+    }
+}
+
+function completeLevel() {
+    /* tell the mission map this level is cleared */
+    if (window.HackoStore) {
+        HackoStore.completeLevel(6, level, 100);
+    }
+
+    HackoAudio.play("win");
+    if (state.won) {
+        return;
+    }
+
+    state.won = true;
+
+    progress.unlocked =
+        Math.max(
+            progress.unlocked,
+            Math.min(
+                10,
+                level + 2
+            )
+        );
+
+    if (
+        !progress.done.includes(
+            level
+        )
+    ) {
+        progress.done.push(
+            level
+        );
+    }
+
+    localStorage.setItem(
+        "hackoFunctionProgress",
+        JSON.stringify(progress)
+    );
+
+    document.getElementById(
+        "modalTitle"
+    ).textContent =
+        level === 9
+            ? "FORTRESS MASTER!"
+            : "MISSION COMPLETE";
+
+    document.getElementById(
+        "modalText"
+    ).textContent =
+        level === 9
+            ? (
+                "Hacko shut down the fortress defenses " +
+                "and mastered functions!"
+            )
+            : (
+                "Hacko activated the mechanism " +
+                "and escaped the room."
+            );
+
+    document.getElementById(
+        "solutionCode"
+    ).textContent =
+        missions[level].solution;
+
+    const nextButton =
+        document.getElementById(
+            "nextBtn"
+        );
+
+    nextButton.textContent =
+        level === 9
+            ? "PLAY AGAIN"
+            : "NEXT MISSION";
+
+    nextButton.onclick = () => {
+        closeOverlay();
+
+        loadLevel(
+            level === 9
+                ? 0
+                : level + 1
+        );
+    };
+
+    document.getElementById(
+        "overlay"
+    ).classList.add(
+        "show"
+    );
+
+    renderLevels();
+}
+
+function updateUI() {
+    const hpStat =
+        document.getElementById(
+            "hpStat"
+        );
+
+    hpStat.textContent =
+        state.hp;
+
+    hpStat.style.color =
+        state.hp < 35
+            ? "#ff496f"
+            : "#91ff70";
+
+    document.getElementById(
+        "stoneStat"
+    ).textContent =
+        `${
+            state.stones.filter(
+                stone => stone.taken
+            ).length
+        }/${state.stones.length}`;
+
+    document.getElementById(
+        "functionStat"
+    ).textContent =
+        state.functions.length;
+
+    [
+        "saveFnBtn",
+        "addCallBtn"
+    ].forEach(id => {
+        document.getElementById(
+            id
+        ).disabled =
+            !state.consoleActive;
+    });
+}
+
+function renderLevels() {
+    document.getElementById(
+        "levels"
+    ).innerHTML =
+        missions.map(
+            (mission, index) => {
+                const active =
+                    index === level
+                        ? " active"
+                        : "";
+
+                const completed =
+                    progress.done.includes(
+                        index
+                    )
+                        ? " done"
+                        : "";
+
+                const disabled =
+                    index >= progress.unlocked
+                        ? "disabled"
+                        : "";
+
+                return (
+                    `<button ` +
+                    `class="level${active}${completed}" ` +
+                    `${disabled} ` +
+                    `onclick="loadLevel(${index})" ` +
+                    `title="${mission.title}">` +
+                    `${index + 1}` +
+                    `</button>`
+                );
+            }
+        ).join("");
+}
+
+function setFeedback(
+    text,
+    good = null
+) {
+    const feedback =
+        document.getElementById(
+            "feedback"
+        );
+
+    feedback.textContent =
+        text;
+
+    feedback.className =
+        "feedback" +
+        (
+            good === true
+                ? " good"
+                : good === false
+                    ? " bad"
+                    : ""
+        );
+}
+
+function setMessage(text) {
+    document.getElementById(
+        "stageMessage"
+    ).textContent =
+        text;
+}
+
+function restartLevel() {
+    HackoAudio.play("wrong");
+    loadLevel(level);
+}
+
+function closeOverlay() {
+    document.getElementById(
+        "overlay"
+    ).classList.remove(
+        "show"
+    );
+}
+
+function draw() {
+    ctx.clearRect(
+        0,
+        0,
+        960,
+        540
+    );
+
+    const background =
+        ctx.createLinearGradient(
+            0,
+            0,
+            0,
+            540
+        );
+
+    background.addColorStop(
+        0,
+        "#151636"
+    );
+
+    background.addColorStop(
+        0.55,
+        "#102c45"
+    );
+
+    background.addColorStop(
+        1,
+        "#07111e"
+    );
+
+    ctx.fillStyle =
+        background;
+
+    ctx.fillRect(
+        0,
+        0,
+        960,
+        540
+    );
+
+    ctx.fillStyle =
+        "#ffffff08";
+
+    for (
+        let x = 0;
+        x < 960;
+        x += 60
+    ) {
+        for (
+            let y = 0;
+            y < 540;
+            y += 60
+        ) {
+            ctx.fillRect(
+                x + 5,
+                y + 5,
+                48,
+                3
+            );
+        }
+    }
+
+    state.platforms.forEach(
+        (platform, index) => {
+            ctx.fillStyle =
+                index === 0
+                    ? "#183a52"
+                    : "#24536b";
+
+            ctx.fillRect(
+                platform.x,
+                platform.y,
+                platform.w,
+                platform.h
+            );
+
+            ctx.fillStyle =
+                "#45f3ff33";
+
+            ctx.fillRect(
+                platform.x,
+                platform.y,
+                platform.w,
+                5
+            );
+
+            ctx.strokeStyle =
+                "#397e9e";
+
+            ctx.strokeRect(
+                platform.x + 2,
+                platform.y + 2,
+                platform.w - 4,
+                platform.h - 4
+            );
+        }
+    );
+
+    drawConsole();
+    drawStones();
+    drawLasers();
+    drawEnemies();
+    drawMechanism();
+    drawHacko();
+}
+
+function drawConsole() {
+    ctx.save();
+
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = "#45f3ff";
+    ctx.fillStyle = "#123f5c";
+
+    ctx.fillRect(
+        210,
+        340,
+        55,
+        60
+    );
+
+    ctx.strokeStyle = "#45f3ff";
+    ctx.lineWidth = 3;
+
+    ctx.strokeRect(
+        215,
+        345,
+        45,
+        45
+    );
+
+    ctx.fillStyle = "#45f3ff";
+    ctx.font = "bold 11px Orbitron";
+    ctx.textAlign = "center";
+
+    ctx.fillText(
+        "CODE",
+        237,
+        373
+    );
+
+    ctx.restore();
+}
+
+function drawStones() {
+    state.stones.forEach(
+        stone => {
+            if (stone.taken) {
+                return;
+            }
+
+            ctx.save();
+
+            ctx.translate(
+                stone.x + 11,
+                stone.y + 11
+            );
+
+            ctx.rotate(
+                performance.now() /
+                700
+            );
+
+            ctx.shadowBlur = 16;
+            ctx.shadowColor = "#ffd34e";
+            ctx.fillStyle = "#ffd34e";
+
+            ctx.fillRect(
+                -9,
+                -9,
+                18,
+                18
+            );
+
+            ctx.restore();
+        }
+    );
+}
+
+function drawLasers() {
+    state.lasers.forEach(
+        laser => {
+            if (!laser.on) {
+                return;
+            }
+
+            const active =
+                Math.floor(
+                    performance.now() /
+                    650 +
+                    laser.phase
+                ) % 2 === 0;
+
+            ctx.fillStyle =
+                active
+                    ? "#ff496f"
+                    : "#ff496f33";
+
+            ctx.shadowBlur =
+                active
+                    ? 18
+                    : 0;
+
+            ctx.shadowColor =
+                "#ff496f";
+
+            ctx.fillRect(
+                laser.x,
+                laser.y,
+                8,
+                165
+            );
+
+            ctx.shadowBlur = 0;
+        }
+    );
+}
+
+function drawEnemies() {
+    state.enemies.forEach(
+        enemy => {
+            ctx.save();
+
+            ctx.translate(
+                enemy.x + 17,
+                enemy.y + 15
+            );
+
+            ctx.fillStyle = "#ff496f";
+            ctx.shadowBlur = 14;
+            ctx.shadowColor = "#ff496f";
+
+            ctx.beginPath();
+
+            ctx.arc(
+                0,
+                0,
+                15,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+
+            ctx.fillStyle = "#07111e";
+
+            ctx.fillRect(
+                -8,
+                -4,
+                5,
+                5
+            );
+
+            ctx.fillRect(
+                3,
+                -4,
+                5,
+                5
+            );
+
+            ctx.restore();
+        }
+    );
+}
+
+function drawHacko() {
+    const player =
+        state.player;
+
+    ctx.save();
+
+    if (
+        performance.now() <
+        hurtTime &&
+        Math.floor(
+            performance.now() / 80
+        ) % 2 === 0
+    ) {
+        ctx.globalAlpha = 0.35;
+    }
+
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = "#45f3ff";
+
+    if (hackoReady) {
+        ctx.drawImage(
+            hacko,
+            player.x - 7,
+            player.y - 7,
+            player.w + 14,
+            player.h + 14
+        );
+    } else {
+        ctx.fillStyle = "#45f3ff";
+
+        ctx.fillRect(
+            player.x,
+            player.y,
+            player.w,
+            player.h
+        );
+
+        ctx.fillStyle = "#07111e";
+        ctx.font = "bold 16px Orbitron";
+        ctx.textAlign = "center";
+
+        ctx.fillText(
+            "H",
+            player.x +
+            player.w / 2,
+            player.y + 31
+        );
+    }
+
+    ctx.restore();
+}
+
+function drawMechanism() {
+    ctx.save();
+
+    const solved =
+        state.solved;
+
+    const pulse =
+        14 +
+        Math.sin(
+            performance.now() /
+            180
+        ) * 3;
+
+    ctx.fillStyle =
+        solved
+            ? "#91ff70"
+            : "#ff496f";
+
+    ctx.shadowBlur = 22;
+    ctx.shadowColor =
+        ctx.fillStyle;
+
+    ctx.strokeStyle =
+        ctx.fillStyle;
+
+    ctx.lineWidth = 5;
+
+    ctx.strokeRect(
+        790,
+        300,
+        25,
+        185
+    );
+
+    if (solved) {
+        ctx.beginPath();
+
+        ctx.arc(
+            900,
+            440,
+            pulse,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.stroke();
+    } else {
+        ctx.fillRect(
+            790,
+            300,
+            25,
+            185
+        );
+    }
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 10px Orbitron";
+    ctx.textAlign = "center";
+
+    const labels = [
+        "DOOR",
+        "TORCHES",
+        "BRIDGE",
+        "PLATFORM",
+        "METER",
+        "CHAIN",
+        "SMART",
+        "ELEVATOR",
+        "CRYSTALS",
+        "CORE"
+    ];
+
+    ctx.fillText(
+        labels[level],
+        802,
+        285
+    );
+
+    if (level === 1) {
+        for (
+            let torch = 0;
+            torch < 3;
+            torch++
+        ) {
+            ctx.fillStyle =
+                solved
+                    ? "#ffd34e"
+                    : "#39475a";
+
+            ctx.beginPath();
+
+            ctx.arc(
+                650 +
+                torch * 40,
+                470,
+                10,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+        }
+    }
+
+    if (level === 2) {
+        ctx.fillStyle =
+            solved
+                ? "#4da6ff"
+                : "#24384e";
+
+        ctx.fillRect(
+            710,
+            455,
+            80,
+            12
+        );
+    }
+
+    if (level === 4) {
+        ctx.fillStyle =
+            "#102944";
+
+        ctx.fillRect(
+            690,
+            365,
+            70,
+            80
+        );
+
+        ctx.fillStyle =
+            solved
+                ? "#91ff70"
+                : "#ff496f";
+
+        ctx.fillRect(
+            703,
+            410,
+            solved
+                ? 44
+                : 5,
+            15
+        );
+    }
+
+    if (level === 7) {
+        ctx.fillStyle =
+            solved
+                ? "#91ff70"
+                : "#39475a";
+
+        ctx.fillRect(
+            700,
+            330,
+            65,
+            120
+        );
+    }
+
+    if (level === 9) {
+        ctx.fillStyle =
+            solved
+                ? "#91ff70"
+                : "#b67aff";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            720,
+            370,
+            48,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+    }
+
+    ctx.restore();
+}
+
+let last =
+    performance.now();
+
+function loop(now) {
+    const deltaTime =
+        Math.min(
+            0.025,
+            (
+                now -
+                last
+            ) / 1000
+        );
+
+    last = now;
+
+    update(deltaTime);
+    draw();
+
+    requestAnimationFrame(
+        loop
+    );
+}
+
+window.addEventListener(
+    "keydown",
+    event => {
+        keys[event.key] = true;
+
+        if (
+            [
+                " ",
+                "ArrowUp",
+                "ArrowLeft",
+                "ArrowRight"
+            ].includes(
+                event.key
+            )
+        ) {
+            event.preventDefault();
+        }
+    }
+);
+
+window.addEventListener(
+    "keyup",
+    event => {
+        keys[event.key] = false;
+    }
+);
+
+loadLevel(
+    Math.min(
+        progress.unlocked - 1,
+        9
+    )
+);
+
+requestAnimationFrame(
+    loop
+);
+
+/* =====================================================
+   RESUME + AUTOSAVE
+
+   Progress used to be written only when a level was
+   finished, and no page in the project listened for
+   pagehide or visibilitychange. Leaving mid-level threw
+   that level's work away - which is what the client meant
+   by "pag na back mawawala".
+
+   Every cleared level is now recorded as it happens, and
+   coming back drops the player at the start of the level
+   they had reached.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoStore || !HackoStore.isLoggedIn()) {
+        return;
+    }
+
+    HackoStore.registerTotalLevels(6, 10);
+
+    /* The jump has to happen AFTER the game has booted.
+       theescaperoom builds itself in window.onload, so doing
+       this at parse time meant its own loadLevel(0) ran
+       afterwards and silently sent the player back to level 1.
+       A load listener registered here fires after any onload
+       the page assigned earlier. */
+    function goToSavedLevel() {
+
+        var resume = HackoStore.getResumeLevel(6);
+
+        if (resume > 0 && resume < 10) {
+            try {
+                loadLevel(resume);
+            } catch (e) {
+                /* a game that cannot jump just starts at the top */
+            }
+        }
+    }
+
+    if (document.readyState === "complete") {
+        setTimeout(goToSavedLevel, 0);
+    } else {
+        window.addEventListener("load", function () {
+            setTimeout(goToSavedLevel, 0);
+        });
+    }
+
+    HackoStore.bindAutosave(function () {
+        try {
+            return { mission: 6, level: level };
+        } catch (e) {
+            return null;
+        }
+    });
+
+}());
+
+/* =====================================================
+   SOUND LAYER
+
+   Sound used to fire only on a few discrete events, so a
+   game could sit in silence for long stretches. Every page
+   now carries a quiet background track and a visible
+   SOUND ON / SOUND OFF button, so a player can always tell
+   whether audio is working.
+
+   Browsers will not start audio until the player has
+   interacted, so the track is requested here and actually
+   begins on the first key press or click.
+===================================================== */
+
+(function () {
+
+    if (!window.HackoAudio) {
+        return;
+    }
+
+    function begin() {
+        HackoAudio.music.play("fortress");
+        HackoAudio.mountToggle(document.body);
+        if (window.HackoStore) {
+            HackoStore.mountMapLink();
+        }
+    }
+
+    if (document.readyState === "complete") {
+        begin();
+    } else {
+        window.addEventListener("load", begin);
+    }
+
+}());
+</script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A game-based Java debugging mission map for beginners.">
+  <title>HACKO — Debugging Gym</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="arena.css">
+  <link rel="stylesheet" href="hero.css">
+<script src="../shared/audio.js" data-track="gym"></script>
+<script src="../shared/storage.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#top"><span class="brand-mark">H</span><span>HACKO<small>DEBUGGING GYM</small></span></a>
+    <div class="stats"><span>♥ <b id="lives">3</b></span><span>XP <b id="xp">0</b></span><button id="reset">↻ Reset run</button></div>
+  </header>
+
+  <main>
+    <section class="hero" id="top">
+      <div class="eyebrow">MISSION MAP · JAVA BEGINNERS</div>
+      <h1>Enter the<br><em>Debugging Gym.</em></h1>
+      <p>Walk the glitch corridor. Duel ten bug trainers. Fix the code before the code breaks you.</p>
+      <div class="progress-row"><span>GYM PROGRESS</span><div class="track"><i id="progress-bar"></i></div><b id="progress-text">0%</b></div>
+    </section>
+
+    <section class="map" id="mission-map" aria-label="Mission map"><div class="map-line"></div></section>
+
+    <section class="game-arena" id="game-arena">
+      <div class="arena-sky"><span class="glitch g1">ERROR</span><span class="glitch g2">NULL</span><span class="glitch g3">404</span></div>
+      <div class="arena-hud">
+        <div class="fighter-hud hero-hud"><div><b>HACKO</b><small>CODE WARRIOR</small></div><div class="hp"><i id="hero-hp"></i></div></div>
+        <div class="round-label">DEBUG DUEL <b id="round-number">01</b></div>
+        <div class="fighter-hud enemy-hud"><div><b id="enemy-hud-name">LITTLE SYNTAX</b><small>BUG TRAINER</small></div><div class="hp"><i id="enemy-hp"></i></div></div>
+      </div>
+      <div class="fighters">
+        <div class="fighter hero-fighter" id="hero-fighter"><div class="shadow"></div><img class="hero-sprite" src="hacko.png" alt="Hacko, the robot code warrior"><div class="name-plate">HACKO</div></div>
+        <div class="impact" id="impact">{ BUG! }</div>
+        <div class="fighter enemy-fighter" id="enemy-fighter"><div class="shadow"></div><div class="pixel-person enemy-person"><i class="hair"></i><i class="head"></i><i class="body"></i><i class="arm left"></i><i class="arm right"></i><i class="leg left"></i><i class="leg right"></i><i class="visor"></i></div><div class="name-plate" id="enemy-plate">LITTLE SYNTAX</div></div>
+      </div>
+      <div class="arena-floor"><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="battle-message" id="battle-message">A wild bug trainer blocks the corridor!</div>
+    </section>
+
+    <section class="battle" id="battle">
+      <aside class="trainer-card">
+        <span class="mission-no" id="mission-no"></span>
+        <div class="avatar"><span id="avatar-letter"></span></div>
+        <span class="trainer-label" id="trainer-name"></span>
+        <h2 id="mission-title"></h2>
+        <div class="stars" id="stars"></div>
+        <blockquote id="trainer-quote"></blockquote>
+        <p class="hacko" id="hacko-quote"></p>
+      </aside>
+
+      <div class="duel">
+        <div class="duel-head"><span>BUGGY_CODE.JAVA</span><span class="live">● LIVE ERROR</span></div>
+        <pre><code id="buggy-code"></code></pre>
+        <div class="challenge">
+          <span class="fix-label">YOUR FIX</span>
+          <h3 id="prompt"></h3>
+          <div class="choices" id="choices"></div>
+          <div class="feedback" id="feedback"><span>?</span><p>Choose the patch that makes the Java program compile and behave correctly.</p></div>
+          <div class="actions"><button class="submit" id="submit" disabled>RUN PATCH <span>→</span></button><button class="next hidden" id="next">Walk to next duel →</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="victory hidden" id="victory"><span>GYM CLEARED</span><h2>Victory compiles.</h2><p>10 trainers defeated · 1,000 XP earned · Java debugging badge unlocked</p><button id="play-again">Play again</button></section>
+  </main>
+
+  <footer><span>HACKO LEARNING SYSTEMS</span><p>Read the error. Trace the cause. Patch with purpose.</p></footer>
+  <script src="script.js"></script>
+</body>
+</html>
