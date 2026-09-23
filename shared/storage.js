@@ -802,20 +802,14 @@
         var link = doc.createElement("a");
 
         link.id = "hacko-map-link";
+
         /* aa/ sits one folder down, so the link has to climb out */
         link.href =
             (global.location && /\/aa\//.test(global.location.pathname))
                 ? "../map.html"
                 : "map.html";
+
         link.textContent = "◀ HOME";
-        link.style.cssText = [
-            "position:fixed", "right:14px", "top:14px", "z-index:9999",
-            "border:1px solid #367c9d", "border-radius:999px",
-            "background:#45f3ff", "color:#06111c", "cursor:pointer",
-            "padding:11px 20px", "text-decoration:none",
-            "font:700 14px Orbitron,sans-serif",
-            "box-shadow:0 4px 14px rgba(0,0,0,.45)"
-        ].join(";");
 
         link.addEventListener("click", function () {
             if (global.HackoAudio) {
@@ -823,11 +817,48 @@
             }
         });
 
+        /* Sit in whatever stat row the game already has, rather than
+           floating over the corner and covering its HUD. Each game
+           named its row differently, so try them in turn. */
+        var row =
+            doc.querySelector(".hk-hud") ||
+            doc.querySelector("header .stats") ||
+            doc.querySelector("#top .stats") ||
+            doc.querySelector("header .hud-grid") ||
+            doc.querySelector("header .hud") ||
+            doc.querySelector(".stats") ||
+            doc.querySelector("header");
+
+        if (row) {
+
+            link.style.cssText = [
+                "display:inline-flex", "align-items:center",
+                "border:1px solid #45f3ff", "border-radius:999px",
+                "background:rgba(69,243,255,.12)", "color:#45f3ff",
+                "cursor:pointer", "padding:7px 14px", "margin-left:8px",
+                "text-decoration:none", "white-space:nowrap",
+                "font:700 12px Orbitron,sans-serif"
+            ].join(";");
+
+            row.appendChild(link);
+
+            return link;
+        }
+
+        /* no header to join - fall back to a corner */
+        link.style.cssText = [
+            "position:fixed", "right:14px", "top:14px", "z-index:9999",
+            "border:1px solid #45f3ff", "border-radius:999px",
+            "background:#45f3ff", "color:#06111c", "cursor:pointer",
+            "padding:9px 16px", "text-decoration:none",
+            "font:700 13px Orbitron,sans-serif",
+            "box-shadow:0 4px 14px rgba(0,0,0,.45)"
+        ].join(";");
+
         doc.body.appendChild(link);
 
         return link;
     }
-
 
     /* ---------------------------------------------------
        PUBLIC API
