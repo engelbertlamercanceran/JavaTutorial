@@ -201,6 +201,68 @@ WORLD
     color:#7affbc;
 }
 
+/* ===== LOOP ATTACK GRID =====
+   The room used to be decoration: you walked around collecting XP
+   trinkets while the real game sat in a text box. Now the pattern your
+   nested loops print is fired at the boss here, one cell at a time, in
+   exactly the order the loops run - the outer loop stepping down the
+   rows, the inner loop filling each one. You watch your own code
+   execute. */
+
+#loopGrid{
+    position:absolute;
+    left:50%;
+    top:56%;
+    transform:translateX(-50%);
+    display:grid;
+    gap:4px;
+    z-index:30;
+    pointer-events:none;
+}
+
+#loopGrid .cell{
+    width:16px;
+    height:16px;
+    border-radius:3px;
+    background:rgba(0,234,255,.08);
+    border:1px solid rgba(0,234,255,.25);
+    transform:scale(.6);
+    opacity:0;
+    transition:transform .12s ease, opacity .12s ease;
+}
+
+#loopGrid .cell.lit{
+    background:#00eaff;
+    border-color:#7bf4ff;
+    box-shadow:0 0 10px #00eaff;
+    transform:scale(1);
+    opacity:1;
+}
+
+#loopGrid .cell.blank{
+    opacity:.18;
+    transform:scale(1);
+}
+
+#loopGrid .cell.strike{
+    background:#ff3d68;
+    border-color:#ff8aa5;
+    box-shadow:0 0 14px #ff174f;
+}
+
+#loopRowMarker{
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    top:52%;
+    color:#00eaff;
+    font:700 11px Arial,sans-serif;
+    letter-spacing:.14em;
+    z-index:30;
+    opacity:0;
+    transition:opacity .2s;
+}
+
 /* boss */
 
 #boss{
@@ -659,6 +721,10 @@ TERMINAL
 <!-- BOSS ROOM -->
 
 <div id="bossRoom" class="room">
+
+<div id="loopGrid"></div>
+<div id="loopRowMarker"></div>
+
 
 <div class="roomTitle">
     LOOP OVERLORD CHAMBER
@@ -1656,6 +1722,8 @@ function interact(){
 
         case"chip":
 
+            /* the trinkets were pure XP with nothing to spend it on;
+               the chip now pays for a hint outright */
             state.xp+=50;
             state.chip=true;
 
@@ -1934,8 +2002,103 @@ function runCode(){
    ATTACK
 ===================================================== */
 
+/* Turns the level's TARGET block into a grid of rows and columns. */
+function patternRows(){
+
+    const L=
+        levels[state.level-1];
+
+    const lines=
+        String(L.pattern||"")
+        .split("\n")
+        .slice(2)
+        .filter(line=>line.trim().length);
+
+    if(!lines.length){
+        return [["*"]];
+    }
+
+    const width=
+        Math.max(...lines.map(line=>line.length));
+
+    return lines.map(line=>{
+        const row=[];
+        for(let i=0;i<width;i++){
+            row.push(line[i]&&line[i]!==" "?line[i]:null);
+        }
+        return row;
+    });
+}
+
+/* Replays the nested loops as a visible attack: outer loop walks the
+   rows, inner loop walks the columns, one cell at a time. */
+function fireLoopAttack(onDone){
+
+    const grid=$("loopGrid");
+    const marker=$("loopRowMarker");
+    const rows=patternRows();
+
+    grid.innerHTML="";
+    grid.style.gridTemplateColumns=
+        "repeat("+rows[0].length+",16px)";
+
+    const cells=[];
+
+    rows.forEach((row,r)=>{
+        row.forEach((value,c)=>{
+            const cell=document.createElement("div");
+            cell.className="cell"+(value===null?" blank":"");
+            grid.appendChild(cell);
+            if(value!==null){
+                cells.push({cell,r,c});
+            }
+        });
+    });
+
+    marker.style.opacity="1";
+
+    let i=0;
+    const stepTime=Math.max(28,300/Math.max(cells.length,1));
+
+    (function step(){
+
+        if(i>=cells.length){
+
+            marker.style.opacity="0";
+
+            setTimeout(()=>{
+                grid.querySelectorAll(".cell")
+                    .forEach(c=>c.classList.add("strike"));
+                HackoAudio.play("hit");
+            },120);
+
+            setTimeout(()=>{
+                grid.innerHTML="";
+                if(onDone)onDone();
+            },620);
+
+            return;
+        }
+
+        const item=cells[i];
+
+        item.cell.classList.add("lit");
+
+        marker.textContent=
+            "row "+(item.r+1)+"  /  col "+(item.c+1);
+
+        HackoAudio.play("step");
+
+        i++;
+        setTimeout(step,stepTime);
+
+    }());
+}
+
 function attack(){
     HackoAudio.play("correct");
+
+    fireLoopAttack();
 
     const L=
         levels[state.level-1];
