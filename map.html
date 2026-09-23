@@ -1697,6 +1697,40 @@ window.addEventListener("load", function () {
         return;
     }
 
+    /* Once signed in there was no route back to the sign-in
+       page, so a player could not switch profile and could
+       not reach export/import - which is the only way to move
+       progress between machines in an offline build. */
+    var row =
+        document.querySelector(".player-hud") ||
+        document.querySelector("header");
+
+    if (row) {
+
+        var leave = document.createElement("button");
+
+        leave.type = "button";
+        leave.textContent = "SWITCH PLAYER";
+        leave.style.cssText = [
+            "border:1px solid #367c9d", "border-radius:999px",
+            "background:#102742", "color:#eefaff", "cursor:pointer",
+            "padding:7px 14px", "margin-left:8px", "white-space:nowrap",
+            "font:700 12px Orbitron,sans-serif"
+        ].join(";");
+
+        leave.addEventListener("click", function () {
+
+            if (window.HackoAudio) {
+                HackoAudio.play("select");
+            }
+
+            HackoStore.logout();
+            window.location.href = "login.html";
+        });
+
+        row.appendChild(leave);
+    }
+
     var bar = document.createElement("button");
     bar.type = "button";
     bar.style.cssText = [

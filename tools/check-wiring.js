@@ -159,6 +159,12 @@ ok("map uses the 70% gate", map.indexOf("HackoStore.isUnlocked") !== -1);
 ok("map requires a signed-in player",
     map.indexOf("login.html") !== -1);
 
+/* Without this a player can never switch profile, and never
+   reach export/import - the only way to move progress
+   between machines in an offline build. */
+ok("map can get back to sign-in",
+    /SWITCH PLAYER/.test(map) && /HackoStore\.logout\(\)/.test(map));
+
 /* every mission that names a file must have that file */
 var fileRe = /title:\s*"([^"]+)"[\s\S]{0,500}?file:\s*"([^"]*)"/g;
 var match;
