@@ -486,14 +486,19 @@
             leadType: "triangle"
         },
 
+        /* Bouncy major-key chiptune - the platformer idiom, where
+           the old minor-key wander felt like a menu screen. Written
+           for this game rather than borrowed from one. */
         escape: {
-            bpm: 96,
-            kick: "x...x...x...x...",
-            hat:  "..x.x.x...x.x.x.",
-            bass: ["A2","-","A2","-","E3","-","A2","-","F2","-","F2","-","C3","-","F2","-"],
-            lead: ["A4","-","-","C5","-","E5","-","-","F4","-","-","A4","-","G4","-","-"],
-            pads: [["A3","C4","E4"], ["F3","A3","C4"]],
-            leadType: "triangle"
+            bpm: 138,
+            kick: "x..x..x.x..x..x.",
+            hat:  ".x.x.x.x.x.x.x.x",
+            bass: ["C3","-","G2","-","C3","-","G2","-",
+                   "F2","-","C3","-","G2","-","G2","-"],
+            lead: ["E5","-","G5","-","E5","C5","-","D5",
+                   "F5","-","E5","-","C5","-","D5","-"],
+            pads: [["C4","E4","G4"], ["F3","A3","C4"]],
+            leadType: "square"
         },
 
         stealth: {

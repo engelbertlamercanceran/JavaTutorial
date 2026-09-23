@@ -2046,6 +2046,11 @@
                         collectible.collected = true
                         collectedCount++
 
+                        /* picking a data type up was completely
+                           silent - the one moment in the level that
+                           most deserves a sound */
+                        HackoAudio.play('pickup')
+
                         inventory.push({
                             id: `${currentLevelIndex}-${index}`,
                             type: collectible.type,
