@@ -648,15 +648,20 @@ footer {
         state.sweepAt += 1;
     }
 
-    /* Non-lethal on purpose: a hit costs health and shoves
-       HACKO aside, but never throws away the code that has
-       been written. Running out of health costs a life and
-       resets the bar, nothing more. */
+    /* Lethal, but it never takes your code.
+     *
+     * Four hits kill. Dying costs a life and throws you back to the
+     * start of the sweep, so you have to survive the pattern again
+     * before the terminal reopens - the setback is time and pressure.
+     * What stays untouched is the editor: being made to retype a
+     * nested loop you already wrote is tedium, not difficulty, and it
+     * would teach players to stop dodging and just wait out the clock.
+     */
     function takeHit() {
 
         HackoAudio.play("hit");
 
-        state.hp = Math.max(0, state.hp - 12);
+        state.hp = Math.max(0, state.hp - 25);
 
         $("arena").classList.add("shake");
 
@@ -668,24 +673,49 @@ footer {
         paintPlayer();
 
         if (state.hp <= 0) {
-
-            state.lives -= 1;
-            state.hp = 100;
-            state.xp = Math.max(0, state.xp - 50);
-
-            HackoAudio.play("gameover");
-
-            setVerdict(
-                "The boss knocked HACKO down. Your code is safe - keep going.",
-                false
-            );
-
-            if (state.lives <= 0) {
-                state.lives = 3;
-            }
+            die();
+            return;
         }
 
         updateHUD();
+    }
+
+    function die() {
+
+        window.clearInterval(state.timer);
+
+        state.lives -= 1;
+        state.hp = 100;
+        state.xp = Math.max(0, state.xp - 50);
+
+        HackoAudio.play("gameover");
+
+        if (state.lives <= 0) {
+
+            state.lives = 3;
+            state.xp = Math.max(0, state.xp - 100);
+
+            setVerdict(
+                "HACKO was destroyed. The shield reset - your code is " +
+                "still here.",
+                false
+            );
+
+        } else {
+
+            setVerdict(
+                "HACKO went down. " + state.lives +
+                " " + (state.lives === 1 ? "life" : "lives") +
+                " left - survive the sweep again. Your code is still here.",
+                false
+            );
+        }
+
+        $("readout").textContent = "HACKO DOWN";
+        updateHUD();
+
+        /* back to the start of the sweep, editor untouched */
+        window.setTimeout(startAttack, 1200);
     }
 
 
