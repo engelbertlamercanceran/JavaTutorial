@@ -1237,21 +1237,24 @@ DISTANCE
 
 function distance(a,b){
 
-    const ax=
-        parseFloat(a.style.left)||0;
+    /* Measured from the real rendered position.
+     *
+     * This used to read a.style.left / a.style.top, which only sees
+     * INLINE styles. Every object in the room is positioned by the
+     * stylesheet instead, so each one reported (0,0) and the player
+     * was only ever "near" the top-left corner - pressing E did
+     * nothing anywhere in the room. Byte is placed with right: and
+     * HACKO with bottom:, so neither even had a left/top to read.
+     */
 
-    const ay=
-        parseFloat(a.style.top)||0;
+    if(!a||!b)return Infinity;
 
-    const bx=
-        parseFloat(b.style.left)||0;
-
-    const by=
-        parseFloat(b.style.top)||0;
+    const ra=a.getBoundingClientRect();
+    const rb=b.getBoundingClientRect();
 
     return Math.hypot(
-        ax-bx,
-        ay-by
+        (ra.left+ra.width/2)-(rb.left+rb.width/2),
+        (ra.top+ra.height/2)-(rb.top+rb.height/2)
     );
 
 }
