@@ -907,6 +907,13 @@ checks:[
 /i\s*\+\+/i,
 /System\s*\.\s*out\s*\.\s*print/i
 ],
+why:[
+"Use a for loop.",
+"Start the counter at 1 - this level prints 1 through 5.",
+"Keep going while the counter is 5 or less.",
+"Step the counter up by one each pass.",
+"Print with System.out.println."
+],
 damage:100,
 xp:100,
 hints:[
@@ -945,6 +952,13 @@ checks:[
 /i\s*--/i,
 /System\s*\.\s*out\s*\.\s*print/i
 ],
+why:[
+"Use a for loop.",
+"Start the counter at 10 - this one counts down.",
+"Keep going while the counter is 1 or more.",
+"Step the counter DOWN each pass.",
+"Print with System.out.println."
+],
 damage:100,
 xp:120,
 hints:[
@@ -979,6 +993,12 @@ checks:[
 /i\s*%\s*2\s*==\s*0/i,
 /System\s*\.\s*out\s*\.\s*print/i
 ],
+why:[
+"Use a for loop.",
+"You need an if inside the loop to filter the numbers.",
+"A number is even when the remainder of dividing by 2 is 0.",
+"Print with System.out.println."
+],
 damage:100,
 xp:150,
 hints:[
@@ -1010,6 +1030,11 @@ checks:[
 /System\s*\.\s*out\s*\.\s*print\s*\(\s*"\*"\s*\)/i,
 /row/i,
 /col/i
+],
+why:[
+"Print a star with System.out.print(\"*\").",
+"Name the outer counter row.",
+"Name the inner counter col."
 ],
 nested:true,
 damage:100,
@@ -1045,6 +1070,10 @@ checks:[
 /col\s*<=\s*row/i,
 /System\s*\.\s*out\s*\.\s*print\s*\(\s*"\*"\s*\)/i
 ],
+why:[
+"The inner loop must run up to the current row, not a fixed number.",
+"Print a star with System.out.print(\"*\")."
+],
 nested:true,
 damage:100,
 xp:200,
@@ -1078,6 +1107,10 @@ starter:
 checks:[
 /col\s*<=\s*row/i,
 /System\s*\.\s*out\s*\.\s*print\s*\(\s*col\s*\)/i
+],
+why:[
+"The inner loop must run up to the current row.",
+"Print the inner counter itself: System.out.print(col)."
 ],
 nested:true,
 damage:100,
@@ -1115,6 +1148,12 @@ checks:[
 /row\s*--/i,
 /col\s*<=\s*row/i
 ],
+why:[
+"Start row at 5 - this triangle shrinks.",
+"Keep going while row is 1 or more.",
+"Step row DOWN each pass.",
+"The inner loop still runs up to the current row."
+],
 nested:true,
 damage:100,
 xp:240,
@@ -1151,6 +1190,11 @@ checks:[
 /row\s*\*\s*col/i,
 /row\s*<=\s*5/i,
 /col\s*<=\s*5/i
+],
+why:[
+"Each cell is row multiplied by col.",
+"The outer loop runs while row is 5 or less.",
+"The inner loop runs while col is 5 or less."
 ],
 nested:true,
 damage:100,
@@ -1193,6 +1237,13 @@ checks:[
 /col\s*==\s*5/i,
 /System\s*\.\s*out\s*\.\s*print/i
 ],
+why:[
+"A cell is on the border when row is 1...",
+"...or when row is 5...",
+"...or when col is 1...",
+"...or when col is 5.",
+"Print with System.out.print."
+],
 nested:true,
 damage:100,
 xp:300,
@@ -1230,6 +1281,11 @@ checks:[
 /row\s*\+\s*col/i,
 /%\s*2\s*==\s*0/i,
 /System\s*\.\s*out\s*\.\s*print/i
+],
+why:[
+"Add row and col together to decide the square.",
+"Check whether that total is even: % 2 == 0.",
+"Print with System.out.print."
 ],
 nested:true,
 damage:100,
@@ -1754,7 +1810,11 @@ function move(){
    CODE VALIDATION
 ===================================================== */
 
-function validate(code){
+let lastFailure=null;
+
+function validate(code){
+
+    lastFailure=null;
 
     const L=
         levels[state.level-1];
@@ -1772,18 +1832,32 @@ function validate(code){
             (clean.match(/for\s*\(/gi)||[])
             .length;
 
-        if(loops<2)
+        if(loops<2){
+            lastFailure=
+                "This level needs one loop inside another.";
             return false;
+        }
 
     }
 
     for(
-        const check
-        of L.checks
+        let i=0;
+        i<L.checks.length;
+        i++
     ){
 
-        if(!check.test(clean))
+        if(!L.checks[i].test(clean)){
+
+            /* "the boss detected the wrong pattern" told the player
+               nothing. Name the requirement that actually failed. */
+            lastFailure=
+                (L.why && L.why[i])
+                ? L.why[i]
+                : null;
+
             return false;
+
+        }
 
     }
 
@@ -1976,7 +2050,11 @@ function fail(){
             "error",
 
             "❌ CODE FAILED!\n\n"+
-            "The boss detected the wrong pattern.\n"+
+            (
+                lastFailure
+                ? lastFailure+"\n\n"
+                : "The boss detected the wrong pattern.\n\n"
+            )+
             "❤️ Lives remaining: "+
             state.lives+
             "\n\n"+
