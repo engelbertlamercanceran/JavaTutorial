@@ -9,6 +9,8 @@ var SUITES = [
     ["maze solvability", "check-mazes.js"],
     ["item artwork", "check-items.js"],
     ["jump reachability", "check-jumps.js"],
+    ["Java interpreter", "test-javaloop.js"],
+    ["Loop Dungeon shields", "check-shields.js"],
     ["Java lesson content", "check-java.js"],
     ["suite wiring", "check-wiring.js"]
 ];

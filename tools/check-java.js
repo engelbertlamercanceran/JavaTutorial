@@ -94,7 +94,7 @@ var FOREIGN = [
 var CONTENT = [
     ["classroomrescue.html", "const levels = ["],
     ["looplabyrinth.html", "const challenges = ["],
-    ["loopboss.html", "const levels"],
+    ["loopboss.html", "var SHIELDS = ["],
     ["theescaperoom.html", "const LEVELS"],
     ["thesecretmessage.html", "const LEVELS"],
     ["conditionalchallenge.html", "const LEVELS"],
@@ -337,98 +337,12 @@ challenges.forEach(function (challenge, index) {
 
 
 /* ---------------------------------------------------
-   4. LOOP BOSS - NESTED LOOPS
+   4. LOOP BOSS
+
+   Loop Boss no longer regex-matches the player's source.
+   It runs their Java and diffs the output, so its levels
+   are verified by tools/check-shields.js instead.
 --------------------------------------------------- */
-
-var bossLevels = new Function(
-    extractArray(read("loopboss.html"), "const levels")
-        .replace(/^\[/, "return [")
-)();
-
-var LB_SOLUTIONS = [
-    "for (int i = 1; i <= 5; i++) { System.out.println(i); }",
-
-    "for (int i = 10; i >= 1; i--) { System.out.println(i); }",
-
-    "for (int i = 1; i <= 10; i++) {\n" +
-    "  if (i % 2 == 0) { System.out.println(i); }\n}",
-
-    "for (int row = 1; row <= 3; row++) {\n" +
-    "  for (int col = 1; col <= 3; col++) { System.out.print(\"*\"); }\n" +
-    "  System.out.println();\n}",
-
-    "for (int row = 1; row <= 5; row++) {\n" +
-    "  for (int col = 1; col <= row; col++) { System.out.print(\"*\"); }\n" +
-    "  System.out.println();\n}",
-
-    "for (int row = 1; row <= 5; row++) {\n" +
-    "  for (int col = 1; col <= row; col++) { System.out.print(col); }\n" +
-    "  System.out.println();\n}",
-
-    "for (int row = 5; row >= 1; row--) {\n" +
-    "  for (int col = 1; col <= row; col++) { System.out.print(\"*\"); }\n" +
-    "  System.out.println();\n}",
-
-    "for (int row = 1; row <= 5; row++) {\n" +
-    "  for (int col = 1; col <= 5; col++) {\n" +
-    "    System.out.print((row * col) + \" \");\n  }\n" +
-    "  System.out.println();\n}",
-
-    "for (int row = 1; row <= 5; row++) {\n" +
-    "  for (int col = 1; col <= 5; col++) {\n" +
-    "    if (row == 1 || row == 5 || col == 1 || col == 5) {\n" +
-    "      System.out.print(\"*\");\n    } else {\n" +
-    "      System.out.print(\" \");\n    }\n  }\n" +
-    "  System.out.println();\n}",
-
-    "for (int row = 1; row <= 4; row++) {\n" +
-    "  for (int col = 1; col <= 4; col++) {\n" +
-    "    if ((row + col) % 2 == 0) {\n" +
-    "      System.out.print(\"*\");\n    } else {\n" +
-    "      System.out.print(\".\");\n    }\n  }\n" +
-    "  System.out.println();\n}"
-];
-
-/* Mirrors validate() in loopboss.html */
-function validateBoss(index, code) {
-
-    var level = bossLevels[index];
-
-    var clean = code
-        .replace(/\/\/.*$/gm, "")
-        .replace(/\s+/g, " ")
-        .trim();
-
-    if (level.nested) {
-        var loops = (clean.match(/for\s*\(/gi) || []).length;
-        if (loops < 2) {
-            return false;
-        }
-    }
-
-    return level.checks.every(function (re) { return re.test(clean); });
-}
-
-console.log("\nLoop Boss - " + bossLevels.length + " levels");
-
-bossLevels.forEach(function (level, index) {
-
-    var n = index + 1;
-
-    ok("LB level " + n + " accepts correct Java",
-        validateBoss(index, LB_SOLUTIONS[index]) === true);
-
-    ok("LB level " + n + " rejects the starter skeleton",
-        validateBoss(index, level.starter) === false);
-
-    ok("LB level " + n + " has tiered hints",
-        Array.isArray(level.hints) && level.hints.length >= 2);
-
-    /* A /g/ regex used with .test() is stateful and will
-       pass and fail on alternate calls. */
-    ok("LB level " + n + " has no stateful /g/ check",
-        level.checks.every(function (re) { return !re.global; }));
-});
 
 
 console.log("\n" + passed + " passed, " + failed + " failed");

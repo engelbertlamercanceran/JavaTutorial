@@ -16,6 +16,7 @@ hack/
     audio.js       synthesised retro sound effects (no audio files)
     storage.js     accounts, progress, autosave, export/import
     hint.js        tiered hints + a guard against leaking answers
+    javaloop.js    runs the Java the loop missions teach, and diffs output
   tools/           node checks, see Testing
   Badges/          the ten mission badges
   login.html       pick a player
@@ -49,7 +50,7 @@ progress that way.
 | 7 | Debugging Duel | Debugging | **not built** - prototype in `aa/` |
 | 8 | Classroom Rescue | Classes and objects | `classroomrescue.html` |
 | 9 | Conditional Labyrinth II | Nested conditionals | **not built** |
-| 10 | Loop Boss Battle | Nested loops | `loopboss.html` |
+| 10 | Loop Dungeon - The Pattern Boss | Nested loops | `loopboss.html` |
 
 `aa/` holds a working Debugging Gym prototype — ten bug-trainer duels ending in
 a boss fight. It is the intended basis for mission 7 but is not wired into the
@@ -100,6 +101,8 @@ node tools/test-all.js
 | `check-items.js` | every Array Adventure item is distinguishable, and every silhouette draws |
 | `check-java.js` | lesson content is Java; correct answers pass and starter skeletons do not |
 | `check-jumps.js` | every Escape Room pickup is reachable, flagging anything above 70% of a perfect double jump |
+| `test-javaloop.js` | the Java interpreter: same output from different code must always pass |
+| `check-shields.js` | every Loop Dungeon shield is beatable with real Java, and no starter already wins |
 | `check-wiring.js` | games load the shared modules, report to the map, resume after boot, carry music, and every badge exists |
 
 Run `check-mazes.js` after editing any maze and `check-java.js` after editing
@@ -114,6 +117,10 @@ any lesson. Both catch classes of bug that shipped unnoticed before.
   pre-fill the finished answer, so pressing RUN won instantly.
 - **Lesson content is Java.** Four games previously taught PHP or JavaScript.
   `check-java.js` scans the text players actually see.
+- **Run the code, do not pattern-match the source.** Mission 10 regex-matched
+  what the player typed, so a correct answer in an unexpected shape was
+  rejected with no useful explanation. `shared/javaloop.js` executes it and
+  diffs the output instead, which is why any working solution now passes.
 - **Items differ by shape as well as colour**, so the games work for
   colour-blind players.
 - **Sound is synthesised**, not sourced. Add new effects to the `SFX` table in
@@ -128,7 +135,6 @@ any lesson. Both catch classes of bug that shipped unnoticed before.
 
 ## Known gaps
 
-- Missions 7 and 9 are not built.
 - Classroom Rescue is a single room. The client asked for a Pokémon-gym-style
   multi-room escape; the concept conflicts with the spec's "Classes and Objects"
   brief for mission 8 and needs a decision before building.

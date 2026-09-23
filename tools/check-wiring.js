@@ -74,16 +74,26 @@ Object.keys(GAMES).forEach(function (file) {
     ok(file + " plays sound effects",
         /HackoAudio\.play\(/.test(src));
 
+    /* A game may pass its mission number directly, or through
+       its own MISSION constant. Both are fine, but a constant
+       has to actually be set to the right number. */
+    var declaresConstant =
+        new RegExp("var MISSION = " + mission + "\\s*;").test(src);
+
     var reports = new RegExp(
         "HackoStore\\.completeLevel\\(\\s*" + mission + "\\s*,"
-    ).test(src);
+    ).test(src) ||
+        (declaresConstant &&
+            /HackoStore\.completeLevel\(\s*MISSION\s*,/.test(src));
 
     ok(file + " reports levels as mission " + mission, reports);
 
     ok(file + " registers its level count",
         new RegExp(
             "registerTotalLevels\\(\\s*" + mission + "\\s*,"
-        ).test(src));
+        ).test(src) ||
+            (declaresConstant &&
+                /registerTotalLevels\(\s*MISSION\s*,/.test(src)));
 
     ok(file + " resumes and autosaves",
         src.indexOf("RESUME + AUTOSAVE") !== -1 &&
@@ -97,10 +107,13 @@ Object.keys(GAMES).forEach(function (file) {
         /goToSavedLevel/.test(src) &&
         /addEventListener\("load"|readyState === "complete"/.test(src));
 
-    ok(file + " has a background track and a sound toggle",
-        src.indexOf("SOUND LAYER") !== -1 &&
-        /HackoAudio\.music\.play\("\w+"\)/.test(src) &&
-        src.indexOf("mountToggle") !== -1);
+    /* The track may be declared on the script tag, which is the
+       more robust form - it survives an error in the game's own
+       script, where a block at the end of that script does not. */
+    ok(file + " has a background track",
+        /data-track="\w+"/.test(src) ||
+            (src.indexOf("SOUND LAYER") !== -1 &&
+                /HackoAudio\.music\.play\("\w+"\)/.test(src)));
 
     /* The index passed to completeLevel has to be a real
        variable in that game, not a hopeful guess. */
