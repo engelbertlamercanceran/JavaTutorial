@@ -29,6 +29,8 @@ function renderMap(){
 }
 
 function render(){
+  const chip=$('round-chip'); if(chip) chip.textContent=current+1;
+
   const m=missions[current], progress=completed.filter(Boolean).length*10;
   $('lives').textContent=lives; $('xp').textContent=completed.filter(Boolean).length*100;
   $('progress-bar').style.width=progress+'%'; $('progress-text').textContent=progress+'%';

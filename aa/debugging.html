@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="A game-based Java debugging mission map for beginners.">
   <title>HACKO — Debugging Gym</title>
+  <link rel="stylesheet" href="../shared/hacko.css">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="arena.css">
   <link rel="stylesheet" href="hero.css">
@@ -13,16 +14,24 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#top"><span class="brand-mark">H</span><span>HACKO<small>DEBUGGING GYM</small></span></a>
-    <div class="stats"><span>♥ <b id="lives">3</b></span><span>XP <b id="xp">0</b></span><button id="reset">↻ Reset run</button></div>
+    <a class="brand" href="#top"><span class="brand-mark">H</span><span>HACKO<small>DEBUGGING DUEL</small></span></a>
+
+    <div class="stats hk-hud">
+      <span class="hk-chip">DUEL <b id="round-chip">1</b>/10</span>
+      <span class="hk-chip hk-chip--lives">LIVES <b id="lives">3</b></span>
+      <span class="hk-chip">XP <b id="xp">0</b></span>
+      <button class="hk-btn hk-btn--ghost" id="reset">RESTART</button>
+    </div>
   </header>
 
   <main>
-    <section class="hero" id="top">
-      <div class="eyebrow">MISSION MAP · JAVA BEGINNERS</div>
-      <h1>Enter the<br><em>Debugging Gym.</em></h1>
-      <p>Walk the glitch corridor. Duel ten bug trainers. Fix the code before the code breaks you.</p>
-      <div class="progress-row"><span>GYM PROGRESS</span><div class="track"><i id="progress-bar"></i></div><b id="progress-text">0%</b></div>
+    <!-- The hero banner promised walking a corridor, which this
+         mission never did. Removed at the client's request; what is
+         left is the duel selector every other mission has. -->
+    <section class="level-bar" id="top">
+      <span class="level-bar-label">SELECT DUEL</span>
+      <div class="track"><i id="progress-bar"></i></div>
+      <b id="progress-text">0%</b>
     </section>
 
     <section class="map" id="mission-map" aria-label="Mission map"><div class="map-line"></div></section>
@@ -40,7 +49,7 @@
         <div class="fighter enemy-fighter" id="enemy-fighter"><div class="shadow"></div><div class="pixel-person enemy-person"><i class="hair"></i><i class="head"></i><i class="body"></i><i class="arm left"></i><i class="arm right"></i><i class="leg left"></i><i class="leg right"></i><i class="visor"></i></div><div class="name-plate" id="enemy-plate">LITTLE SYNTAX</div></div>
       </div>
       <div class="arena-floor"><span></span><span></span><span></span><span></span><span></span></div>
-      <div class="battle-message" id="battle-message">A wild bug trainer blocks the corridor!</div>
+      <div class="battle-message" id="battle-message">A bug trainer is waiting.</div>
     </section>
 
     <section class="battle" id="battle">
@@ -62,7 +71,7 @@
           <h3 id="prompt"></h3>
           <div class="choices" id="choices"></div>
           <div class="feedback" id="feedback"><span>?</span><p>Choose the patch that makes the Java program compile and behave correctly.</p></div>
-          <div class="actions"><button class="submit" id="submit" disabled>RUN PATCH <span>→</span></button><button class="next hidden" id="next">Walk to next duel →</button></div>
+          <div class="actions"><button class="submit" id="submit" disabled>RUN PATCH <span>→</span></button><button class="next hidden" id="next">NEXT DUEL →</button></div>
         </div>
       </div>
     </section>
@@ -71,6 +80,39 @@
   </main>
 
   <footer><span>HACKO LEARNING SYSTEMS</span><p>Read the error. Trace the cause. Patch with purpose.</p></footer>
+
+  <style>
+  /* Slim selector bar in place of the removed hero section. */
+  .level-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px 4px;
+  }
+
+  .level-bar-label {
+      font: 700 0.68rem Orbitron, sans-serif;
+      letter-spacing: 0.16em;
+      color: var(--hk-muted, #a8a59c);
+      white-space: nowrap;
+  }
+
+  .level-bar .track {
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+  }
+
+  .level-bar .track > i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--acid, #d5fa42);
+      transition: width 0.35s ease;
+  }
+  </style>
   <script src="script.js"></script>
 </body>
 </html>
