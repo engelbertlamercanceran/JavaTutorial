@@ -94,7 +94,7 @@ var FOREIGN = [
 var CONTENT = [
     ["classroomrescue.html", "const levels = ["],
     ["looplabyrinth.html", "const challenges = ["],
-    ["loopboss.html", "var SHIELDS = ["],
+    ["loopboss.html", "var PHASES = ["],
     ["theescaperoom.html", "const LEVELS"],
     ["thesecretmessage.html", "const LEVELS"],
     ["conditionalchallenge.html", "const LEVELS"],

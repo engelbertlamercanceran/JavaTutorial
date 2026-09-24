@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HACKO: Loop Dungeon - The Pattern Boss</title>
+<title>HACKO: The Loop Master</title>
 
 <link rel="stylesheet" href="shared/hacko.css">
 <script src="shared/audio.js" data-track="boss"></script>
@@ -11,374 +11,209 @@
 <script src="shared/javaloop.js"></script>
 
 <style>
-body {
-    margin: 0;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    min-height: 100vh;
-    overflow-x: hidden;
-}
+body { margin: 0; display: grid; grid-template-rows: auto 1fr auto; min-height: 100vh; }
 
 header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 10px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; padding: 10px 18px;
     border-bottom: 2px solid var(--hk-cyan);
     background: rgba(8, 21, 38, 0.93);
 }
 
-.brand {
-    font: 900 clamp(1rem, 2.6vw, 1.5rem) var(--hk-display);
-    color: var(--hk-cyan);
-}
-
-.brand small {
-    display: block;
-    font-size: 0.5rem;
-    letter-spacing: 0.2em;
-    color: #fff;
-}
+.brand { font: 900 clamp(1rem, 2.6vw, 1.5rem) var(--hk-display); color: var(--hk-cyan); }
+.brand small { display: block; font-size: 0.5rem; letter-spacing: 0.2em; color: #fff; }
 
 main {
-    display: grid;
-    grid-template-columns: 1fr 420px;
-    gap: 12px;
-    padding: 12px;
-    min-height: 0;
+    display: grid; grid-template-columns: 1fr 430px;
+    gap: 12px; padding: 12px; min-height: 0;
 }
 
-/* ---------- arena ---------- */
-
-.arena {
-    position: relative;
-    border: 3px solid #ff3d68;
-    border-radius: 16px;
-    background:
-        radial-gradient(circle at 50% 0%, #3a0d22, transparent 60%),
-        #07111f;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    min-height: 460px;
+.duel {
+    display: flex; flex-direction: column; gap: 10px;
+    border: 3px solid #ff3d68; border-radius: 16px;
+    background: radial-gradient(circle at 50% 0%, #3a0d22, transparent 62%), #07111f;
+    padding: 14px; min-height: 470px;
 }
 
-.arena.safe { border-color: #3cd9e9; }
+.duel.won { border-color: var(--hk-lime); }
 
-.arena.shake { animation: shake 0.25s; }
+.bosshead { display: flex; align-items: center; gap: 12px; }
 
-@keyframes shake {
-    0%, 100% { transform: translate(0, 0); }
-    25% { transform: translate(-6px, 3px); }
-    50% { transform: translate(5px, -3px); }
-    75% { transform: translate(-3px, -2px); }
+.bossface {
+    width: 54px; height: 54px; border-radius: 50%;
+    background: #551334; border: 3px solid #ff3d68;
+    box-shadow: 0 0 22px #ff174f;
+    display: grid; place-items: center; font-size: 26px; flex: 0 0 auto;
 }
 
-.phase {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 8px 14px;
-    background: rgba(2, 8, 16, 0.75);
-    font: 700 0.76rem var(--hk-display);
+.duel.won .bossface {
+    background: #143a22; border-color: var(--hk-lime);
+    box-shadow: 0 0 22px var(--hk-lime);
 }
 
-.phase .tag { color: #ff8aa5; }
-.arena.safe .phase .tag { color: var(--hk-cyan); }
+.bossinfo { flex: 1; min-width: 0; }
+.bossinfo b { font: 700 0.8rem var(--hk-display); color: #ff8aa5; }
 
 .bossbar {
-    flex: 1;
-    height: 12px;
-    max-width: 320px;
-    border: 1px solid #ff3d68;
-    border-radius: 999px;
-    background: #12060c;
-    overflow: hidden;
+    height: 11px; margin-top: 5px; border: 1px solid #ff3d68;
+    border-radius: 999px; background: #12060c; overflow: hidden;
 }
 
 .bossbar > i {
-    display: block;
-    height: 100%;
-    width: 100%;
+    display: block; height: 100%; width: 100%;
     background: linear-gradient(90deg, #ff3d68, #ff8a3d);
-    transition: width 0.35s ease;
+    transition: width 0.3s;
 }
 
-.grid-wrap {
-    flex: 1;
-    display: grid;
-    place-items: center;
-    padding: 14px;
+.quote {
+    border-left: 3px solid #ff3d68; padding: 8px 12px;
+    background: rgba(255, 61, 104, 0.08); border-radius: 0 8px 8px 0;
+    font-style: italic; color: #ffc2ce;
 }
 
-#grid {
-    display: grid;
-    gap: 5px;
+.brief {
+    padding: 9px 12px; border: 1px dashed var(--hk-line);
+    border-radius: 8px; color: #cfe6f2; font-size: 0.9rem; line-height: 1.45;
 }
 
-.cell {
-    width: 34px;
-    height: 34px;
-    border-radius: 5px;
-    background: rgba(69, 243, 255, 0.06);
-    border: 1px solid rgba(69, 243, 255, 0.18);
-    display: grid;
-    place-items: center;
-    font: 700 13px var(--hk-display);
-    color: #4b7d95;
-    transition: background 0.1s, border-color 0.1s;
+.vars { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.var {
+    padding: 5px 11px; border: 1px solid var(--hk-amber);
+    border-radius: 999px; background: rgba(255, 211, 78, 0.1);
+    font: 700 0.74rem Consolas, monospace; color: var(--hk-amber);
 }
 
-.cell.firing {
-    background: #ff3d68;
-    border-color: #ff8aa5;
-    box-shadow: 0 0 16px #ff174f;
-    color: #fff;
+.exchange {
+    flex: 1; display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; min-height: 0;
 }
 
-.cell.player {
-    outline: 3px solid var(--hk-lime);
-    outline-offset: -3px;
+.lane h4 {
+    margin: 0 0 6px; font: 700 0.62rem var(--hk-display);
+    letter-spacing: 0.12em; color: var(--hk-muted);
 }
 
-.cell.player::after {
-    content: "";
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    background: var(--hk-lime);
-    box-shadow: 0 0 12px var(--hk-lime);
+.lane .rows {
+    display: flex; flex-direction: column; gap: 4px;
+    max-height: 200px; overflow: auto;
 }
 
-.readout {
-    text-align: center;
-    padding: 6px;
-    font: 700 0.72rem var(--hk-display);
-    color: #ff8aa5;
-    min-height: 1.6em;
+.beat {
+    padding: 5px 9px; border-radius: 6px;
+    font: 700 0.74rem Consolas, monospace;
+    border: 1px solid transparent; opacity: 0.25;
+    transition: opacity 0.12s, background 0.12s;
 }
 
-.arena.safe .readout { color: var(--hk-cyan); }
+.beat.on { opacity: 1; }
+.beat.boss { background: rgba(255,61,104,.15); border-color: #ff3d68; color: #ffc2ce; }
+.beat.mine { background: rgba(69,243,255,.12); border-color: var(--hk-cyan); color: var(--hk-cyan); }
+.beat.parried { background: rgba(145,255,111,.15); border-color: var(--hk-lime); color: var(--hk-lime); }
+.beat.landed { background: #ff3d68; border-color: #ff8aa5; color: #fff; }
+.beat.missing { background: rgba(255,61,104,.08); border-color: #ff3d68; color: #ff8aa5; font-style: italic; }
 
-.hpwrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 14px 10px;
+.callout {
+    text-align: center; min-height: 1.6em;
+    font: 700 0.78rem var(--hk-display); color: #ff8aa5;
 }
 
-.hpbar {
-    flex: 1;
-    height: 10px;
-    border: 1px solid var(--hk-lime);
-    border-radius: 999px;
-    background: #071421;
-    overflow: hidden;
-}
+.duel.won .callout { color: var(--hk-lime); }
 
-.hpbar > i {
-    display: block;
-    height: 100%;
-    width: 100%;
-    background: var(--hk-lime);
-    transition: width 0.2s;
-}
-
-/* ---------- shield select ---------- */
-
-/* Every other mission lets a player go back to an earlier
-   level. This one did not, so a cleared shield could never
-   be replayed. */
-.shields {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin: 10px 0 2px;
-}
-
-.shields button {
-    width: 30px;
-    height: 30px;
-    border-radius: 7px;
-    border: 1px solid var(--hk-line);
-    background: #0b1c30;
-    color: var(--hk-muted);
-    cursor: pointer;
-    font: 700 12px var(--hk-display);
-}
-
-.shields button:hover:not(:disabled) {
-    border-color: var(--hk-cyan);
-    color: var(--hk-cyan);
-}
-
-.shields button.done {
-    border-color: var(--hk-lime);
-    color: var(--hk-lime);
-}
-
-.shields button.current {
-    background: var(--hk-cyan);
-    border-color: var(--hk-cyan);
-    color: #06111c;
-}
-
-.shields button:disabled {
-    opacity: 0.32;
-    cursor: not-allowed;
-}
-
-/* ---------- terminal ---------- */
-
-.side {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-height: 0;
-}
-
-.locked { opacity: 0.4; pointer-events: none; }
-
-#target, #yours {
-    background: #02080e;
-    color: #a7ffc5;
-    font: 13px/1.45 Consolas, monospace;
-    padding: 10px;
-    border-radius: 8px;
-    white-space: pre;
-    overflow: auto;
-    max-height: 150px;
-}
-
-#yours { color: #ffd0da; }
+.side { display: flex; flex-direction: column; gap: 10px; }
 
 #editor {
-    width: 100%;
-    height: 170px;
-    background: #1e1e1e;
-    color: #d4d4d4;
-    font: 13px/1.5 Consolas, monospace;
-    padding: 10px;
-    border: 1px solid #333;
-    border-radius: 8px;
-    resize: vertical;
-}
-
-.diff {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-
-.diff h4 {
-    margin: 0 0 4px;
-    font: 700 0.64rem var(--hk-display);
-    color: var(--hk-muted);
-    letter-spacing: 0.1em;
+    width: 100%; height: 175px; background: #1e1e1e; color: #d4d4d4;
+    font: 13px/1.5 Consolas, monospace; padding: 10px;
+    border: 1px solid #333; border-radius: 8px; resize: vertical;
 }
 
 #verdict {
-    min-height: 2.4em;
-    padding: 8px 10px;
-    border-radius: 8px;
-    font-size: 0.88rem;
-    line-height: 1.4;
-    white-space: pre-wrap;
+    min-height: 2.4em; padding: 9px 11px; border-radius: 8px;
+    font-size: 0.87rem; line-height: 1.45; white-space: pre-wrap;
 }
 
-#verdict.ok {
-    border: 1px solid var(--hk-lime);
-    background: rgba(145, 255, 111, 0.1);
-    color: #b6ff9e;
+#verdict.ok { border: 1px solid var(--hk-lime); background: rgba(145,255,111,.1); color: #b6ff9e; }
+#verdict.bad { border: 1px solid var(--hk-red); background: rgba(255,73,111,.1); color: #ff9eb3; }
+
+.phases { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 2px; }
+
+.phases button {
+    width: 30px; height: 30px; border-radius: 7px;
+    border: 1px solid var(--hk-line); background: #0b1c30;
+    color: var(--hk-muted); cursor: pointer; font: 700 12px var(--hk-display);
 }
 
-#verdict.bad {
-    border: 1px solid var(--hk-red);
-    background: rgba(255, 73, 111, 0.1);
-    color: #ff9eb3;
-}
+.phases button.done { border-color: var(--hk-lime); color: var(--hk-lime); }
+.phases button.current { background: var(--hk-cyan); border-color: var(--hk-cyan); color: #06111c; }
+.phases button:disabled { opacity: 0.32; cursor: not-allowed; }
 
 footer {
-    text-align: center;
-    padding: 7px;
-    background: #071526;
-    border-top: 1px solid #2d6580;
-    color: #b8d8e5;
-    font-size: 0.82rem;
+    text-align: center; padding: 7px; background: #071526;
+    border-top: 1px solid #2d6580; color: #b8d8e5; font-size: 0.82rem;
 }
 
 .kbd {
-    padding: 2px 6px;
-    border: 1px solid #4b819d;
-    border-radius: 4px;
-    background: #193b57;
-    font: 700 0.66rem var(--hk-display);
+    padding: 2px 6px; border: 1px solid #4b819d; border-radius: 4px;
+    background: #193b57; font: 700 0.66rem var(--hk-display);
 }
 
-@media (max-width: 1000px) {
-    main { grid-template-columns: 1fr; }
-}
+@media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
 </style>
 </head>
 
 <body class="hk-body">
 
 <header>
-    <div class="brand">HACKO<small>LOOP DUNGEON - THE PATTERN BOSS</small></div>
-
+    <div class="brand">HACKO<small>THE LOOP MASTER</small></div>
     <div class="hk-hud">
-        <span class="hk-chip">SHIELD <b id="hudLevel">1</b>/10</span>
+        <span class="hk-chip">PHASE <b id="hudPhase">1</b>/10</span>
         <span class="hk-chip hk-chip--lives">LIVES <b id="hudLives">3</b></span>
         <span class="hk-chip">XP <b id="hudXP">0</b></span>
     </div>
 </header>
 
 <main>
-    <div class="arena" id="arena">
+    <div class="duel" id="duel">
 
-        <div class="phase">
-            <span class="tag" id="phaseTag">INCOMING</span>
-            <div class="bossbar"><i id="bossHP"></i></div>
-            <span id="phaseTimer">0:00</span>
+        <div class="bosshead">
+            <div class="bossface" id="bossFace">&#9760;</div>
+            <div class="bossinfo">
+                <b id="bossName">THE LOOP MASTER</b>
+                <div class="bossbar"><i id="bossHP"></i></div>
+            </div>
         </div>
 
-        <div class="grid-wrap"><div id="grid"></div></div>
+        <div class="quote" id="bossQuote"></div>
+        <div class="brief" id="brief"></div>
+        <div class="vars" id="vars"></div>
 
-        <div class="readout" id="readout"></div>
-
-        <div class="hpwrap">
-            <span style="font:700 .66rem var(--hk-display);color:var(--hk-lime)">HACKO</span>
-            <div class="hpbar"><i id="playerHP"></i></div>
+        <div class="exchange">
+            <div class="lane">
+                <h4>ITS ATTACK</h4>
+                <div class="rows" id="bossLane"></div>
+            </div>
+            <div class="lane">
+                <h4>YOUR PLAN</h4>
+                <div class="rows" id="myLane"></div>
+            </div>
         </div>
+
+        <div class="callout" id="callout"></div>
     </div>
 
     <div class="side">
         <div class="hk-panel">
-            <h3 id="levelTitle">SHIELD 1</h3>
-            <p class="hk-note" id="levelGoal"></p>
-
-            <div class="shields" id="shieldSelect"></div>
-
-            <div class="diff" style="margin-top:8px">
-                <div>
-                    <h4>BOSS PATTERN</h4>
-                    <div id="target"></div>
-                </div>
-                <div>
-                    <h4>YOUR OUTPUT</h4>
-                    <div id="yours">(not run yet)</div>
-                </div>
-            </div>
+            <h3 id="phaseTitle">PHASE 1</h3>
+            <div class="phases" id="phaseSelect"></div>
         </div>
 
-        <div class="hk-panel" id="terminal">
-            <h3>TERMINAL</h3>
+        <div class="hk-panel">
+            <h3>YOUR BATTLE PLAN</h3>
             <textarea id="editor" spellcheck="false"></textarea>
 
             <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-                <button class="hk-btn" id="runBtn">RUN CODE</button>
+                <button class="hk-btn" id="runBtn">FIGHT</button>
                 <button class="hk-btn hk-btn--ghost" id="hintBtn">HINT</button>
             </div>
 
@@ -388,9 +223,8 @@ footer {
 </main>
 
 <footer>
-    <span class="kbd">WASD</span> dodge the sweep &mdash;
-    <span class="kbd">CTRL</span>+<span class="kbd">ENTER</span> run your code.
-    The cell lighting up is the one the boss is printing.
+    Write the loop that answers its attack, then <span class="kbd">FIGHT</span>
+    &mdash; or <span class="kbd">CTRL</span>+<span class="kbd">ENTER</span>.
 </footer>
 
 <script>
@@ -399,225 +233,280 @@ footer {
 
     var MISSION = 10;
 
-    /* ---------------------------------------------------
-       SHIELDS
+    /* =====================================================
+       THE LOOP MASTER
 
-       Each shield is both the pattern the boss projects into
-       the arena AND the output the player has to reproduce.
-       Dodging the sweep is how you read the pattern; writing
-       the loop is how you fire it back.
-    --------------------------------------------------- */
+       The boss attacks in repeats because it is running a
+       loop. Your code is not a pattern to copy - it is a
+       battle plan. Every line it prints is one counter-move,
+       and the game plays your plan against the attack beat
+       by beat, so a missing or wrong move is something you
+       watch land rather than something you are told about.
 
-    var SHIELDS = [
+       Each phase is built so ONE loop shape fits:
+
+         for       the boss names its count up front
+         while     the count is unknown and is re-rolled on
+                   every attempt, so a hardcoded number is
+                   wrong most of the time
+         do-while  the condition is already false, so a
+                   while loop plans nothing at all and the
+                   blow lands
+
+       That last case is the only honest way to show why
+       do-while exists, and nothing else in this course
+       teaches it.
+    ===================================================== */
+
+    function times(move, n) {
+
+        var out = [];
+
+        for (var i = 0; i < n; i++) {
+            out.push(move);
+        }
+
+        return out.join("\n");
+    }
+
+    function between(low, high) {
+        return low + Math.floor(Math.random() * (high - low + 1));
+    }
+
+    var PHASES = [
         {
-            title: "FIRST LOOP",
-            goal: "One loop, five numbers on a single line.",
-            target: "1 2 3 4 5",
-            starter: "for (int i = ___; i ___; i++) {\n    // print i and a space\n}",
-            sweep: 330,
+            title: "THE COUNT",
+            name: "LOOP MASTER",
+            quote: "I will strike three times. Nothing you do changes that.",
+            brief: "It announced the count. Plan one BLOCK per strike.",
+            setup: function () { return { strikes: 3 }; },
+            expected: function (v) { return times("BLOCK", v.strikes); },
+            starter: "for (int i = 1; i <= ___; i++) {\n" +
+                "    System.out.println(\"BLOCK\");\n}",
             hints: [
-                "A loop needs a start, a stop and a step.",
-                "Everything lands on one line, so use print rather than println.",
-                "Example printing three: for (int n = 1; n <= 3; n++) System.out.print(n + \" \");"
+                "It told you exactly how many strikes are coming.",
+                "When the count is known before you start, a for loop fits.",
+                "Every line your code prints is one counter-move."
             ]
         },
         {
-            title: "REPEAT",
-            goal: "The same value, four times.",
-            target: "A A A A",
-            starter: "for (int i = 1; i <= ___; i++) {\n    // print A and a space\n}",
-            sweep: 310,
+            title: "RELENTLESS",
+            name: "LOOP MASTER",
+            quote: "Seven blows. Count them if you can.",
+            brief: "Same shape, longer chain. One BLOCK per strike.",
+            setup: function () { return { strikes: 7 }; },
+            expected: function (v) { return times("BLOCK", v.strikes); },
+            starter: "for (int i = 1; i <= ___; i++) {\n" +
+                "    System.out.println(\"BLOCK\");\n}",
             hints: [
-                "The counter controls how many times, not what is printed.",
-                "Nothing inside the loop has to mention the counter at all.",
-                "A loop repeats a fixed action as easily as a changing one."
+                "Nothing new here - only the number changed.",
+                "Check the stop test: <= 7 and < 7 differ by one blow.",
+                "One missing line at the end is one strike that lands."
             ]
         },
         {
-            title: "ROWS",
-            goal: "The same row, three times. One loop inside another.",
-            target: "1 2 3\n1 2 3\n1 2 3",
-            starter: "for (int row = 1; row <= 3; row++) {\n\n    // an inner loop prints 1 2 3\n\n    // then end the line\n}",
-            sweep: 270,
+            title: "THE RAGE",
+            name: "LOOP MASTER",
+            quote: "I strike while my rage burns. You cannot count what you cannot see.",
+            brief: "Its rage falls by one with every block you land. Keep " +
+                "blocking while rage is above zero. The rage is DIFFERENT " +
+                "every time you fight.",
+            setup: function () { return { rage: between(3, 7) }; },
+            expected: function (v) { return times("BLOCK", v.rage); },
+            starter: "// rage is already declared for you\n\n" +
+                "while (___) {\n    System.out.println(\"BLOCK\");\n    ___;\n}",
             hints: [
-                "Three identical rows means something repeats three times.",
-                "The outer loop counts rows. The inner loop fills one row.",
-                "println() with nothing in it just ends the current line."
+                "Look at the rage now, then fight again and look once more.",
+                "A fixed number cannot survive a value that changes each fight.",
+                "A while loop asks its question before every pass - let rage answer it."
             ]
         },
         {
-            title: "TRIANGLE",
-            goal: "Each row one star longer than the last.",
-            target: "*\n**\n***\n****\n*****",
-            starter: "for (int row = 1; row <= 5; row++) {\n\n    // print as many stars as this row number\n\n}",
-            sweep: 235,
+            title: "THE SHIELD",
+            name: "LOOP MASTER",
+            quote: "Break my shield if you can find its edge.",
+            brief: "STRIKE once for every point of shield. The shield is " +
+                "different every fight.",
+            setup: function () { return { shield: between(4, 8) }; },
+            expected: function (v) { return times("STRIKE", v.shield); },
+            starter: "// shield is already declared for you\n\n" +
+                "while (___) {\n    System.out.println(\"STRIKE\");\n    ___;\n}",
             hints: [
-                "The rows are not all the same length any more.",
-                "The inner loop should not always stop at the same number.",
-                "Let the inner loop run up to whatever row it is currently on."
+                "The move changed, the thinking did not.",
+                "Keep going while there is still shield left.",
+                "Forget to reduce the shield and the loop never ends."
             ]
         },
         {
-            title: "NUMBER WAVE",
-            goal: "Counting up, one more digit each row.",
-            target: "1\n12\n123\n1234\n12345",
-            starter: "for (int row = 1; row <= 5; row++) {\n\n    // count up to this row number\n\n}",
-            sweep: 215,
+            title: "THE FIRST BLOW",
+            name: "LOOP MASTER",
+            quote: "My first blow always lands. Even broken, I swing once.",
+            brief: "Its rage is ALREADY ZERO - and it still swings once. You " +
+                "need exactly one BLOCK. Run the starter as it stands and " +
+                "watch what it plans.",
+            setup: function () { return { rage: 0 }; },
+            expected: function () { return "BLOCK"; },
+            starter: "// rage is already declared for you, and it is 0\n\n" +
+                "while (rage > 0) {\n    System.out.println(\"BLOCK\");\n" +
+                "    rage--;\n}",
             hints: [
-                "Same shape as the triangle, but the stars became numbers.",
-                "Each row counts from 1 up to that row's number.",
-                "Print the inner counter itself instead of a fixed character."
+                "Fight with the starter unchanged. How many moves did you plan?",
+                "A while loop tests BEFORE the first pass, so a false condition plans nothing at all.",
+                "There is a loop that runs its body first and asks afterwards - its body always happens at least once."
             ]
         },
         {
-            title: "REVERSE WAVE",
-            goal: "The wave, walked backwards.",
-            target: "12345\n1234\n123\n12\n1",
-            starter: "for (int row = ___; row ___; row___) {\n\n    // count up to this row number\n\n}",
-            sweep: 200,
+            title: "ALWAYS ONE MORE",
+            name: "LOOP MASTER",
+            quote: "However little fight I have left, I always have one more.",
+            brief: "BLOCK once for every point of fury, but it swings once " +
+                "even at zero. Fury changes every fight - sometimes it IS zero.",
+            setup: function () { return { fury: between(0, 4) }; },
+            expected: function (v) { return times("BLOCK", Math.max(1, v.fury)); },
+            starter: "// fury is already declared for you\n\n" +
+                "do {\n    ___;\n    ___;\n} while (___);",
             hints: [
-                "The inner loop is unchanged. Only the outer one differs.",
-                "Start at the widest row and step downwards.",
-                "Two minus signs subtract one, just as two plus signs add one."
+                "With fury 3 you need three blocks. With fury 0 you still need one.",
+                "Only one loop shape guarantees the body runs before any test.",
+                "Print, then reduce fury, then ask whether any is left."
             ]
         },
         {
-            title: "SQUARE SHIELD",
-            goal: "A solid four by four block.",
-            target: "####\n####\n####\n####",
-            starter: "for (int row = 1; row <= 4; row++) {\n\n    // four hashes, then end the line\n\n}",
-            sweep: 180,
+            title: "TWO STANCES",
+            name: "LOOP MASTER",
+            quote: "I alternate. Read me or fall.",
+            brief: "It strikes high then low, over and over. Answer a high " +
+                "strike with BLOCK and a low one with DODGE. Odd beats are high.",
+            setup: function () { return { strikes: 6 }; },
+            expected: function (v) {
+
+                var out = [];
+
+                for (var i = 1; i <= v.strikes; i++) {
+                    out.push(i % 2 === 1 ? "BLOCK" : "DODGE");
+                }
+
+                return out.join("\n");
+            },
+            starter: "for (int i = 1; i <= 6; i++) {\n\n" +
+                "    // odd beat or even beat?\n\n}",
             hints: [
-                "Every row is identical, so the inner loop is fixed.",
-                "Sixteen cells from two loops of four.",
-                "print keeps the row going, println ends it."
+                "The count is known, so the loop itself is the easy part.",
+                "Inside the loop you have to decide which move this beat needs.",
+                "A number is odd when the remainder of dividing by 2 is 1."
             ]
         },
         {
-            title: "SPIKE SHIELD",
-            goal: "A growing wall of hashes.",
-            target: "#\n##\n###\n####\n#####",
-            starter: "for (int row = 1; row <= 5; row++) {\n\n    // this row's hashes\n\n}",
-            sweep: 165,
+            title: "THE WAVES",
+            name: "LOOP MASTER",
+            quote: "Three waves. Four blows in each. Can you hold them all?",
+            brief: "One BLOCK per blow, and shout HOLD after each wave ends.",
+            setup: function () { return { waves: 3, perWave: 4 }; },
+            expected: function (v) {
+
+                var out = [];
+
+                for (var w = 1; w <= v.waves; w++) {
+
+                    for (var b = 1; b <= v.perWave; b++) {
+                        out.push("BLOCK");
+                    }
+
+                    out.push("HOLD");
+                }
+
+                return out.join("\n");
+            },
+            starter: "for (int wave = 1; wave <= 3; wave++) {\n\n" +
+                "    // four blocks\n\n    // then HOLD\n}",
             hints: [
-                "You have built this shape before with a different character.",
-                "The inner loop runs up to the current row.",
-                "Only the printed character changed."
+                "Twelve blows in three groups - one loop is not enough.",
+                "The outer loop counts waves; the inner loop counts blows in a wave.",
+                "HOLD belongs in the outer loop, after the inner one finishes."
             ]
         },
         {
-            title: "NUMBER SHIELD",
-            goal: "Each row repeats its own number, that many times.",
-            target: "1\n22\n333\n4444\n55555",
-            starter: "for (int row = 1; row <= 5; row++) {\n\n    // print the row number, row times\n\n}",
-            sweep: 152,
+            title: "THE LAST STAND",
+            name: "LOOP MASTER",
+            quote: "My guard holds until it breaks. Then I swing once more.",
+            brief: "STRIKE once per point of guard, then it always swings once " +
+                "at the end - so finish with a single BLOCK. The guard is " +
+                "different every fight.",
+            setup: function () { return { guard: between(2, 6) }; },
+            expected: function (v) {
+                return times("STRIKE", v.guard) + "\nBLOCK";
+            },
+            starter: "// guard is already declared for you\n\n" +
+                "while (___) {\n    ___;\n    ___;\n}\n\n" +
+                "// it always gets one last swing in",
             hints: [
-                "Row three shows 333 - the row number repeated three times.",
-                "The inner loop controls how many, the outer controls what.",
-                "Print the OUTER counter from inside the inner loop."
+                "Two ideas back to back: an unknown count, then a guaranteed single move.",
+                "The first part keeps going while guard remains.",
+                "The last move happens no matter what, so it needs no loop at all."
             ]
         },
         {
-            title: "THE PATTERN BOSS",
-            goal: "A four by four checkerboard. Loops and a condition.",
-            target: "*.*.\n.*.*\n*.*.\n.*.*",
-            starter: "for (int row = 1; row <= 4; row++) {\n\n    for (int col = 1; col <= 4; col++) {\n        // star or dot?\n    }\n\n    // end the line\n}",
-            sweep: 135,
+            title: "THE LOOP MASTER",
+            name: "THE LOOP MASTER",
+            quote: "Everything I am, in one final pattern. Face it.",
+            brief: "Waves again, but each wave is one blow longer than the " +
+                "last, and it lands one final blow at the end. BLOCK each " +
+                "blow, HOLD after each wave, and finish with ENDURE.",
+            setup: function () { return { waves: 4 }; },
+            expected: function (v) {
+
+                var out = [];
+
+                for (var w = 1; w <= v.waves; w++) {
+
+                    for (var b = 1; b <= w; b++) {
+                        out.push("BLOCK");
+                    }
+
+                    out.push("HOLD");
+                }
+
+                out.push("ENDURE");
+
+                return out.join("\n");
+            },
+            starter: "for (int wave = 1; wave <= 4; wave++) {\n\n" +
+                "    // this wave's blocks\n\n    // then HOLD\n}\n\n" +
+                "// one final move",
             hints: [
-                "The character flips every step, across and downwards.",
-                "Look at what row and col add up to on the starred squares.",
-                "When that total is even print one character, when odd the other."
+                "Wave one is a single blow, wave four is four - the inner loop grows.",
+                "Let the inner loop run up to whatever wave it is on.",
+                "ENDURE happens once, after every wave is done."
             ]
         }
     ];
 
 
-    /* ---------------------------------------------------
-       STATE
-    --------------------------------------------------- */
-
     var state = {
-        level: 0,
+        phase: 0,
         lives: 3,
         xp: 0,
-        hp: 100,
-        bossHP: 100,
-        phase: "attack",
-        player: { r: 0, c: 0 },
-        rows: [],
-        sweepAt: 0,
-        timer: null,
-        clock: 0,
+        vars: {},
+        expected: "",
         hintTier: 0,
-        won: false
+        won: false,
+        playing: false
     };
 
     function $(id) { return document.getElementById(id); }
 
-    /* Splits a target into a grid, padding short rows so the
-       arena stays rectangular. */
-    function toGrid(target) {
-
-        var lines = target.split("\n");
-
-        var width = lines.reduce(function (widest, line) {
-            return Math.max(widest, line.length);
-        }, 0);
-
-        return lines.map(function (line) {
-
-            var row = [];
-
-            for (var i = 0; i < width; i++) {
-                row.push(line[i] === undefined ? " " : line[i]);
-            }
-
-            return row;
-        });
+    function setVerdict(text, good) {
+        $("verdict").textContent = text;
+        $("verdict").className = text ? (good ? "ok" : "bad") : "";
     }
 
-    function buildGrid() {
-
-        var grid = $("grid");
-
-        grid.innerHTML = "";
-        grid.style.gridTemplateColumns =
-            "repeat(" + state.rows[0].length + ", 34px)";
-
-        state.rows.forEach(function (row, r) {
-            row.forEach(function (value, c) {
-
-                var cell = document.createElement("div");
-
-                cell.className = "cell";
-                cell.id = "cell-" + r + "-" + c;
-                cell.textContent = value === " " ? "" : value;
-
-                grid.appendChild(cell);
-            });
-        });
-
-        paintPlayer();
+    function updateHUD() {
+        $("hudPhase").textContent = state.phase + 1;
+        $("hudLives").textContent = state.lives;
+        $("hudXP").textContent = state.xp;
     }
 
-    function paintPlayer() {
-
-        var all = $("grid").querySelectorAll(".cell");
-
-        for (var i = 0; i < all.length; i++) {
-            all[i].classList.remove("player");
-        }
-
-        var here = $("cell-" + state.player.r + "-" + state.player.c);
-
-        if (here) {
-            here.classList.add("player");
-        }
-    }
-
-    /* Which shields the player may jump to: everything they
-       have cleared, plus the next one along. */
-    function clearedShields() {
+    function clearedPhases() {
 
         if (!window.HackoStore || !HackoStore.isLoggedIn()) {
             return [];
@@ -626,438 +515,333 @@ footer {
         return HackoStore.mission(MISSION).levelsDone || [];
     }
 
-    function renderShieldSelect() {
+    function renderPhaseSelect() {
 
-        var box = $("shieldSelect");
-        var done = clearedShields();
+        var box = $("phaseSelect");
+        var done = clearedPhases();
 
-        var furthest = done.length
-            ? Math.max.apply(null, done)
-            : -1;
+        var furthest = done.length ? Math.max.apply(null, done) : -1;
 
         box.innerHTML = "";
 
-        SHIELDS.forEach(function (shield, index) {
+        PHASES.forEach(function (phase, index) {
 
             var button = document.createElement("button");
 
             button.type = "button";
             button.textContent = index + 1;
-            button.title = "Shield " + (index + 1) + " - " + shield.title;
+            button.title = "Phase " + (index + 1) + " - " + phase.title;
 
-            var cleared = done.indexOf(index) !== -1;
-            var reachable = index <= furthest + 1 || index <= state.level;
-
-            if (cleared) {
+            if (done.indexOf(index) !== -1) {
                 button.classList.add("done");
             }
 
-            if (index === state.level) {
+            if (index === state.phase) {
                 button.classList.add("current");
             }
 
-            button.disabled = !reachable;
+            button.disabled = !(index <= furthest + 1 || index <= state.phase);
 
             button.addEventListener("click", function () {
 
-                if (index === state.level) {
-                    return;
+                if (index !== state.phase) {
+                    HackoAudio.play("select");
+                    loadPhase(index);
                 }
-
-                HackoAudio.play("select");
-                loadLevel(index);
             });
 
             box.appendChild(button);
         });
     }
 
-    function updateHUD() {
-        $("hudLevel").textContent = state.level + 1;
-        $("hudLives").textContent = state.lives;
-        $("hudXP").textContent = state.xp;
-        $("playerHP").style.width = Math.max(0, state.hp) + "%";
-        $("bossHP").style.width = Math.max(0, state.bossHP) + "%";
+    /* The whole point of the while phases: the numbers move,
+       so a hardcoded count cannot survive a second attempt. */
+    function rollAttack() {
+
+        var phase = PHASES[state.phase];
+
+        state.vars = phase.setup();
+        state.expected = phase.expected(state.vars);
+
+        var box = $("vars");
+        box.innerHTML = "";
+
+        Object.keys(state.vars).forEach(function (name) {
+
+            var chip = document.createElement("span");
+
+            chip.className = "var";
+            chip.textContent = "int " + name + " = " + state.vars[name] + ";";
+
+            box.appendChild(chip);
+        });
     }
 
-    function setVerdict(text, good) {
-        $("verdict").textContent = text;
-        $("verdict").className = text ? (good ? "ok" : "bad") : "";
+    function attackBeats() {
+        return state.expected.split("\n");
     }
 
+    function renderLanes(mine, dim) {
 
-    /* ---------------------------------------------------
-       ATTACK PHASE
+        var boss = attackBeats();
 
-       The boss sweeps its pattern cell by cell, in exactly
-       the order nested loops print it: across a row, then
-       down to the next. Standing on the cell being printed
-       costs health - so surviving the sweep IS reading the
-       pattern you are about to write.
-    --------------------------------------------------- */
+        $("bossLane").innerHTML = "";
+        $("myLane").innerHTML = "";
 
-    function startAttack() {
+        boss.forEach(function (move, i) {
 
-        state.phase = "attack";
-        state.sweepAt = 0;
+            var b = document.createElement("div");
 
-        $("arena").classList.remove("safe");
-        $("phaseTag").textContent = "INCOMING";
-        $("phaseTimer").textContent = "";
-        $("terminal").classList.add("locked");
+            b.className = "beat boss" + (dim ? "" : " on");
+            b.id = "boss-" + i;
+            b.textContent = (i + 1) + "  incoming";
 
-        window.clearInterval(state.timer);
-        state.timer = window.setInterval(sweepStep, SHIELDS[state.level].sweep);
+            $("bossLane").appendChild(b);
+
+            var planned = mine[i];
+            var m = document.createElement("div");
+
+            m.className = (planned === undefined ? "beat missing" : "beat mine") +
+                (dim ? "" : " on");
+            m.id = "mine-" + i;
+            m.textContent = planned === undefined
+                ? "--  nothing planned"
+                : (i + 1) + "  " + planned;
+
+            $("myLane").appendChild(m);
+        });
     }
 
-    function sweepStep() {
+    function loadPhase(index) {
 
-        var cols = state.rows[0].length;
-        var total = state.rows.length * cols;
-        var prev = state.sweepAt - 1;
+        state.phase = Math.max(0, Math.min(index, PHASES.length - 1));
+        state.won = false;
+        state.playing = false;
+        state.hintTier = 0;
 
-        if (prev >= 0) {
+        var phase = PHASES[state.phase];
 
-            var old = $("cell-" + Math.floor(prev / cols) + "-" + (prev % cols));
+        rollAttack();
 
-            if (old) {
-                old.classList.remove("firing");
-            }
-        }
+        $("duel").classList.remove("won");
+        $("bossFace").innerHTML = "&#9760;";
+        $("bossName").textContent = phase.name;
+        $("bossHP").style.width = "100%";
+        $("bossQuote").textContent = "“" + phase.quote + "”";
+        $("brief").textContent = phase.brief;
+        $("phaseTitle").textContent =
+            "PHASE " + (state.phase + 1) + " - " + phase.title;
+        $("editor").value = phase.starter;
+        $("callout").textContent = "";
 
-        if (state.sweepAt >= total) {
-            startCode();
-            return;
-        }
-
-        var r = Math.floor(state.sweepAt / cols);
-        var c = state.sweepAt % cols;
-        var cell = $("cell-" + r + "-" + c);
-
-        if (cell) {
-            cell.classList.add("firing");
-        }
-
-        $("readout").textContent =
-            "row " + (r + 1) + "  /  col " + (c + 1) +
-            "   -  the boss is printing its pattern";
-
-        if (state.player.r === r && state.player.c === c) {
-            takeHit();
-        } else {
-            HackoAudio.play("step");
-        }
-
-        state.sweepAt += 1;
-    }
-
-    /* Lethal, but it never takes your code.
-     *
-     * Four hits kill. Dying costs a life and throws you back to the
-     * start of the sweep, so you have to survive the pattern again
-     * before the terminal reopens - the setback is time and pressure.
-     * What stays untouched is the editor: being made to retype a
-     * nested loop you already wrote is tedium, not difficulty, and it
-     * would teach players to stop dodging and just wait out the clock.
-     */
-    function takeHit() {
-
-        HackoAudio.play("hit");
-
-        state.hp = Math.max(0, state.hp - 25);
-
-        $("arena").classList.add("shake");
-
-        window.setTimeout(function () {
-            $("arena").classList.remove("shake");
-        }, 260);
-
-        state.player.c = (state.player.c + 1) % state.rows[0].length;
-        paintPlayer();
-
-        if (state.hp <= 0) {
-            die();
-            return;
-        }
-
+        setVerdict("", true);
+        renderLanes([], false);
+        renderPhaseSelect();
         updateHUD();
     }
 
-    function die() {
 
-        window.clearInterval(state.timer);
+    /* Plays the plan against the attack, one beat at a time. */
+    function playExchange(mine, onDone) {
 
-        state.lives -= 1;
-        state.hp = 100;
-        state.xp = Math.max(0, state.xp - 50);
+        var boss = attackBeats();
 
-        HackoAudio.play("gameover");
+        state.playing = true;
+        renderLanes(mine, true);
 
-        if (state.lives <= 0) {
-
-            /* Client rule: out of lives drops back one shield. */
-            state.lives = 3;
-            state.xp = Math.max(0, state.xp - 100);
-
-            var back = window.HackoStore
-                ? HackoStore.loseAllLives(MISSION, state.level)
-                : Math.max(0, state.level - 1);
-
-            $("readout").textContent = "HACKO DOWN";
-            updateHUD();
-
-            window.setTimeout(function () {
-                loadLevel(back);
-            }, 1200);
-
-            return;
-
-        } else {
-
-            setVerdict(
-                "HACKO went down. " + state.lives +
-                " " + (state.lives === 1 ? "life" : "lives") +
-                " left - survive the sweep again. Your code is still here.",
-                false
-            );
-        }
-
-        $("readout").textContent = "HACKO DOWN";
-        updateHUD();
-
-        /* back to the start of the sweep, editor untouched */
-        window.setTimeout(startAttack, 1200);
-    }
-
-
-    /* ---------------------------------------------------
-       CODE PHASE
-    --------------------------------------------------- */
-
-    function startCode() {
-
-        state.phase = "code";
-        state.clock = 45;
-
-        $("arena").classList.add("safe");
-        $("phaseTag").textContent = "SHIELD EXPOSED";
-        $("readout").textContent =
-            "The pattern is down. Reproduce it before the boss recharges.";
-        $("terminal").classList.remove("locked");
-
-        window.clearInterval(state.timer);
-        state.timer = window.setInterval(tickClock, 1000);
-
-        $("editor").focus();
-        tickClock();
-    }
-
-    function tickClock() {
-
-        var mins = Math.floor(state.clock / 60);
-        var secs = state.clock % 60;
-
-        $("phaseTimer").textContent =
-            mins + ":" + (secs < 10 ? "0" : "") + secs;
-
-        if (state.clock <= 0) {
-
-            setVerdict(
-                "The boss recharged. Dodge the sweep and try again.",
-                false
-            );
-
-            HackoAudio.play("wrong");
-            startAttack();
-            return;
-        }
-
-        state.clock -= 1;
-    }
-
-
-    /* ---------------------------------------------------
-       RUNNING THE CODE
-
-       The player's Java is actually executed and its output
-       compared with the pattern. Any code producing the right
-       output wins - there is no expected shape, which is what
-       the old regex matching got wrong.
-    --------------------------------------------------- */
-
-    function runCode() {
-
-        if (state.phase !== "code" || state.won) {
-            return;
-        }
-
-        var shield = SHIELDS[state.level];
-        var result = HackoJava.run($("editor").value);
-
-        if (result.error) {
-            $("yours").textContent = "(did not run)";
-            setVerdict("Your code did not run:\n" + result.error, false);
-            HackoAudio.play("wrong");
-            return;
-        }
-
-        $("yours").textContent =
-            result.output.replace(/\s+$/, "") || "(printed nothing)";
-
-        var check = HackoJava.compare(result.output, shield.target);
-
-        if (!check.match) {
-
-            setVerdict(
-                "Pattern does not match.\n" +
-                "Line " + check.line + ":\n" +
-                "  you printed  " + JSON.stringify(check.got) + "\n" +
-                "  expected     " + JSON.stringify(check.want),
-                false
-            );
-
-            HackoAudio.play("wrong");
-            return;
-        }
-
-        strike();
-    }
-
-    function strike() {
-
-        state.won = true;
-        window.clearInterval(state.timer);
-
-        state.bossHP = 0;
-        state.xp += 100 + state.clock;
-
-        setVerdict("PATTERN MATCHED. Shield destroyed.", true);
-        $("phaseTag").textContent = "SHIELD BROKEN";
-        $("readout").textContent = "Your pattern fires back.";
-
-        HackoAudio.play("win");
-        updateHUD();
-
-        var cells = $("grid").querySelectorAll(".cell");
         var i = 0;
 
-        (function fire() {
+        (function beat() {
 
-            if (i >= cells.length) {
-
-                if (window.HackoStore) {
-                    HackoStore.completeLevel(MISSION, state.level, 100);
-                }
-
-                renderShieldSelect();
-
-                window.setTimeout(function () {
-
-                    if (state.level + 1 < SHIELDS.length) {
-                        loadLevel(state.level + 1);
-                    } else {
-                        $("readout").textContent =
-                            "THE PATTERN BOSS IS DEFEATED.";
-                        HackoAudio.play("unlock");
-                    }
-                }, 700);
-
+            if (i >= boss.length) {
+                state.playing = false;
+                onDone(true);
                 return;
             }
 
-            cells[i].classList.add("firing");
-            i += 1;
+            var want = boss[i];
+            var got = mine[i];
 
-            window.setTimeout(fire, 26);
+            $("boss-" + i).classList.add("on");
+
+            var row = $("mine-" + i);
+            row.classList.add("on");
+
+            if (got === want) {
+
+                row.className = "beat parried on";
+                row.textContent = (i + 1) + "  " + got;
+                $("callout").textContent = "parried";
+                HackoAudio.play("select");
+
+            } else {
+
+                row.className = "beat landed on";
+                row.textContent = got === undefined
+                    ? (i + 1) + "  nothing planned"
+                    : (i + 1) + "  " + got;
+
+                $("callout").textContent = got === undefined
+                    ? "no move planned - the blow lands"
+                    : "wrong move - the blow lands";
+
+                HackoAudio.play("hit");
+                state.playing = false;
+                onDone(false, i, want, got);
+                return;
+            }
+
+            $("bossHP").style.width =
+                Math.round(100 - ((i + 1) / boss.length) * 100) + "%";
+
+            i += 1;
+            window.setTimeout(beat, 240);
         }());
     }
 
+    function fight() {
 
-    /* ---------------------------------------------------
-       LEVELS
-    --------------------------------------------------- */
+        if (state.playing || state.won) {
+            return;
+        }
 
-    function loadLevel(index) {
+        /* the boss's numbers reach the player's code as
+           ordinary declared variables */
+        var preamble = Object.keys(state.vars).map(function (name) {
+            return "int " + name + " = " + state.vars[name] + ";";
+        }).join("\n");
 
-        window.clearInterval(state.timer);
+        var result = HackoJava.run(preamble + "\n" + $("editor").value);
 
-        state.level = Math.max(0, Math.min(index, SHIELDS.length - 1));
-        state.won = false;
-        state.hp = 100;
-        state.bossHP = 100;
-        state.hintTier = 0;
+        if (result.error) {
+            setVerdict("Your plan did not compile:\n" + result.error, false);
+            HackoAudio.play("wrong");
+            return;
+        }
 
-        var shield = SHIELDS[state.level];
+        var mine = result.output
+            .replace(/\s+$/, "")
+            .split("\n")
+            .filter(function (line) { return line.trim().length; });
 
-        state.rows = toGrid(shield.target);
+        if (!mine.length) {
 
-        state.player = {
-            r: state.rows.length - 1,
-            c: 0
-        };
+            setVerdict(
+                "Your plan is empty - you did not counter at all.\n" +
+                "A loop whose condition is false from the start never runs " +
+                "its body even once.",
+                false
+            );
 
-        $("levelTitle").textContent =
-            "SHIELD " + (state.level + 1) + " - " + shield.title;
-        $("levelGoal").textContent = shield.goal;
-        $("target").textContent = shield.target;
-        $("yours").textContent = "(not run yet)";
-        $("editor").value = shield.starter;
+            HackoAudio.play("wrong");
+            renderLanes([], false);
+            loseLife();
+            return;
+        }
 
-        setVerdict("", true);
+        playExchange(mine, function (survived, beat, want, got) {
 
-        buildGrid();
-        renderShieldSelect();
+            if (survived) {
+
+                if (mine.length > attackBeats().length) {
+
+                    setVerdict(
+                        "You answered every blow but kept swinging - " +
+                        mine.length + " moves for " + attackBeats().length +
+                        " strikes. Tighten the loop.",
+                        false
+                    );
+
+                    HackoAudio.play("wrong");
+                    loseLife();
+                    return;
+                }
+
+                victory();
+                return;
+            }
+
+            setVerdict(
+                "Beat " + (beat + 1) + ": it wanted " + want +
+                " and you planned " +
+                (got === undefined ? "nothing" : got) + ".",
+                false
+            );
+
+            loseLife();
+        });
+    }
+
+    function loseLife() {
+
+        state.lives -= 1;
+
+        if (state.lives > 0) {
+            updateHUD();
+            rollAttack();
+            renderLanes([], false);
+            return;
+        }
+
+        /* Client rule: out of lives drops back one phase. */
+        state.lives = 3;
+        state.xp = Math.max(0, state.xp - 100);
+
+        var back = window.HackoStore
+            ? HackoStore.loseAllLives(MISSION, state.phase)
+            : Math.max(0, state.phase - 1);
+
+        HackoAudio.play("gameover");
+        $("callout").textContent = "HACKO FALLS";
+
+        window.setTimeout(function () {
+            loadPhase(back);
+        }, 1200);
+    }
+
+    function victory() {
+
+        state.won = true;
+        state.xp += 100;
+
+        $("duel").classList.add("won");
+        $("bossFace").innerHTML = "&#10003;";
+        $("bossHP").style.width = "0%";
+        $("callout").textContent = "ITS LOOP IS BROKEN";
+
+        setVerdict("Every blow answered. Phase cleared.", true);
+        HackoAudio.play("win");
         updateHUD();
-        startAttack();
+
+        if (window.HackoStore) {
+            HackoStore.completeLevel(MISSION, state.phase, 100);
+        }
+
+        renderPhaseSelect();
+
+        window.setTimeout(function () {
+
+            if (state.phase + 1 < PHASES.length) {
+                loadPhase(state.phase + 1);
+            } else {
+                $("callout").textContent = "THE LOOP MASTER IS DEFEATED";
+                HackoAudio.play("unlock");
+            }
+        }, 1400);
     }
 
-
-    /* ---------------------------------------------------
-       INPUT
-
-       Typing in the editor must never move HACKO, which is
-       why the phases alternate rather than overlap.
-    --------------------------------------------------- */
-
-    function move(dr, dc) {
-
-        var rows = state.rows.length;
-        var cols = state.rows[0].length;
-
-        state.player.r = Math.max(0, Math.min(rows - 1, state.player.r + dr));
-        state.player.c = Math.max(0, Math.min(cols - 1, state.player.c + dc));
-
-        paintPlayer();
-    }
+    $("runBtn").addEventListener("click", fight);
 
     window.addEventListener("keydown", function (event) {
-
         if (event.ctrlKey && event.key === "Enter") {
             event.preventDefault();
-            runCode();
-            return;
+            fight();
         }
-
-        if (document.activeElement === $("editor")) {
-            return;
-        }
-
-        var key = event.key.toLowerCase();
-
-        if (key === "arrowup" || key === "w") { move(-1, 0); }
-        else if (key === "arrowdown" || key === "s") { move(1, 0); }
-        else if (key === "arrowleft" || key === "a") { move(0, -1); }
-        else if (key === "arrowright" || key === "d") { move(0, 1); }
-        else { return; }
-
-        event.preventDefault();
     });
-
-    $("runBtn").addEventListener("click", runCode);
 
     $("hintBtn").addEventListener("click", function () {
 
-        var tiers = SHIELDS[state.level].hints;
+        var tiers = PHASES[state.phase].hints;
         var tier = Math.min(state.hintTier, tiers.length - 1);
         var label = ["NUDGE", "STRUCTURE", "EXAMPLE"][tier] || "HINT";
 
@@ -1069,12 +853,12 @@ footer {
         }
     });
 
-    loadLevel(0);
+    loadPhase(0);
 
 
-    /* ---------------------------------------------------
+    /* =====================================================
        RESUME + AUTOSAVE
-    --------------------------------------------------- */
+    ===================================================== */
 
     (function () {
 
@@ -1082,14 +866,14 @@ footer {
             return;
         }
 
-        HackoStore.registerTotalLevels(MISSION, SHIELDS.length);
+        HackoStore.registerTotalLevels(MISSION, PHASES.length);
 
         function goToSavedLevel() {
 
             var resume = HackoStore.getResumeLevel(MISSION);
 
-            if (resume > 0 && resume < SHIELDS.length) {
-                loadLevel(resume);
+            if (resume > 0 && resume < PHASES.length) {
+                loadPhase(resume);
             }
         }
 
@@ -1104,7 +888,7 @@ footer {
         HackoStore.bindAutosave(function () {
             return {
                 mission: MISSION,
-                level: state.level,
+                level: state.phase,
                 lives: state.lives
             };
         });

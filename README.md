@@ -50,7 +50,7 @@ progress that way.
 | 7 | Debugging Duel | Debugging | **not built** - prototype in `aa/` |
 | 8 | Classroom Rescue | Classes and objects | `classroomrescue.html` |
 | 9 | Conditional Labyrinth II | Nested conditionals | **not built** |
-| 10 | Loop Dungeon - The Pattern Boss | Nested loops | `loopboss.html` |
+| 10 | The Loop Master | for / while / do-while | `loopboss.html` |
 
 `aa/` holds a working Debugging Gym prototype — ten bug-trainer duels ending in
 a boss fight. It is the intended basis for mission 7 but is not wired into the
@@ -102,7 +102,7 @@ node tools/test-all.js
 | `check-java.js` | lesson content is Java; correct answers pass and starter skeletons do not |
 | `check-jumps.js` | every Escape Room pickup is reachable, flagging anything above 70% of a perfect double jump |
 | `test-javaloop.js` | the Java interpreter: same output from different code must always pass |
-| `check-shields.js` | every Loop Dungeon shield is beatable with real Java, and no starter already wins |
+| `check-shields.js` | every Loop Master phase is beatable, a hardcoded count fails the while phases, and a while loop loses the do-while phase |
 | `check-wiring.js` | games load the shared modules, report to the map, resume after boot, carry music, and every badge exists |
 
 Run `check-mazes.js` after editing any maze and `check-java.js` after editing

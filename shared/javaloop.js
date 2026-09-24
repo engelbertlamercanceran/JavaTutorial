@@ -16,7 +16,7 @@
 
    Supported: int/String/boolean/char/double declarations,
    assignment and compound assignment, ++ and --, for loops
-   (nested to any depth), if / else if / else, while,
+   (nested to any depth), if / else if / else, while, do-while,
    System.out.print and println, and the usual arithmetic,
    comparison and logical operators.
 
@@ -239,6 +239,10 @@
                 return parseWhile();
             }
 
+            if (t.value === "do") {
+                return parseDoWhile();
+            }
+
             if (t.value === "if") {
                 return parseIf();
             }
@@ -372,6 +376,29 @@
                 update: update,
                 body: parseBlock()
             };
+        }
+
+        /* do { ... } while (cond);
+           The body runs BEFORE the test, which is the whole
+           reason the form exists. */
+        function parseDoWhile() {
+
+            eat("do");
+
+            var body = parseBlock();
+
+            eat("while");
+            eat("(");
+
+            var test = parseExpression();
+
+            eat(")");
+
+            if (at(";")) {
+                eat(";");
+            }
+
+            return { kind: "doWhile", test: test, body: body };
         }
 
         function parseWhile() {
@@ -720,6 +747,16 @@
                     tick();
                     run(node.body);
                 }
+
+                return;
+            }
+
+            case "doWhile": {
+
+                do {
+                    tick();
+                    run(node.body);
+                } while (truthy(evaluate(node.test)));
 
                 return;
             }

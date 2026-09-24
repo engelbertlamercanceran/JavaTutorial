@@ -1,12 +1,18 @@
 /* =========================================================
    HACKO - tools/check-shields.js
 
-   Every Loop Dungeon shield must be beatable with real Java,
-   and the starter skeleton must NOT already beat it.
+   Every Loop Master phase must be beatable with real Java,
+   and each must actually REQUIRE the loop shape it teaches.
 
-   This runs a genuine solution for each shield through the
-   interpreter the game uses, and compares the output the
-   same way the game does.
+   Two properties matter more than "is it solvable":
+
+   1. The while phases re-roll their numbers on every attempt,
+      so a hardcoded count has to fail most of the time. If it
+      does not, the phase teaches nothing.
+
+   2. The do-while phases start with a false condition, so a
+      while loop must plan NOTHING and lose. That is the only
+      honest demonstration of why do-while exists.
 
        node tools/check-shields.js
 ========================================================= */
@@ -29,13 +35,14 @@ function ok(name, condition, detail) {
         passed += 1;
     } else {
         failed += 1;
-        console.log("  FAIL  " + name + (detail ? "\n        " + detail : ""));
+        console.log("  FAIL  " + name + (detail ? "  (" + detail + ")" : ""));
     }
 }
 
-/* pull SHIELDS out of the page */
+
+/* pull PHASES out of the page */
 var src = fs.readFileSync(path.join(ROOT, "loopboss.html"), "utf8");
-var from = src.indexOf("    var SHIELDS = [");
+var from = src.indexOf("    var PHASES = [");
 var open = src.indexOf("[", from);
 var depth = 0;
 var end = -1;
@@ -52,115 +59,180 @@ for (var i = open; i < src.length; i++) {
     }
 }
 
-var SHIELDS = new Function("return " + src.slice(open, end + 1))();
+/* the phase data leans on two helpers declared above it */
+function times(move, n) {
+    var out = [];
+    for (var t = 0; t < n; t++) {
+        out.push(move);
+    }
+    return out.join("\n");
+}
 
-/* A real Java answer for each shield. */
+function between(low, high) {
+    return low + Math.floor(Math.random() * (high - low + 1));
+}
+
+var PHASES = new Function(
+    "times", "between",
+    "return " + src.slice(open, end + 1)
+)(times, between);
+
+
+/* a real Java answer for each phase */
 var SOLUTIONS = [
-    'for (int i = 1; i <= 5; i++) { System.out.print(i + " "); }',
+    'for (int i = 1; i <= 3; i++) { System.out.println("BLOCK"); }',
 
-    'for (int i = 1; i <= 4; i++) { System.out.print("A "); }',
+    'for (int i = 1; i <= 7; i++) { System.out.println("BLOCK"); }',
 
-    'for (int row = 1; row <= 3; row++) {' +
-    '  for (int n = 1; n <= 3; n++) { System.out.print(n + " "); }' +
-    '  System.out.println();' +
-    '}',
+    'while (rage > 0) { System.out.println("BLOCK"); rage--; }',
 
-    'for (int row = 1; row <= 5; row++) {' +
-    '  for (int c = 1; c <= row; c++) { System.out.print("*"); }' +
-    '  System.out.println();' +
-    '}',
+    'while (shield > 0) { System.out.println("STRIKE"); shield--; }',
 
-    'for (int row = 1; row <= 5; row++) {' +
-    '  for (int c = 1; c <= row; c++) { System.out.print(c); }' +
-    '  System.out.println();' +
-    '}',
+    'do { System.out.println("BLOCK"); rage--; } while (rage > 0);',
 
-    'for (int row = 5; row >= 1; row--) {' +
-    '  for (int c = 1; c <= row; c++) { System.out.print(c); }' +
-    '  System.out.println();' +
-    '}',
+    'do { System.out.println("BLOCK"); fury--; } while (fury > 0);',
 
-    'for (int row = 1; row <= 4; row++) {' +
-    '  for (int c = 1; c <= 4; c++) { System.out.print("#"); }' +
-    '  System.out.println();' +
-    '}',
+    'for (int i = 1; i <= 6; i++) {' +
+    '  if (i % 2 == 1) { System.out.println("BLOCK"); }' +
+    '  else { System.out.println("DODGE"); } }',
 
-    'for (int row = 1; row <= 5; row++) {' +
-    '  for (int c = 1; c <= row; c++) { System.out.print("#"); }' +
-    '  System.out.println();' +
-    '}',
+    'for (int w = 1; w <= 3; w++) {' +
+    '  for (int b = 1; b <= 4; b++) { System.out.println("BLOCK"); }' +
+    '  System.out.println("HOLD"); }',
 
-    'for (int row = 1; row <= 5; row++) {' +
-    '  for (int c = 1; c <= row; c++) { System.out.print(row); }' +
-    '  System.out.println();' +
-    '}',
+    'while (guard > 0) { System.out.println("STRIKE"); guard--; }' +
+    ' System.out.println("BLOCK");',
 
-    'for (int row = 1; row <= 4; row++) {' +
-    '  for (int col = 1; col <= 4; col++) {' +
-    '    if ((row + col) % 2 == 0) { System.out.print("*"); }' +
-    '    else { System.out.print("."); }' +
-    '  }' +
-    '  System.out.println();' +
-    '}'
+    'for (int w = 1; w <= 4; w++) {' +
+    '  for (int b = 1; b <= w; b++) { System.out.println("BLOCK"); }' +
+    '  System.out.println("HOLD"); }' +
+    ' System.out.println("ENDURE");'
 ];
 
-console.log(SHIELDS.length + " shields\n");
+/* phases whose numbers move between attempts */
+var RANDOMISED = [2, 3, 5, 8];
 
-SHIELDS.forEach(function (shield, index) {
+/* phases where a while loop must plan nothing at all */
+var DO_WHILE = [4];
 
-    var n = index + 1;
-    var solution = SOLUTIONS[index];
 
-    var run = J.run(solution);
+function declare(vars) {
+    return Object.keys(vars).map(function (name) {
+        return "int " + name + " = " + vars[name] + ";";
+    }).join("\n");
+}
+
+/* mirrors fight() in the page */
+function play(phase, source, vars) {
+
+    var run = J.run(declare(vars) + "\n" + source);
 
     if (run.error) {
-        ok("shield " + n + " solution runs", false, run.error);
-        return;
+        return { error: run.error, moves: 0, survived: false };
     }
 
-    var check = J.compare(run.output, shield.target);
+    var mine = run.output
+        .replace(/\s+$/, "")
+        .split("\n")
+        .filter(function (line) { return line.trim().length; });
 
-    ok("shield " + n + " (" + shield.title + ") is solvable",
-        check.match,
-        check.match ? "" :
-            "line " + check.line +
-            ": got " + JSON.stringify(check.got) +
-            ", want " + JSON.stringify(check.want));
+    var want = phase.expected(vars).split("\n");
 
-    /* the skeleton must not already win */
-    var starter = J.run(shield.starter);
-    var starterWins = !starter.error &&
-        J.compare(starter.output, shield.target).match;
+    return {
+        error: null,
+        moves: mine.length,
+        survived: mine.length === want.length &&
+            mine.every(function (move, index) { return move === want[index]; })
+    };
+}
 
-    ok("shield " + n + " starter does not already win", !starterWins);
 
-    ok("shield " + n + " has tiered hints",
-        Array.isArray(shield.hints) && shield.hints.length >= 3);
+console.log(PHASES.length + " phases\n");
 
-    /* the sweep has to be readable, not a blur */
-    ok("shield " + n + " sweep speed is playable",
-        shield.sweep >= 100 && shield.sweep <= 400,
-        shield.sweep + "ms");
+PHASES.forEach(function (phase, index) {
 
-    if (check.match) {
-        var cells = shield.target.split("\n").length;
-        console.log("  ok  " + String(n).padStart(2) + "  " +
-            shield.title.padEnd(18) + cells + " rows, sweep " +
-            shield.sweep + "ms");
+    var n = index + 1;
+    var wins = 0;
+    var problem = null;
+
+    for (var attempt = 0; attempt < 8; attempt++) {
+
+        var vars = phase.setup();
+        var result = play(phase, SOLUTIONS[index], vars);
+
+        if (result.error) {
+            problem = result.error;
+            break;
+        }
+
+        if (result.survived) {
+            wins += 1;
+        }
+    }
+
+    ok("phase " + n + " (" + phase.title + ") is beatable every time",
+        problem === null && wins === 8,
+        problem || (wins + "/8 attempts survived"));
+
+    var starter = play(phase, phase.starter, phase.setup());
+
+    ok("phase " + n + " starter does not already win", !starter.survived);
+
+    ok("phase " + n + " has tiered hints",
+        Array.isArray(phase.hints) && phase.hints.length >= 3);
+
+    if (problem === null && wins === 8) {
+        console.log("  ok  " + String(n).padStart(2) + "  " + phase.title);
     }
 });
 
-/* the arena grid must be rectangular, or cells go missing */
-SHIELDS.forEach(function (shield, index) {
 
-    var lines = shield.target.split("\n");
-    var widest = lines.reduce(function (w, l) {
-        return Math.max(w, l.length);
-    }, 0);
+console.log("\nthe while phases must punish a hardcoded count");
 
-    ok("shield " + (index + 1) + " grid is well formed",
-        widest > 0 && lines.length > 0);
+RANDOMISED.forEach(function (index) {
+
+    var phase = PHASES[index];
+    var guess = 'for (int i = 1; i <= 5; i++) { System.out.println("BLOCK"); }';
+    var survived = 0;
+
+    for (var attempt = 0; attempt < 20; attempt++) {
+        if (play(phase, guess, phase.setup()).survived) {
+            survived += 1;
+        }
+    }
+
+    ok(phase.title + ": a fixed count of 5 usually fails",
+        survived <= 8, "survived " + survived + "/20");
+
+    console.log("  " + phase.title.padEnd(18) +
+        "hardcoded guess survived " + survived + "/20");
 });
+
+
+console.log("\nthe do-while phases must defeat a while loop");
+
+DO_WHILE.forEach(function (index) {
+
+    var phase = PHASES[index];
+    var vars = phase.setup();
+
+    var withWhile = play(phase,
+        'while (rage > 0) { System.out.println("BLOCK"); rage--; }', vars);
+
+    var withDoWhile = play(phase,
+        'do { System.out.println("BLOCK"); rage--; } while (rage > 0);', vars);
+
+    ok(phase.title + ": a while loop plans nothing",
+        withWhile.moves === 0, "planned " + withWhile.moves);
+
+    ok(phase.title + ": do-while plans exactly one move and wins",
+        withDoWhile.moves === 1 && withDoWhile.survived,
+        "planned " + withDoWhile.moves);
+
+    console.log("  " + phase.title + ": while planned " + withWhile.moves +
+        " moves, do-while planned " + withDoWhile.moves);
+});
+
 
 console.log("\n" + passed + " passed, " + failed + " failed");
 
