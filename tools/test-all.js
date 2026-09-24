@@ -12,7 +12,8 @@ var SUITES = [
     ["Java interpreter", "test-javaloop.js"],
     ["Loop Dungeon shields", "check-shields.js"],
     ["Java lesson content", "check-java.js"],
-    ["suite wiring", "check-wiring.js"]
+    ["suite wiring", "check-wiring.js"],
+    ["Debugging Gym map", "check-gym.js"]
 ];
 
 var failed = 0;

@@ -11,25 +11,17 @@ const missions = [
   {title:"Error Master Vex",trainer:"GYM LEADER · VEX",stars:6,quote:"You fixed nine weaklings… but can you fix perfection itself?",hacko:"Wala nang perfect code… pero may fixed code.",code:'String title = null;\nfor (int i = 0; i <= data.length; i++) {\n    sum += data[i];\n}\nif (sum = 10) {\n    System.out.println(title.toUpperCase());\n}',prompt:"Which patch defeats all three bugs?",choices:['title = "Victory"; i < data.length; sum == 10','title = null; i < data.length; sum = 10','title = "Victory"; i <= data.length; sum == 10'],answer:0,lesson:"You fixed null, array bounds, and comparison logic. Gym cleared!"}
 ];
 
-let current=0, unlocked=0, lives=3, selected=null, result=null;
+/* frontier is the next trainer Hacko has not beaten. Everyone before
+   it is a defeated trainer standing beside the gym path; the gym map
+   (gym.js) starts a duel when Hacko walks in front of a trainer. */
+let current=0, frontier=0, lives=3, selected=null, result=null;
 let completed=Array(10).fill(false);
 const $=id=>document.getElementById(id);
 
-
-function renderMap(){
-  $('mission-map').querySelectorAll('.node').forEach(n=>n.remove());
-  missions.forEach((m,i)=>{
-    const button=document.createElement('button');
-    button.className=`node ${current===i?'active':''} ${completed[i]?'done':''} ${i>unlocked?'locked':''}`;
-    button.disabled=i>unlocked;
-    button.innerHTML=`<span class="orb">${completed[i]?'✓':i>unlocked?'⌁':i+1}</span><span class="node-name">${i===9?'BOSS':m.title}</span>`;
-    button.onclick=()=>goTo(i);
-    $('mission-map').appendChild(button);
-  });
-}
+function setMode(mode){document.body.dataset.mode=mode}
 
 function render(){
-  const chip=$('round-chip'); if(chip) chip.textContent=current+1;
+  const chip=$('round-chip'); if(chip) chip.textContent=Math.min(10,frontier+1);
 
   const m=missions[current], progress=completed.filter(Boolean).length*10;
   $('lives').textContent=lives; $('xp').textContent=completed.filter(Boolean).length*100;
@@ -46,7 +38,7 @@ function render(){
   $('enemy-hud-name').textContent=m.trainer.toUpperCase(); $('enemy-plate').textContent=m.trainer.toUpperCase();
   $('enemy-fighter').style.setProperty('--enemy-hue',`${(current*39+8)%360}`);
   $('hero-hp').style.width=`${Math.max(0,lives/3*100)}%`;
-  $('enemy-hp').style.width=completed[current]?'0%':'100%';
+  $('enemy-hp').style.width=result==='win'?'0%':'100%';
   $('choices').innerHTML='';
   m.choices.forEach((choice,i)=>{
     const button=document.createElement('button');
@@ -55,40 +47,71 @@ function render(){
     if(selected===i) button.classList.add('selected');
     if(result && i===m.answer) button.classList.add('correct');
     if(result==='lose' && selected===i) button.classList.add('wrong');
-    button.onclick=()=>{HackoAudio.play('select');selected=i;result=null;render()};
+    button.onclick=()=>{if(result==='win')return;HackoAudio.play('select');selected=i;result=null;render()};
     $('choices').appendChild(button);
   });
   const feedback=$('feedback'); feedback.className=`feedback ${result||''}`;
   feedback.querySelector('span').textContent=result==='win'?'✓':result==='lose'?'×':'?';
   feedback.querySelector('p').textContent=result==='win'?m.lesson:result==='lose'?'That patch still throws an error. Trace the highlighted line and try again.':'Choose the patch that makes the Java program compile and behave correctly.';
   $('submit').disabled=selected===null||result==='win'; $('submit').innerHTML=result==='win'?'BUG DEFEATED':'RUN PATCH <span>→</span>';
-  $('next').classList.toggle('hidden',!(result==='win'&&current<9));
+  $('next').classList.toggle('hidden',result!=='win');
+  $('next').textContent=current===9?'LEAVE THE GYM →':'BACK TO THE GYM →';
   $('victory').classList.toggle('hidden',!completed[9]);
-  renderMap();
+}
+
+/* called by the gym map when Hacko walks in front of trainer i */
+function startBattle(i){
+  current=i;selected=null;result=null;lives=3;
+  $('hero-fighter').classList.remove('walk','attack','hit');
+  $('enemy-fighter').classList.remove('hit','enemy-attack');
+  $('battle-message').textContent=`${missions[i].trainer} wants to duel!`;
+  setMode('battle');render();
+  window.scrollTo({top:$('game-arena').offsetTop-90,behavior:'smooth'});
+}
+
+function backToGym(){
+  HackoAudio.play('select');
+  setMode('map');
+  Gym.returnFromBattle({won:true,k:current});
+  result=null;selected=null;render();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function submit(){
   if(selected===null||result==='win') return;
-  if(selected===missions[current].answer){completed[current]=true;unlocked=Math.min(9,Math.max(unlocked,current+1));result='win';if(window.HackoStore){HackoStore.completeLevel(7,current,100)}playAttack()}
+  if(selected===missions[current].answer){completed[current]=true;frontier=Math.max(frontier,current+1);result='win';if(window.HackoStore){HackoStore.completeLevel(7,current,100)}playAttack()}
   else{result='lose';playDamage();loseLife();return}
   render();
 }
 function playAttack(){HackoAudio.play('correct');const h=$('hero-fighter'),e=$('enemy-fighter'),i=$('impact');h.classList.remove('attack');e.classList.remove('hit');void h.offsetWidth;h.classList.add('attack');setTimeout(()=>{e.classList.add('hit');i.classList.add('show');$('enemy-hp').style.width='0%';$('battle-message').textContent='Critical patch! Bug defeated.'},280);setTimeout(()=>i.classList.remove('show'),850)}
 function playDamage(){HackoAudio.play('hit');const h=$('hero-fighter'),e=$('enemy-fighter');e.classList.remove('enemy-attack');h.classList.remove('hit');void e.offsetWidth;e.classList.add('enemy-attack');setTimeout(()=>{h.classList.add('hit');$('battle-message').textContent='The bug struck back! Try another patch.'},280);setTimeout(()=>h.classList.remove('hit'),900)}
-function goTo(i){if(i<=unlocked){HackoAudio.play('select');const h=$('hero-fighter');h.classList.add('walk');setTimeout(()=>{current=i;selected=null;result=null;lives=3;h.classList.remove('walk','attack');$('enemy-fighter').classList.remove('hit','enemy-attack');$('battle-message').textContent='A new bug trainer blocks the corridor!';render();window.scrollTo({top:$('game-arena').offsetTop-80,behavior:'smooth'})},500)}}
+
 /* Three lives, and losing them drops back one duel - the rule
-   every other mission follows. */
+   every other mission follows. In the gym that means the previous
+   trainer steps back onto the path and Hacko is sent back to them. */
 function loseLife(){
   lives--;
   if(lives>0){HackoAudio.play('wrong');render();return}
   lives=3;
   const back=window.HackoStore?HackoStore.loseAllLives(7,current):Math.max(0,current-1);
+  frontier=Math.min(frontier,back);
   HackoAudio.play('gameover');
-  setTimeout(()=>{current=back;selected=null;result=null;render();$('battle-message').textContent=`Out of lives! Back to duel ${back+1}.`},900);
+  $('battle-message').textContent='Hacko is out of lives!';
+  setTimeout(()=>{
+    selected=null;result=null;setMode('map');
+    Gym.returnFromBattle({won:false,k:current,back});
+    render();window.scrollTo({top:0,behavior:'smooth'});
+  },1200);
 }
 
-function reset(){HackoAudio.play('select');current=0;unlocked=0;lives=3;selected=null;result=null;completed=Array(10).fill(false);render()}
-$('submit').onclick=submit; $('next').onclick=()=>goTo(current+1); $('reset').onclick=reset; $('play-again').onclick=reset;
+function reset(){HackoAudio.play('select');current=0;frontier=0;lives=3;selected=null;result=null;completed=Array(10).fill(false);Gym.reset();setMode('map');render()}
+$('submit').onclick=submit; $('next').onclick=backToGym; $('reset').onclick=reset; $('play-again').onclick=reset;
+
+setMode('map');
+Gym.init({
+  canvas:$('gym-canvas'),dialog:$('gym-dialog'),text:$('gym-text'),
+  trainers:missions,getFrontier:()=>frontier,onBattle:startBattle
+});
 render();
 
 /* ===== SOUND LAYER =====
@@ -107,8 +130,8 @@ render();
 
 
 /* ===== RESUME + AUTOSAVE =====
-   The Debugging Gym kept no progress at all - a refresh wiped every
-   duel. It now reports to the shared store like the other missions. */
+   Coming back puts Hacko in front of the trainer they had reached,
+   with everyone before them already beaten. */
 (function () {
     if (!window.HackoStore || !HackoStore.isLoggedIn()) { return; }
 
@@ -117,9 +140,10 @@ render();
     function goToSavedLevel() {
         var done = HackoStore.mission(7).levelsDone || [];
         done.forEach(function (i) { completed[i] = true; });
-        unlocked = Math.min(9, done.length);
-        var resume = HackoStore.getResumeLevel(7);
-        if (resume > 0 && resume < 10) { current = resume; }
+        frontier = done.length >= 10
+            ? 10
+            : Math.min(HackoStore.getResumeLevel(7), done.length);
+        Gym.placeAt(frontier);
         try { render(); } catch (e) {}
     }
 
@@ -127,6 +151,6 @@ render();
     else { window.addEventListener("load", goToSavedLevel); }
 
     HackoStore.bindAutosave(function () {
-        return { mission: 7, level: current, lives: lives };
+        return { mission: 7, level: Math.min(frontier, 9), lives: lives };
     });
 }());

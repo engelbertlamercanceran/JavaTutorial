@@ -14,10 +14,10 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#top"><span class="brand-mark">H</span><span>HACKO<small>DEBUGGING DUEL</small></span></a>
+    <a class="brand" href="#top"><span class="brand-mark">H</span><span>HACKO<small>DEBUGGING GYM</small></span></a>
 
     <div class="stats hk-hud">
-      <span class="hk-chip">DUEL <b id="round-chip">1</b>/10</span>
+      <span class="hk-chip">TRAINER <b id="round-chip">1</b>/10</span>
       <span class="hk-chip hk-chip--lives">LIVES <b id="lives">3</b></span>
       <span class="hk-chip">XP <b id="xp">0</b></span>
       <button class="hk-btn hk-btn--ghost" id="reset">RESTART</button>
@@ -25,16 +25,29 @@
   </header>
 
   <main>
-    <!-- The hero banner promised walking a corridor, which this
-         mission never did. Removed at the client's request; what is
-         left is the duel selector every other mission has. -->
     <section class="level-bar" id="top">
-      <span class="level-bar-label">SELECT DUEL</span>
+      <span class="level-bar-label">GYM PROGRESS</span>
       <div class="track"><i id="progress-bar"></i></div>
       <b id="progress-text">0%</b>
     </section>
 
-    <section class="map" id="mission-map" aria-label="Mission map"><div class="map-line"></div></section>
+    <!-- The client asked for a walking hero, Pokemon gym style.
+         Hacko walks this gym; stepping in front of a bug trainer
+         starts the duel below. Drawn by gym.js. -->
+    <section class="gym" id="gym" aria-label="Debugging Gym map">
+      <div class="gym-frame">
+        <canvas id="gym-canvas" width="672" height="480" aria-label="Top-down gym. Walk Hacko with the arrow keys or WASD."></canvas>
+        <div class="gym-dialog hidden" id="gym-dialog" role="status"><p id="gym-text"></p><span class="gym-more">▼</span></div>
+      </div>
+      <p class="gym-help"><b>ARROWS / WASD</b> walk · <b>E</b> or <b>SPACE</b> talk · walk in front of a trainer to duel · the <i>▼</i> marks the next trainer</p>
+      <div class="gym-pad" id="gym-pad">
+        <button type="button" data-dir="up" aria-label="Walk up">▲</button>
+        <button type="button" data-dir="left" aria-label="Walk left">◀</button>
+        <button type="button" data-act="talk" aria-label="Talk">E</button>
+        <button type="button" data-dir="right" aria-label="Walk right">▶</button>
+        <button type="button" data-dir="down" aria-label="Walk down">▼</button>
+      </div>
+    </section>
 
     <section class="game-arena" id="game-arena">
       <div class="arena-sky"><span class="glitch g1">ERROR</span><span class="glitch g2">NULL</span><span class="glitch g3">404</span></div>
@@ -82,7 +95,127 @@
   <footer><span>HACKO LEARNING SYSTEMS</span><p>Read the error. Trace the cause. Patch with purpose.</p></footer>
 
   <style>
-  /* Slim selector bar in place of the removed hero section. */
+  /* ---- gym overworld ---- */
+  body[data-mode="map"] #game-arena,
+  body[data-mode="map"] #battle { display: none; }
+  body[data-mode="battle"] #gym { display: none; }
+
+  .gym {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px 24px;
+  }
+
+  .gym-frame {
+      position: relative;
+      width: min(100%, 900px, calc((100vh - 190px) * 1.4));
+      border: 6px solid #6b6356;
+      outline: 3px solid #2a2620;
+      box-shadow: 0 20px 60px #000;
+      background: #5c3321;
+  }
+
+  .gym-frame canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+  }
+
+  /* Pokemon-style white text box */
+  .gym-dialog {
+      position: absolute;
+      left: 3%;
+      right: 3%;
+      bottom: 4%;
+      min-height: 17%;
+      padding: 12px 40px 12px 16px;
+      background: #fbfbf6;
+      color: #1d1d22;
+      border: 4px solid #3a4f8c;
+      border-radius: 10px;
+      box-shadow: inset 0 0 0 3px #fbfbf6, inset 0 0 0 6px #9fb3e8;
+      font: 700 clamp(14px, 2.1vw, 20px) Consolas, "Courier New", monospace;
+      line-height: 1.4;
+      cursor: pointer;
+  }
+
+  .gym-dialog p { margin: 0; }
+
+  .gym-more {
+      position: absolute;
+      right: 16px;
+      bottom: 10px;
+      color: #d63a3a;
+      animation: gym-more 0.8s steps(2) infinite;
+  }
+
+  @keyframes gym-more { 50% { transform: translateY(3px); } }
+
+  /* the flash before a duel, like a wild battle starting */
+  .gym-frame.flash::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      animation: gym-flash 0.7s steps(1) forwards;
+  }
+
+  @keyframes gym-flash {
+      0%, 30%, 60% { background: rgba(255, 255, 255, 0.9); }
+      15%, 45%     { background: transparent; }
+      75%, 100%    { background: #000; }
+  }
+
+  .gym-help {
+      margin: 0;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      color: var(--muted, #a8a59c);
+      text-align: center;
+  }
+
+  .gym-help b { color: var(--cream, #f3efe3); }
+  .gym-help i { color: var(--acid, #d5fa42); font-style: normal; }
+
+  .gym-pad {
+      display: none;
+      grid-template-columns: repeat(3, 56px);
+      grid-template-rows: repeat(3, 48px);
+      gap: 6px;
+  }
+
+  .gym-pad button {
+      border: 2px solid #3b3c35;
+      border-radius: 10px;
+      background: #1b1c17;
+      color: var(--cream, #f3efe3);
+      font-size: 18px;
+      touch-action: none;
+      user-select: none;
+  }
+
+  .gym-pad [data-dir="up"]    { grid-column: 2; grid-row: 1; }
+  .gym-pad [data-dir="left"]  { grid-column: 1; grid-row: 2; }
+  .gym-pad [data-act]         { grid-column: 2; grid-row: 2; background: #d5fa42; color: #11120f; font-weight: 900; }
+  .gym-pad [data-dir="right"] { grid-column: 3; grid-row: 2; }
+  .gym-pad [data-dir="down"]  { grid-column: 2; grid-row: 3; }
+
+  @media (hover: none), (max-width: 760px) {
+      .gym-pad { display: grid; }
+  }
+
+  /* the header chips ran off the right edge on phones and
+     dragged the whole page (and the gym) sideways */
+  @media (max-width: 760px) {
+      .topbar { height: auto; flex-wrap: wrap; gap: 10px; padding: 10px 16px; }
+      .topbar .stats { flex-wrap: wrap; gap: 8px; width: 100%; }
+      /* style.css hid the chips on phones - lives must stay visible */
+      .topbar .stats .hk-chip { display: inline-block; }
+  }
+
+  /* Slim progress bar above the gym. */
   .level-bar {
       display: flex;
       align-items: center;
@@ -113,6 +246,7 @@
       transition: width 0.35s ease;
   }
   </style>
+  <script src="gym.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
