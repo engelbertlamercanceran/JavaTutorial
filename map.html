@@ -1017,6 +1017,59 @@ body {
     border-left: 18px solid #d27c29;
 }
 
+/* arrow-down was used on four cards but never had a single
+   CSS rule, so those connectors rendered as nothing at all. */
+.arrow-down {
+    left: 50%;
+
+    bottom: -58px;
+
+    width: 12px;
+
+    height: 50px;
+
+    transform: translateX(-50%);
+}
+
+.arrow-down::before {
+    content: "";
+
+    position: absolute;
+
+    left: 3px;
+    top: 0;
+
+    width: 6px;
+    height: 32px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #ffe074,
+            #b86b25
+        );
+
+    border-radius: 5px;
+
+    box-shadow:
+        3px 0 3px #000;
+}
+
+.arrow-down::after {
+    content: "";
+
+    position: absolute;
+
+    bottom: 0;
+
+    left: -3px;
+
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+
+    border-top: 18px solid #d27c29;
+}
+
 .arrow-left {
     left: -90px;
 
@@ -1607,7 +1660,8 @@ body {
     }
 
     .arrow-right,
-    .arrow-left {
+    .arrow-left,
+    .arrow-down {
         display: none;
     }
 
@@ -2077,7 +2131,7 @@ window.addEventListener("load", function () {
                         </span>
                     </div>
 
-                    <div class="arrow arrow-down"></div>
+                    <div class="arrow arrow-right"></div>
 
                 </div>
 
@@ -2118,7 +2172,7 @@ window.addEventListener("load", function () {
                         </span>
                     </div>
 
-                    <div class="arrow arrow-left"></div>
+                    <div class="arrow arrow-down"></div>
 
                 </div>
 
@@ -2159,7 +2213,7 @@ window.addEventListener("load", function () {
                         </span>
                     </div>
 
-                    <div class="arrow arrow-left"></div>
+                    <div class="arrow arrow-right"></div>
 
                 </div>
 
@@ -2282,7 +2336,7 @@ window.addEventListener("load", function () {
                         </span>
                     </div>
 
-                    <div class="arrow arrow-left"></div>
+                    <div class="arrow arrow-down"></div>
 
                 </div>
 

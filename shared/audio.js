@@ -310,9 +310,9 @@
         /* Fires constantly, so it stays quiet and never repeats at
            exactly the same pitch - identical footsteps sound robotic. */
         step: function () {
-            var f = 132 + Math.random() * 26;
-            voice(sfxBus, f, 0, 0.05, "triangle", 0.06, f * 0.7);
-            noise(0, 0.035, 0.035, 2600);
+            var f = 150 + Math.random() * 30;
+            voice(sfxBus, f, 0, 0.07, "triangle", 0.15, f * 0.7);
+            noise(0, 0.045, 0.08, 2600);
         },
 
         jump: function () {

@@ -2015,7 +2015,6 @@ function moveOpponentOutOfPath(x, y) {
 }
 
 function move(dx, dy) {
-    HackoAudio.play("step");
     if (
         paused ||
         !state ||
@@ -2044,6 +2043,10 @@ function move(dx, dy) {
     if (
         blocked(newX, newY)
     ) {
+        /* walking into a wall is its own sound - it used to
+           play the same footstep as a successful step */
+        HackoAudio.play('land')
+
         pulse(
             state.player.x,
             state.player.y,
@@ -2059,6 +2062,8 @@ function move(dx, dy) {
             newY
         )
     ) {
+        HackoAudio.play('land')
+
         pulse(
             state.player.x,
             state.player.y,
@@ -2067,6 +2072,9 @@ function move(dx, dy) {
 
         return
     }
+
+    /* only a step that actually happened makes a footstep */
+    HackoAudio.play('step')
 
     state.player.x = newX
     state.player.y = newY
