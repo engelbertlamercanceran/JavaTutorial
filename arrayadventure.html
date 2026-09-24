@@ -1675,6 +1675,33 @@ function enemyTurn() {
     );
 }
 
+/* No lives at all before this - running out of energy simply
+   restarted the mission. Three lives now, and losing them all
+   drops back one mission level. */
+let missionLives = 3
+
+function loseLifeAndMaybeDemote() {
+
+    missionLives -= 1;
+
+    if (missionLives > 0) {
+        return false;
+    }
+
+    missionLives = 3;
+
+    if (window.HackoStore) {
+
+        const back = HackoStore.loseAllLives(5, level);
+
+        HackoAudio.play("gameover");
+        loadMission(back);
+        return true;
+    }
+
+    return false;
+}
+
 function damage(amount, source) {
     HackoAudio.play("hit");
 
@@ -1693,7 +1720,13 @@ function damage(amount, source) {
     );
 
     if (state.hp <= 0) {
+
         state.won = true;
+
+        if (loseLifeAndMaybeDemote()) {
+            return;
+        }
+
         HackoAudio.play("gameover");
 
         setTimeout(() => {
@@ -1795,6 +1828,7 @@ function selectSlot(index) {
 }
 
 function swapSlots() {
+    HackoAudio.play("select");
     if (!missions[level].swap) {
         setStatus(
             "Swapping unlocks in Mission 3.",
@@ -1835,6 +1869,7 @@ function swapSlots() {
 }
 
 function discardSelected() {
+    HackoAudio.play("wrong");
     if (
         !missions[level].discard
     ) {
@@ -1877,6 +1912,7 @@ function discardSelected() {
 }
 
 function useOnPedestal() {
+    HackoAudio.play("unlock");
     if (!missions[level].use) {
         setStatus(
             "The pedestal is not active in this mission.",
@@ -1914,6 +1950,7 @@ function useOnPedestal() {
 }
 
 function calculateSum() {
+    HackoAudio.play("correct");
     if (!missions[level].sum) {
         setStatus(
             "Calculate Sum unlocks in Mission 10.",
@@ -1949,6 +1986,7 @@ function calculateSum() {
 }
 
 function checkMission() {
+    HackoAudio.play("select");
     const success =
         missions[level].check(state);
 

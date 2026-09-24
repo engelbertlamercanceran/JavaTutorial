@@ -71,8 +71,18 @@ Object.keys(GAMES).forEach(function (file) {
     ok(file + " loads audio", src.indexOf("shared/audio.js") !== -1);
     ok(file + " loads storage", src.indexOf("shared/storage.js") !== -1);
 
-    ok(file + " plays sound effects",
-        /HackoAudio\.play\(/.test(src));
+    /* One or two sounds is not "has sound" - the client
+       compared the other games unfavourably with the escape
+       room, which reacts to nearly everything. */
+    var sfxCount = (src.match(/HackoAudio\.play\(/g) || []).length;
+
+    ok(file + " has real sound coverage (" + sfxCount + " cues)",
+        sfxCount >= 6, "only " + sfxCount);
+
+    /* Client rule: three lives everywhere, and running out
+       drops the player back one level. */
+    ok(file + " drops a level when lives run out",
+        /loseAllLives\(/.test(src));
 
     /* A game may pass its mission number directly, or through
        its own MISSION constant. Both are fine, but a constant

@@ -2369,7 +2369,14 @@ function enemyTurn() {
     }
 }
 
+/* This mission had an HP bar but no lives, so running out of
+   energy just restarted the same level forever. Three lives
+   now, and losing them drops back one level like every other
+   mission. */
+let missionLives = 3
+
 function damage(amount, source) {
+    HackoAudio.play("hit");
     if (
         performance.now() <
         state.player.inv
@@ -2402,14 +2409,45 @@ function damage(amount, source) {
 
         updateHUD()
 
+        missionLives -= 1
+
+        if (missionLives > 0) {
+
+            HackoAudio.play('wrong')
+
+            showMessage(
+                'SYSTEM LOOP BROKEN',
+
+                'Hacko ran out of energy. ' + missionLives +
+                (missionLives === 1 ? ' life' : ' lives') + ' left.',
+
+                'RETRY',
+
+                restartLevel
+            )
+
+            return
+        }
+
+        /* out of lives - back one level */
+        missionLives = 3
+
+        const back = window.HackoStore
+            ? HackoStore.loseAllLives(4, levelIndex)
+            : Math.max(0, levelIndex - 1)
+
+        HackoAudio.play('gameover')
+
         showMessage(
             'SYSTEM LOOP BROKEN',
 
-            'Hacko ran out of energy inside the labyrinth.',
+            'Out of lives. Back to level ' + (back + 1) + '.',
 
-            'RETRY',
+            'CONTINUE',
 
-            restartLevel
+            function () {
+                buildLevel(back)
+            }
         )
     }
 }
@@ -2525,6 +2563,7 @@ function normalize(value) {
 }
 
 function submitAnswer() {
+    HackoAudio.play("select");
     const challenge =
         challenges[levelIndex]
 
@@ -2669,6 +2708,7 @@ function submitAnswer() {
 let hintTier = 0
 
 function useHint() {
+    HackoAudio.play("open");
     const challenge =
         challenges[levelIndex]
 
@@ -2800,6 +2840,7 @@ function showMessage(
 }
 
 function restartLevel() {
+    HackoAudio.play("wrong");
     loadLevel(levelIndex)
 }
 

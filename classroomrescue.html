@@ -1640,6 +1640,7 @@ RUN CODE
 ========================= */
 
 function runCode(){
+    HackoAudio.play("select");
 
     if(!started){
 
@@ -1754,6 +1755,27 @@ function runCode(){
             }else{
 
                 game.lives--;
+
+    /* Client rule: out of lives drops back one level, rather
+       than silently topping the lives back up. */
+    if(game.lives<=0){
+
+        game.lives=3;
+
+        const back=
+            window.HackoStore
+            ?HackoStore.loseAllLives(8,game.level-1)
+            :Math.max(0,game.level-2);
+
+        game.level=back+1;
+
+        HackoAudio.play("gameover");
+        updateHUD();
+        loadLevel();
+
+        return;
+
+    }
                 game.combo=0;
 
 
@@ -1808,6 +1830,7 @@ HINT
 ========================= */
 
 function useHint(){
+    HackoAudio.play("open");
 
     if(!started){
 

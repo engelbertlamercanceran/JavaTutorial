@@ -1833,6 +1833,20 @@
             HackoAudio.play("wrong");
             playerLives--
 
+            /* Client rule: running out of lives drops the player
+               back one level rather than ending the run. */
+            if (playerLives <= 0 && window.HackoStore) {
+
+                playerLives = 3
+
+                var back = HackoStore.loseAllLives(1, currentLevelIndex)
+
+                HackoAudio.play("gameover")
+                updatePlayerHUD()
+                loadLevel(back)
+                return
+            }
+
             if (playerLives <= 0) {
                 updatePlayerHUD()
                 gameOver()

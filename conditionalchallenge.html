@@ -2732,6 +2732,19 @@
 
         function loseLife() {
             HackoAudio.play("wrong");
+
+            /* Client rule: out of lives drops back one level. */
+            if (state.lives <= 1 && window.HackoStore) {
+
+                state.lives = 3
+
+                var back = HackoStore.loseAllLives(3, currentLevelIndex)
+
+                HackoAudio.play("gameover")
+                loadLevel(back)
+                return
+            }
+
             if (state.gameOver) {
                 return
             }
@@ -3990,6 +4003,7 @@ ${selected}`
         }
 
         function restartLevel() {
+            HackoAudio.play("wrong");
             loadLevel(
                 currentLevelIndex
             )

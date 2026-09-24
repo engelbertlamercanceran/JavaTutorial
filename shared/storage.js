@@ -468,6 +468,20 @@
         });
     }
 
+    /* The client's rule: every mission has three lives, and
+       running out drops the player back ONE level rather than
+       restarting the mission or silently resetting.
+       Returns the level they should land on. */
+    function loseAllLives(id, currentLevel) {
+
+        var back = Math.max(0, Number(currentLevel) - 1);
+
+        setLives(id, DEFAULT_LIVES);
+        setResumeLevel(id, back);
+
+        return back;
+    }
+
     function getLives(id) {
 
         var m = mission(id);
@@ -892,6 +906,7 @@
         getResumeLevel: getResumeLevel,
         setLives: setLives,
         getLives: getLives,
+        loseAllLives: loseAllLives,
 
         bindAutosave: bindAutosave,
 

@@ -123,6 +123,10 @@ any lesson. Both catch classes of bug that shipped unnoticed before.
   diffs the output instead, which is why any working solution now passes.
 - **Items differ by shape as well as colour**, so the games work for
   colour-blind players.
+- **Three lives in every mission, and running out drops the player back one
+  level.** Use `HackoStore.loseAllLives(mission, level)`, which restores the
+  lives and returns the level to load. Three missions previously had no lives
+  at all and simply restarted forever.
 - **Sound is synthesised**, not sourced. Add new effects to the `SFX` table in
   `shared/audio.js` and new background tracks to `TRACKS` — no audio files
   anywhere. Every page carries a quiet background track, movement sounds and a
@@ -138,9 +142,6 @@ any lesson. Both catch classes of bug that shipped unnoticed before.
 - Classroom Rescue is a single room. The client asked for a Pokémon-gym-style
   multi-room escape; the concept conflicts with the spec's "Classes and Objects"
   brief for mission 8 and needs a decision before building.
-- Lives still work three different ways across the suite: hard game-over at 0
-  (missions 1-3), HP only with no lives (4-6), and lives that silently reset
-  with an XP penalty (8, 10).
 - `dashboard.html` still reads the old `hackoProgress` key and has not been
   moved onto the shared store.
 - `.removed/` holds six dead files — duplicates, a broken stub and two empty

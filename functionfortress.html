@@ -2356,6 +2356,32 @@ function respawn(
     }
 }
 
+/* No lives before this either. */
+let missionLives = 3
+
+function loseLifeAndMaybeDemote() {
+
+    missionLives -= 1;
+
+    if (missionLives > 0) {
+        HackoAudio.play("wrong");
+        return false;
+    }
+
+    missionLives = 3;
+
+    if (window.HackoStore) {
+
+        const back = HackoStore.loseAllLives(6, level);
+
+        HackoAudio.play("gameover");
+        loadLevel(back);
+        return true;
+    }
+
+    return false;
+}
+
 function completeLevel() {
     /* tell the mission map this level is cleared */
     if (window.HackoStore) {

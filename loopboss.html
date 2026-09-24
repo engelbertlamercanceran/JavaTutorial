@@ -186,6 +186,50 @@ main {
     transition: width 0.2s;
 }
 
+/* ---------- shield select ---------- */
+
+/* Every other mission lets a player go back to an earlier
+   level. This one did not, so a cleared shield could never
+   be replayed. */
+.shields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 10px 0 2px;
+}
+
+.shields button {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    border: 1px solid var(--hk-line);
+    background: #0b1c30;
+    color: var(--hk-muted);
+    cursor: pointer;
+    font: 700 12px var(--hk-display);
+}
+
+.shields button:hover:not(:disabled) {
+    border-color: var(--hk-cyan);
+    color: var(--hk-cyan);
+}
+
+.shields button.done {
+    border-color: var(--hk-lime);
+    color: var(--hk-lime);
+}
+
+.shields button.current {
+    background: var(--hk-cyan);
+    border-color: var(--hk-cyan);
+    color: #06111c;
+}
+
+.shields button:disabled {
+    opacity: 0.32;
+    cursor: not-allowed;
+}
+
 /* ---------- terminal ---------- */
 
 .side {
@@ -314,6 +358,8 @@ footer {
         <div class="hk-panel">
             <h3 id="levelTitle">SHIELD 1</h3>
             <p class="hk-note" id="levelGoal"></p>
+
+            <div class="shields" id="shieldSelect"></div>
 
             <div class="diff" style="margin-top:8px">
                 <div>
@@ -569,6 +615,63 @@ footer {
         }
     }
 
+    /* Which shields the player may jump to: everything they
+       have cleared, plus the next one along. */
+    function clearedShields() {
+
+        if (!window.HackoStore || !HackoStore.isLoggedIn()) {
+            return [];
+        }
+
+        return HackoStore.mission(MISSION).levelsDone || [];
+    }
+
+    function renderShieldSelect() {
+
+        var box = $("shieldSelect");
+        var done = clearedShields();
+
+        var furthest = done.length
+            ? Math.max.apply(null, done)
+            : -1;
+
+        box.innerHTML = "";
+
+        SHIELDS.forEach(function (shield, index) {
+
+            var button = document.createElement("button");
+
+            button.type = "button";
+            button.textContent = index + 1;
+            button.title = "Shield " + (index + 1) + " - " + shield.title;
+
+            var cleared = done.indexOf(index) !== -1;
+            var reachable = index <= furthest + 1 || index <= state.level;
+
+            if (cleared) {
+                button.classList.add("done");
+            }
+
+            if (index === state.level) {
+                button.classList.add("current");
+            }
+
+            button.disabled = !reachable;
+
+            button.addEventListener("click", function () {
+
+                if (index === state.level) {
+                    return;
+                }
+
+                HackoAudio.play("select");
+                loadLevel(index);
+            });
+
+            box.appendChild(button);
+        });
+    }
+
     function updateHUD() {
         $("hudLevel").textContent = state.level + 1;
         $("hudLives").textContent = state.lives;
@@ -692,14 +795,22 @@ footer {
 
         if (state.lives <= 0) {
 
+            /* Client rule: out of lives drops back one shield. */
             state.lives = 3;
             state.xp = Math.max(0, state.xp - 100);
 
-            setVerdict(
-                "HACKO was destroyed. The shield reset - your code is " +
-                "still here.",
-                false
-            );
+            var back = window.HackoStore
+                ? HackoStore.loseAllLives(MISSION, state.level)
+                : Math.max(0, state.level - 1);
+
+            $("readout").textContent = "HACKO DOWN";
+            updateHUD();
+
+            window.setTimeout(function () {
+                loadLevel(back);
+            }, 1200);
+
+            return;
 
         } else {
 
@@ -838,6 +949,8 @@ footer {
                     HackoStore.completeLevel(MISSION, state.level, 100);
                 }
 
+                renderShieldSelect();
+
                 window.setTimeout(function () {
 
                     if (state.level + 1 < SHIELDS.length) {
@@ -893,6 +1006,7 @@ footer {
         setVerdict("", true);
 
         buildGrid();
+        renderShieldSelect();
         updateHUD();
         startAttack();
     }

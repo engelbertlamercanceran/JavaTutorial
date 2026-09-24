@@ -74,6 +74,17 @@ function submit(){
 function playAttack(){HackoAudio.play('correct');const h=$('hero-fighter'),e=$('enemy-fighter'),i=$('impact');h.classList.remove('attack');e.classList.remove('hit');void h.offsetWidth;h.classList.add('attack');setTimeout(()=>{e.classList.add('hit');i.classList.add('show');$('enemy-hp').style.width='0%';$('battle-message').textContent='Critical patch! Bug defeated.'},280);setTimeout(()=>i.classList.remove('show'),850)}
 function playDamage(){HackoAudio.play('hit');const h=$('hero-fighter'),e=$('enemy-fighter');e.classList.remove('enemy-attack');h.classList.remove('hit');void e.offsetWidth;e.classList.add('enemy-attack');setTimeout(()=>{h.classList.add('hit');$('battle-message').textContent='The bug struck back! Try another patch.'},280);setTimeout(()=>h.classList.remove('hit'),900)}
 function goTo(i){if(i<=unlocked){HackoAudio.play('select');const h=$('hero-fighter');h.classList.add('walk');setTimeout(()=>{current=i;selected=null;result=null;lives=3;h.classList.remove('walk','attack');$('enemy-fighter').classList.remove('hit','enemy-attack');$('battle-message').textContent='A new bug trainer blocks the corridor!';render();window.scrollTo({top:$('game-arena').offsetTop-80,behavior:'smooth'})},500)}}
+/* Three lives, and losing them drops back one duel - the rule
+   every other mission follows. */
+function loseLife(){
+  lives--;
+  if(lives>0){HackoAudio.play('wrong');render();return}
+  lives=3;
+  const back=window.HackoStore?HackoStore.loseAllLives(7,current):Math.max(0,current-1);
+  HackoAudio.play('gameover');
+  current=back;selected=null;result=null;render();
+}
+
 function reset(){HackoAudio.play('select');current=0;unlocked=0;lives=3;selected=null;result=null;completed=Array(10).fill(false);render()}
 $('submit').onclick=submit; $('next').onclick=()=>goTo(current+1); $('reset').onclick=reset; $('play-again').onclick=reset;
 render();

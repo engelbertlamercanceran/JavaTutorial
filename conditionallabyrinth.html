@@ -709,11 +709,19 @@ footer {
         draw();
 
         if (state.lives <= 0) {
-            HackoAudio.play("gameover");
-            log("Out of lives. Restarting the level.", "bad");
+
+            /* Client rule: out of lives drops back one level. */
             state.lives = 3;
+
+            var back = window.HackoStore
+                ? HackoStore.loseAllLives(MISSION, state.level)
+                : Math.max(0, state.level - 1);
+
+            HackoAudio.play("gameover");
+            log("Out of lives. Back to level " + (back + 1) + ".", "bad");
+
             updateHUD();
-            loadLevel(state.level);
+            loadLevel(back);
         }
     }
 
