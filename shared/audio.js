@@ -331,6 +331,26 @@
             noise(0, 0.07, 0.12, 1600);
         },
 
+        /* Loop Boss: a missile leaving the launcher - a soft
+           rising whoosh, quiet because a volley fires many */
+        launch: function () {
+            voice(sfxBus, 180, 0, 0.5, "sawtooth", 0.035, 520);
+            noise(0, 0.45, 0.06, 1400);
+        },
+
+        /* an interceptor firing */
+        zap: function () {
+            voice(sfxBus, 1300, 0, 0.14, "square", 0.05, 380);
+            noise(0, 0.06, 0.04, 5000);
+        },
+
+        /* a missile reaching the dome */
+        boom: function () {
+            noise(0, 0.6, 0.32, 700);
+            voice(sfxBus, 95, 0, 0.55, "sine", 0.22, 38);
+            voice(sfxBus, 220, 0, 0.18, "square", 0.06, 70);
+        },
+
         jump: function () {
             fat(300, 0, 0.13, "square", 0.09, 700);
             noise(0, 0.05, 0.05, 3000);
