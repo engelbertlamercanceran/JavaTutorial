@@ -504,6 +504,7 @@ button{
 </style>
 <script src="shared/audio.js" data-track="rescue"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/briefing.js" data-mission="8"></script>
 </head>
 
 <body>
@@ -2154,6 +2155,12 @@ $("startBtn").addEventListener(
     "click",
     startGame
 );
+
+/* the shared briefing already has a START button - pressing it
+   starts the game too, so the player is not asked twice */
+if(window.HackoBriefing){
+    HackoBriefing.onFirstStart(startGame);
+}
 
 $("nextBtn").addEventListener(
     "click",
