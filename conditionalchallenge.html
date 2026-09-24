@@ -2265,6 +2265,24 @@
             ) {
                 player.x = nextX
                 player.y = nextY
+
+                /* a soft tick each time Hacko enters a new tile */
+                const entered =
+                    tileAtPixel(
+                        player.x,
+                        player.y
+                    )
+
+                const enteredKey =
+                    entered.x + ',' + entered.y
+
+                if (player.lastTile !== enteredKey) {
+                    if (player.lastTile) {
+                        HackoAudio.play('tick')
+                    }
+
+                    player.lastTile = enteredKey
+                }
             } else {
                 snapToCenter(player)
 
@@ -2613,6 +2631,7 @@
                     ) < 21
                 ) {
                     clue.collected = true
+                    HackoAudio.play('pickup')
                     state.cluesCollected++
                     state.score += 100
 
@@ -2649,6 +2668,7 @@
                         ) < 22
                     ) {
                         power.collected = true
+                        HackoAudio.play('unlock')
 
                         state.powerUntil =
                             Date.now() +
@@ -2697,6 +2717,7 @@
                     state.powerUntil
                 ) {
                     resetGhost(ghost)
+                    HackoAudio.play('hit')
                     state.score += 200
 
                     addConsole(
@@ -4571,7 +4592,7 @@ ${selected}`
    they had reached.
 ===================================================== */
 
-(function () {
+;(function () {
 
     if (!window.HackoStore || !HackoStore.isLoggedIn()) {
         return;
@@ -4630,7 +4651,7 @@ ${selected}`
    begins on the first key press or click.
 ===================================================== */
 
-(function () {
+;(function () {
 
     if (!window.HackoAudio) {
         return;

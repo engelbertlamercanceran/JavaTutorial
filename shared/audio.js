@@ -315,6 +315,22 @@
             noise(0, 0.045, 0.08, 2600);
         },
 
+        /* Grid-step blip for top-down games. "step" sits around
+           150Hz, which laptop and phone speakers barely reproduce,
+           so a tile move needs something up in the mid range. */
+        tick: function () {
+            var f = 620 + Math.random() * 60;
+            voice(sfxBus, f, 0, 0.06, "square", 0.07, f * 0.8);
+            noise(0, 0.03, 0.05, 4000);
+        },
+
+        /* walking into a wall - low enough to feel solid, high
+           enough to still be heard on small speakers */
+        bump: function () {
+            fat(220, 0, 0.12, "square", 0.09, 140);
+            noise(0, 0.07, 0.12, 1600);
+        },
+
         jump: function () {
             fat(300, 0, 0.13, "square", 0.09, 700);
             noise(0, 0.05, 0.05, 3000);

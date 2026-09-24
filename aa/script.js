@@ -55,7 +55,7 @@ function render(){
     if(selected===i) button.classList.add('selected');
     if(result && i===m.answer) button.classList.add('correct');
     if(result==='lose' && selected===i) button.classList.add('wrong');
-    button.onclick=()=>{selected=i;result=null;render()};
+    button.onclick=()=>{HackoAudio.play('select');selected=i;result=null;render()};
     $('choices').appendChild(button);
   });
   const feedback=$('feedback'); feedback.className=`feedback ${result||''}`;
@@ -70,7 +70,7 @@ function render(){
 function submit(){
   if(selected===null||result==='win') return;
   if(selected===missions[current].answer){completed[current]=true;unlocked=Math.min(9,Math.max(unlocked,current+1));result='win';if(window.HackoStore){HackoStore.completeLevel(7,current,100)}playAttack()}
-  else{lives=Math.max(0,lives-1);result='lose';playDamage()}
+  else{result='lose';playDamage();loseLife();return}
   render();
 }
 function playAttack(){HackoAudio.play('correct');const h=$('hero-fighter'),e=$('enemy-fighter'),i=$('impact');h.classList.remove('attack');e.classList.remove('hit');void h.offsetWidth;h.classList.add('attack');setTimeout(()=>{e.classList.add('hit');i.classList.add('show');$('enemy-hp').style.width='0%';$('battle-message').textContent='Critical patch! Bug defeated.'},280);setTimeout(()=>i.classList.remove('show'),850)}
@@ -84,7 +84,7 @@ function loseLife(){
   lives=3;
   const back=window.HackoStore?HackoStore.loseAllLives(7,current):Math.max(0,current-1);
   HackoAudio.play('gameover');
-  current=back;selected=null;result=null;render();
+  setTimeout(()=>{current=back;selected=null;result=null;render();$('battle-message').textContent=`Out of lives! Back to duel ${back+1}.`},900);
 }
 
 function reset(){HackoAudio.play('select');current=0;unlocked=0;lives=3;selected=null;result=null;completed=Array(10).fill(false);render()}
@@ -103,7 +103,8 @@ render();
     if (document.readyState === "complete") { begin(); }
     else { window.addEventListener("load", begin); }
 }());
-
+
+
 
 /* ===== RESUME + AUTOSAVE =====
    The Debugging Gym kept no progress at all - a refresh wiped every

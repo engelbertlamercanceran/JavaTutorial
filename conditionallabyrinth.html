@@ -646,17 +646,19 @@ footer {
         var ny = state.player.y + dy;
 
         if (state.walls[nx + "," + ny]) {
+            HackoAudio.play("bump");
             return;
         }
 
         if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) {
+            HackoAudio.play("bump");
             return;
         }
 
         state.player.x = nx;
         state.player.y = ny;
 
-        HackoAudio.play("step");
+        HackoAudio.play("tick");
 
         var hit = state.gates.filter(function (gate) {
             return ny === gate.y && Math.abs(nx - gate.x) <= 1;

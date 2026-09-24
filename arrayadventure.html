@@ -406,6 +406,10 @@ footer {
         </div>
 
         <div class="chip">
+            LIVES <b id="livesStat">3</b>
+        </div>
+
+        <div class="chip">
             ARRAY LENGTH <b id="lengthStat">0</b>
         </div>
 
@@ -1110,6 +1114,9 @@ const positions = [
 ];
 
 let level = 0;
+
+/* three lives per mission - see loseLifeAndMaybeDemote() */
+let missionLives = 3;
 let state;
 let selected = [];
 
@@ -1414,10 +1421,11 @@ function move(dx, dy) {
             `${newX},${newY}`
         )
     ) {
+        HackoAudio.play("bump");
         return;
     }
 
-    HackoAudio.play("step");
+    HackoAudio.play("tick");
 
     const blockingEnemy =
         state.enemies.find(enemy => {
@@ -1678,11 +1686,11 @@ function enemyTurn() {
 /* No lives at all before this - running out of energy simply
    restarted the mission. Three lives now, and losing them all
    drops back one mission level. */
-let missionLives = 3
-
 function loseLifeAndMaybeDemote() {
 
     missionLives -= 1;
+
+    updateUI();
 
     if (missionLives > 0) {
         return false;
@@ -2134,6 +2142,11 @@ function updateUI() {
 
     hpStat.textContent =
         state.hp;
+
+    document.getElementById(
+        "livesStat"
+    ).textContent =
+        missionLives;
 
     hpStat.style.color =
         state.hp < 35

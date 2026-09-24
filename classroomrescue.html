@@ -1167,8 +1167,9 @@ function terminalOutput(
 MOVEMENT
 ========================= */
 
+let lastFootstep=0;
+
 function movePlayer(){
-    HackoAudio.play("step");
 
     if(!started || paused)
         return;
@@ -1225,8 +1226,20 @@ function movePlayer(){
         Math.min(maxY,y)
     );
 
+    const moved=
+        x!==(parseFloat(player.style.left)||90) ||
+        y!==(parseFloat(player.style.top)||390);
+
     player.style.left=x+"px";
     player.style.top=y+"px";
+
+    /* one footstep every ~220ms while actually walking */
+    const now=performance.now();
+
+    if(moved && now-lastFootstep>220){
+        lastFootstep=now;
+        HackoAudio.play("tick");
+    }
 
 }
 
@@ -1700,6 +1713,8 @@ function runCode(){
 
                 game.combo++;
 
+                HackoAudio.play("correct");
+
                 const bonus=
                     game.combo>=3
                     ?50
@@ -1753,6 +1768,8 @@ function runCode(){
 
 
             }else{
+
+                HackoAudio.play("wrong");
 
                 game.lives--;
 

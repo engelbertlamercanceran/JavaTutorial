@@ -425,6 +425,10 @@ footer {
         </div>
 
         <div class="chip">
+            LIVES <b id="livesStat">3</b>
+        </div>
+
+        <div class="chip">
             STONES <b id="stoneStat">0/3</b>
         </div>
 
@@ -1441,6 +1445,10 @@ shutdownDefense(result);`
 ];
 
 let level = 0;
+
+/* three lives per mission - see loseLifeAndMaybeDemote() */
+let missionLives = 3;
+let lastFootstep = 0;
 let state;
 let keys = {};
 
@@ -2013,6 +2021,8 @@ function executeProgram() {
             false
         );
 
+        HackoAudio.play("wrong");
+
         state.mechanism = 0;
 
         return;
@@ -2020,6 +2030,8 @@ function executeProgram() {
 
     state.solved = true;
     state.mechanism = 1;
+
+    HackoAudio.play("unlock");
 
     state.lasers.forEach(
         laser => {
@@ -2080,9 +2092,34 @@ function update(deltaTime) {
     player.y +=
         player.vy * deltaTime;
 
+    const wasOnGround =
+        player.onGround;
+
+    const fallSpeed =
+        player.vy;
+
     player.onGround = false;
 
     collideY(player);
+
+    /* landing thud - only after a real fall, not every frame */
+    if (
+        player.onGround &&
+        !wasOnGround &&
+        fallSpeed > 200
+    ) {
+        HackoAudio.play("land");
+    }
+
+    /* footsteps while running on the ground, same as the Escape Room */
+    if (
+        player.onGround &&
+        Math.abs(player.vx) > 20 &&
+        performance.now() - lastFootstep > 240
+    ) {
+        lastFootstep = performance.now();
+        HackoAudio.play("tick");
+    }
 
     player.x =
         Math.max(
@@ -2113,6 +2150,8 @@ function update(deltaTime) {
         player.vy = -520;
         player.onGround = false;
 
+        HackoAudio.play("jump");
+
         keys[" "] = false;
         keys.ArrowUp = false;
         keys.w = false;
@@ -2135,6 +2174,8 @@ function update(deltaTime) {
         !state.consoleActive
     ) {
         state.consoleActive = true;
+
+        HackoAudio.play("open");
 
         setMessage(
             "Code Console linked! Build, save, call, and run your functions."
@@ -2161,6 +2202,8 @@ function update(deltaTime) {
                 )
             ) {
                 stone.taken = true;
+
+                HackoAudio.play("pickup");
 
                 state.hp =
                     Math.min(
@@ -2329,6 +2372,8 @@ function respawn(
     hurtTime =
         performance.now() + 700;
 
+    HackoAudio.play("hit");
+
     state.hp =
         Math.max(
             0,
@@ -2346,9 +2391,18 @@ function respawn(
     );
 
     if (state.hp <= 0) {
+
+        if (loseLifeAndMaybeDemote()) {
+            setMessage(
+                "Out of lives. Back to level " + (level + 1) + "."
+            );
+            return;
+        }
+
         setTimeout(() => {
             alert(
-                "Hacko lost all energy. Restarting the mission."
+                "Hacko lost all energy. " + missionLives +
+                (missionLives === 1 ? " life" : " lives") + " left."
             );
 
             restartLevel();
@@ -2357,11 +2411,11 @@ function respawn(
 }
 
 /* No lives before this either. */
-let missionLives = 3
-
 function loseLifeAndMaybeDemote() {
 
     missionLives -= 1;
+
+    updateUI();
 
     if (missionLives > 0) {
         HackoAudio.play("wrong");
@@ -2481,6 +2535,11 @@ function updateUI() {
 
     hpStat.textContent =
         state.hp;
+
+    document.getElementById(
+        "livesStat"
+    ).textContent =
+        missionLives;
 
     hpStat.style.color =
         state.hp < 35

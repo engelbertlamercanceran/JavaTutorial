@@ -660,6 +660,11 @@ textarea:focus {
         </div>
 
         <div class="chip">
+            LIVES
+            <b id="livesLabel">3</b>
+        </div>
+
+        <div class="chip">
             CORES
             <b id="coreLabel">0/0</b>
         </div>
@@ -989,6 +994,9 @@ const progress = JSON.parse(
 )
 
 let levelIndex = 0
+
+/* three lives per mission - see damage() */
+let missionLives = 3
 let state = null
 let challengeGate = null
 let paused = false
@@ -1884,6 +1892,11 @@ function updateHUD() {
         `${levelIndex + 1}/10`
 
     document.getElementById(
+        'livesLabel'
+    ).textContent =
+        missionLives
+
+    document.getElementById(
         'hpLabel'
     ).textContent =
         Math.max(
@@ -2045,7 +2058,7 @@ function move(dx, dy) {
     ) {
         /* walking into a wall is its own sound - it used to
            play the same footstep as a successful step */
-        HackoAudio.play('land')
+        HackoAudio.play('bump')
 
         pulse(
             state.player.x,
@@ -2062,7 +2075,7 @@ function move(dx, dy) {
             newY
         )
     ) {
-        HackoAudio.play('land')
+        HackoAudio.play('bump')
 
         pulse(
             state.player.x,
@@ -2074,7 +2087,7 @@ function move(dx, dy) {
     }
 
     /* only a step that actually happened makes a footstep */
-    HackoAudio.play('step')
+    HackoAudio.play('tick')
 
     state.player.x = newX
     state.player.y = newY
@@ -2099,6 +2112,8 @@ function checkTile() {
                     state.player.y
             ) {
                 core.taken = true
+
+                HackoAudio.play('pickup')
 
                 log(
                     '<strong>Data core acquired.</strong>'
@@ -2175,6 +2190,8 @@ function checkTile() {
         if (
             obstacle.type === 'plate'
         ) {
+            HackoAudio.play('select')
+
             log(
                 '<strong>Pressure plate activated.</strong>'
             )
@@ -2381,8 +2398,6 @@ function enemyTurn() {
    energy just restarted the same level forever. Three lives
    now, and losing them drops back one level like every other
    mission. */
-let missionLives = 3
-
 function damage(amount, source) {
     HackoAudio.play("hit");
     if (
@@ -2419,6 +2434,8 @@ function damage(amount, source) {
 
         missionLives -= 1
 
+        updateHUD()
+
         if (missionLives > 0) {
 
             HackoAudio.play('wrong')
@@ -2454,7 +2471,7 @@ function damage(amount, source) {
             'CONTINUE',
 
             function () {
-                buildLevel(back)
+                loadLevel(back)
             }
         )
     }
@@ -4410,7 +4427,7 @@ animationLoop()
    they had reached.
 ===================================================== */
 
-(function () {
+;(function () {
 
     if (!window.HackoStore || !HackoStore.isLoggedIn()) {
         return;
@@ -4469,7 +4486,7 @@ animationLoop()
    begins on the first key press or click.
 ===================================================== */
 
-(function () {
+;(function () {
 
     if (!window.HackoAudio) {
         return;
