@@ -656,11 +656,6 @@ textarea:focus {
         </div>
 
         <div class="chip">
-            HP
-            <b id="hpLabel">100</b>
-        </div>
-
-        <div class="chip">
             LIVES
             <b id="livesLabel">3</b>
         </div>
@@ -1637,9 +1632,6 @@ function buildLevel(index) {
                     ? 2
                     : 1,
 
-        enemyDamage:
-            6 + index * 2,
-
         chaseRange:
             4 + index,
 
@@ -1845,7 +1837,6 @@ function loadLevel(index) {
         player: {
             x: level.start.x,
             y: level.start.y,
-            hp: 100,
             inv: 0
         },
 
@@ -1896,14 +1887,6 @@ function updateHUD() {
         'livesLabel'
     ).textContent =
         missionLives
-
-    document.getElementById(
-        'hpLabel'
-    ).textContent =
-        Math.max(
-            0,
-            state.player.hp
-        )
 
     document.getElementById(
         'coreLabel'
@@ -2147,8 +2130,6 @@ function checkTile() {
 
         if (active) {
             damage(
-                12 +
-                levelIndex * 2,
                 'energy spikes'
             )
         }
@@ -2171,8 +2152,6 @@ function checkTile() {
             obstacle.type === 'acid'
         ) {
             damage(
-                10 +
-                levelIndex,
                 'toxic pool'
             )
         }
@@ -2182,8 +2161,6 @@ function checkTile() {
             isBladeActive(obstacle)
         ) {
             damage(
-                18 +
-                levelIndex,
                 'spinning blade'
             )
         }
@@ -2362,7 +2339,6 @@ function enemyTurn() {
 
                 if (attacksPlayer) {
                     damage(
-                        state.difficulty.enemyDamage,
                         enemy.type === 0
                             ? 'spider'
                             : 'bug'
@@ -2395,12 +2371,12 @@ function enemyTurn() {
     }
 }
 
-/* This mission had an HP bar but no lives, so running out of
-   energy just restarted the same level forever. Three lives
-   now, and losing them drops back one level like every other
-   mission. */
-function damage(amount, source) {
-    HackoAudio.play("hit");
+/* Client rule: one hit costs one life straight away - there is
+   no HP bar to wear down first. With lives left Hacko is sent
+   back to the start of the maze (cores and gates already done
+   stay done); losing all three drops back one level like every
+   other mission. */
+function damage(source) {
     if (
         performance.now() <
         state.player.inv
@@ -2408,15 +2384,7 @@ function damage(amount, source) {
         return
     }
 
-    state.player.hp -= amount
-
-    state.player.inv =
-        performance.now() + 700
-
-    log(
-        `<strong>Damage:</strong> ` +
-        `${amount} from ${source}.`
-    )
+    HackoAudio.play("hit");
 
     burst(
         state.player.x,
@@ -2424,58 +2392,51 @@ function damage(amount, source) {
         '#ff416c'
     )
 
+    missionLives -= 1
+
+    if (missionLives > 0) {
+
+        HackoAudio.play('wrong')
+
+        log(
+            `<strong>Hit</strong> by ${source}. ` +
+            missionLives +
+            (missionLives === 1 ? ' life' : ' lives') + ' left.'
+        )
+
+        /* back to the start, and a moment to get clear */
+        state.player.x = state.start.x
+        state.player.y = state.start.y
+        state.player.inv =
+            performance.now() + 1500
+
+        updateHUD()
+
+        return
+    }
+
     updateHUD()
 
-    if (
-        state.player.hp <= 0
-    ) {
-        state.player.hp = 0
+    /* out of lives - back one level */
+    missionLives = 3
 
-        updateHUD()
+    const back = window.HackoStore
+        ? HackoStore.loseAllLives(4, levelIndex)
+        : Math.max(0, levelIndex - 1)
 
-        missionLives -= 1
+    HackoAudio.play('gameover')
 
-        updateHUD()
+    showMessage(
+        'SYSTEM LOOP BROKEN',
 
-        if (missionLives > 0) {
+        'Out of lives. Back to level ' + (back + 1) + '.',
 
-            HackoAudio.play('wrong')
+        'CONTINUE',
 
-            showMessage(
-                'SYSTEM LOOP BROKEN',
-
-                'Hacko ran out of energy. ' + missionLives +
-                (missionLives === 1 ? ' life' : ' lives') + ' left.',
-
-                'RETRY',
-
-                restartLevel
-            )
-
-            return
+        function () {
+            loadLevel(back)
         }
-
-        /* out of lives - back one level */
-        missionLives = 3
-
-        const back = window.HackoStore
-            ? HackoStore.loseAllLives(4, levelIndex)
-            : Math.max(0, levelIndex - 1)
-
-        HackoAudio.play('gameover')
-
-        showMessage(
-            'SYSTEM LOOP BROKEN',
-
-            'Out of lives. Back to level ' + (back + 1) + '.',
-
-            'CONTINUE',
-
-            function () {
-                loadLevel(back)
-            }
-        )
-    }
+    )
 }
 
 function nearestGate() {
@@ -4359,8 +4320,6 @@ setInterval(() => {
                 isSpikeActive(trap)
             ) {
                 damage(
-                    5 +
-                    levelIndex,
                     'active spikes'
                 )
             }
@@ -4381,8 +4340,6 @@ setInterval(() => {
                     'acid'
             ) {
                 damage(
-                    4 +
-                    levelIndex,
                     'toxic pool'
                 )
             }
@@ -4396,8 +4353,6 @@ setInterval(() => {
                 )
             ) {
                 damage(
-                    7 +
-                    levelIndex,
                     'active blade'
                 )
             }

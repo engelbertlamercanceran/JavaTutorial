@@ -42,7 +42,7 @@
                 "Run and jump through the vault, collecting every data chip (int, String, boolean...).",
                 "Stand next to a bookshelf, desk or switch and press E to read its clue.",
                 "Reach the terminal at the end and drag each chip into the variable it matches.",
-                "Dodge lasers and security bots - they drain your health."
+                "Dodge lasers and security bots - one hit costs a life."
             ],
             controls: [
                 ["← →  /  A D", "Run"],
@@ -71,7 +71,7 @@
                 "opens the door.",
             steps: [
                 "Walk the maze and collect every data clue - press E to read each one.",
-                "Avoid the security bots. Touching one costs health.",
+                "Avoid the security bots. Touching one costs a life.",
                 "When every clue is found, go to the door and press E to open the terminal.",
                 "Write the program, run it, then walk through the open door to the exit."
             ],
@@ -189,7 +189,7 @@
                 "Build the right functions, call them in the right order, and " +
                 "escape through the portal.",
             steps: [
-                "Run to the Code Console to switch it on. Collect Function Stones for energy on the way.",
+                "Run to the Code Console to switch it on. Collect the Function Stones on the way.",
                 "Build a function from blocks, then press SAVE FUNCTION.",
                 "Pick a function in the Call Console, fill in its arguments, press ADD CALL, then RUN PROGRAM.",
                 "When the program works the lasers switch off - reach the green portal on the far right."

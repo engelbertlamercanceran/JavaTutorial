@@ -422,10 +422,6 @@ footer {
         </div>
 
         <div class="chip">
-            ENERGY <b id="hpStat">100</b>
-        </div>
-
-        <div class="chip">
             LIVES <b id="livesStat">3</b>
         </div>
 
@@ -1536,7 +1532,6 @@ function loadLevel(index) {
         consoleActive: false,
         solved: false,
         won: false,
-        hp: 100,
         stones: makeStones(index),
         enemies: makeEnemies(index),
         lasers: makeLasers(index),
@@ -1579,7 +1574,7 @@ function loadLevel(index) {
 
     setMessage(
         "Find the glowing Code Console. " +
-        "Collect stones for extra energy."
+        "Collect the Function Stones on the way."
     );
 
     renderLevels();
@@ -2133,7 +2128,6 @@ function update(deltaTime) {
 
     if (player.y > 560) {
         respawn(
-            12,
             "falling"
         );
     }
@@ -2206,14 +2200,8 @@ function update(deltaTime) {
 
                 HackoAudio.play("pickup");
 
-                state.hp =
-                    Math.min(
-                        100,
-                        state.hp + 8
-                    );
-
                 setMessage(
-                    "Function Stone collected: +8 energy."
+                    "Function Stone collected."
                 );
             }
         }
@@ -2239,7 +2227,6 @@ function update(deltaTime) {
                 )
             ) {
                 respawn(
-                    7 + level,
                     "fortress sentry"
                 );
             }
@@ -2269,7 +2256,6 @@ function update(deltaTime) {
                 )
             ) {
                 respawn(
-                    5 + level,
                     "laser grid"
                 );
             }
@@ -2359,10 +2345,10 @@ function overlap(a, b) {
 
 let hurtTime = 0;
 
-function respawn(
-    amount,
-    source
-) {
+/* Client rule: one hit costs one life straight away - there is
+   no energy bar to wear down first. With lives left Hacko goes
+   back to the checkpoint. */
+function respawn(source) {
     if (
         performance.now() <
         hurtTime
@@ -2371,44 +2357,40 @@ function respawn(
     }
 
     hurtTime =
-        performance.now() + 700;
+        performance.now() + 1200;
 
     HackoAudio.play("hit");
-
-    state.hp =
-        Math.max(
-            0,
-            state.hp - amount
-        );
 
     state.player.x = 55;
     state.player.y = 390;
     state.player.vx = 0;
     state.player.vy = 0;
 
-    setMessage(
-        `-${amount} energy from ${source}. ` +
-        `Returned to checkpoint.`
-    );
+    const lastLife = missionLives <= 1;
 
-    if (state.hp <= 0) {
+    if (loseLifeAndMaybeDemote()) {
+        setMessage(
+            "Out of lives. Back to level " + (level + 1) + "."
+        );
+        return;
+    }
 
-        if (loseLifeAndMaybeDemote()) {
-            setMessage(
-                "Out of lives. Back to level " + (level + 1) + "."
-            );
-            return;
-        }
-
+    if (lastLife) {
         setTimeout(() => {
             alert(
-                "Hacko lost all energy. " + missionLives +
-                (missionLives === 1 ? " life" : " lives") + " left."
+                "Hacko is out of lives. The level will restart."
             );
 
             restartLevel();
         }, 50);
+        return;
     }
+
+    setMessage(
+        `Hit by ${source}! ${missionLives} ` +
+        (missionLives === 1 ? "life" : "lives") +
+        " left. Returned to checkpoint."
+    );
 }
 
 /* No lives before this either. */
@@ -2529,23 +2511,10 @@ function completeLevel() {
 }
 
 function updateUI() {
-    const hpStat =
-        document.getElementById(
-            "hpStat"
-        );
-
-    hpStat.textContent =
-        state.hp;
-
     document.getElementById(
         "livesStat"
     ).textContent =
         missionLives;
-
-    hpStat.style.color =
-        state.hp < 35
-            ? "#ff496f"
-            : "#91ff70";
 
     document.getElementById(
         "stoneStat"

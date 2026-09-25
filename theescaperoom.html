@@ -315,22 +315,6 @@
             opacity: 0.8;
         }
 
-        .health-bar {
-            width: 120px;
-            height: 14px;
-            border: 2px solid var(--danger);
-            background: #111;
-            border-radius: 999px;
-            overflow: hidden;
-        }
-
-        .health-fill {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, #ff1744, #ff9100);
-            transition: width 0.25s ease;
-        }
-
         .danger-text {
             color: #ff4d6d;
             text-shadow: 0 0 12px #ff4d6d;
@@ -567,10 +551,6 @@
             <strong id="lives-display" class="danger-text">3</strong>
         </span>
 
-        <div class="health-bar">
-            <div id="health-fill" class="health-fill"></div>
-        </div>
-
         <span>
             DIFFICULTY:
             <strong id="difficulty-display" style="color:#ffcc00">
@@ -609,7 +589,6 @@
         let totalToCollect = 0
 
         let playerLives = 3
-        let playerHealth = 100
         let invincibleUntil = 0
         let screenShake = 0
 
@@ -654,70 +633,60 @@
                 name: 'EASY',
                 enemySpeed: 0.9,
                 chaseSpeed: 1.3,
-                damage: 10,
                 laserCycle: 2600
             },
             {
                 name: 'EASY',
                 enemySpeed: 1.05,
                 chaseSpeed: 1.45,
-                damage: 11,
                 laserCycle: 2400
             },
             {
                 name: 'EASY',
                 enemySpeed: 1.2,
                 chaseSpeed: 1.6,
-                damage: 12,
                 laserCycle: 2250
             },
             {
                 name: 'NORMAL',
                 enemySpeed: 1.35,
                 chaseSpeed: 1.8,
-                damage: 14,
                 laserCycle: 2100
             },
             {
                 name: 'NORMAL',
                 enemySpeed: 1.5,
                 chaseSpeed: 2,
-                damage: 15,
                 laserCycle: 1950
             },
             {
                 name: 'NORMAL',
                 enemySpeed: 1.65,
                 chaseSpeed: 2.2,
-                damage: 17,
                 laserCycle: 1800
             },
             {
                 name: 'CHALLENGING',
                 enemySpeed: 1.8,
                 chaseSpeed: 2.4,
-                damage: 18,
                 laserCycle: 1700
             },
             {
                 name: 'CHALLENGING',
                 enemySpeed: 1.95,
                 chaseSpeed: 2.6,
-                damage: 20,
                 laserCycle: 1600
             },
             {
                 name: 'HARD',
                 enemySpeed: 2.1,
                 chaseSpeed: 2.8,
-                damage: 22,
                 laserCycle: 1500
             },
             {
                 name: 'HARD',
                 enemySpeed: 2.3,
                 chaseSpeed: 3,
-                damage: 24,
                 laserCycle: 1400
             }
         ]
@@ -1128,7 +1097,10 @@
             const level = LEVELS[index]
 
             currentLevelIndex = index
-            levelWidth = level.width
+            /* The room ends at the vault door (90px wide plus its
+               6px frame), so the door is the very end of the level
+               and there is no floor behind it to wander into. */
+            levelWidth = level.terminalX + 96
             levelPlatforms = level.platforms.map(item => ({ ...item }))
             levelCollectibles = level.collectibles.map(item => ({
                 ...item,
@@ -1174,7 +1146,6 @@
             player.vy = 0
             player.jumps = 0
 
-            playerHealth = 100
             invincibleUntil = 0
             cameraX = 0
 
@@ -1204,9 +1175,6 @@
         function updatePlayerHUD() {
             document.getElementById('lives-display').textContent =
                 playerLives
-
-            document.getElementById('health-fill').style.width =
-                Math.max(0, playerHealth) + '%'
         }
 
         function rectanglesOverlap(a, b) {
@@ -1805,29 +1773,24 @@
             HackoAudio.play('step')
         }
 
-        function damagePlayer(amount, sourceX = player.x) {
-            HackoAudio.play("hit");
+        /* Client rule: one hit - an enemy, a laser or a fall -
+           costs one life straight away. There is no health bar
+           to wear down first. */
+        function damagePlayer() {
             if (performance.now() < invincibleUntil) {
                 return
             }
 
-            playerHealth -= amount
+            HackoAudio.play("hit");
+
             invincibleUntil = performance.now() + 1700
             screenShake = 15
-
-            player.vy = -11
-            player.vx =
-                player.x < sourceX ? -9 : 9
 
             canvas.classList.remove('damage-flash')
             void canvas.offsetWidth
             canvas.classList.add('damage-flash')
 
-            updatePlayerHUD()
-
-            if (playerHealth <= 0) {
-                loseLife()
-            }
+            loseLife()
         }
 
         function loseLife() {
@@ -1858,7 +1821,6 @@
         }
 
         function respawnPlayer() {
-            playerHealth = 100
             player.x = spawnPoint.x
             player.y = spawnPoint.y
             player.vx = 0
@@ -1984,10 +1946,7 @@
                     player.vy = -12
                     player.jumps = 0
                 } else {
-                    damagePlayer(
-                        difficulty.damage,
-                        enemy.x + enemy.width / 2
-                    )
+                    damagePlayer()
                 }
             })
         }
@@ -2011,10 +1970,7 @@
                         hazardRect
                     )
                 ) {
-                    damagePlayer(
-                        14 + currentLevelIndex,
-                        hazard.x + hazard.w / 2
-                    )
+                    damagePlayer()
                 }
             })
         }
@@ -2128,7 +2084,7 @@
                 0,
                 Math.min(
                     player.x,
-                    levelWidth - player.width
+                    level.terminalX - player.width
                 )
             )
 
@@ -2203,7 +2159,7 @@
             }
 
             if (player.y > HEIGHT + 80) {
-                damagePlayer(100)
+                damagePlayer()
             }
 
             updateEnemies(deltaTime)
@@ -2655,7 +2611,6 @@
                 currentLevelIndex <
                 LEVELS.length - 1
             ) {
-                playerHealth = 100
 
                 loadLevel(currentLevelIndex + 1)
 
@@ -2699,7 +2654,6 @@
             ).style.display = 'inline-block'
 
             playerLives = 3
-            playerHealth = 100
 
             loadLevel(currentLevelIndex)
 
@@ -2802,7 +2756,6 @@
                         ).style.display = 'none'
 
                         playerLives = 3
-                        playerHealth = 100
 
                         loadLevel(index)
 
@@ -2828,7 +2781,6 @@
             localStorage.removeItem('hackoProgress')
 
             playerLives = 3
-            playerHealth = 100
 
             document.getElementById(
                 'pause-menu'
@@ -2855,7 +2807,6 @@
 
         window.onload = () => {
             playerLives = 3
-            playerHealth = 100
 
             loadLevel(0)
 
@@ -2863,7 +2814,7 @@
             gameLoop()
 
             console.log(
-                '%c✅ HACKO upgraded with enemies, hazards, checkpoints, health and progressive difficulty.',
+                '%c✅ HACKO upgraded with enemies, hazards, checkpoints, lives and progressive difficulty.',
                 'background:#00d4ff;color:#0a0e27;padding:4px 8px;border-radius:4px'
             )
         }

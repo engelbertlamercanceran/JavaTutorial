@@ -403,10 +403,6 @@ footer {
         </div>
 
         <div class="chip">
-            ENERGY <b id="hpStat">100</b>
-        </div>
-
-        <div class="chip">
             LIVES <b id="livesStat">3</b>
         </div>
 
@@ -1237,17 +1233,11 @@ function loadMission(index) {
         usedIndex: null,
         sumCalculated: false,
         walls,
-        hp: 100,
         moves: 0,
         gateOpen: false,
         won: false,
         hazards: makeHazards(level, walls),
-        enemies: makeEnemies(level, walls),
-        battery: {
-            x: 1,
-            y: 8,
-            taken: false
-        }
+        enemies: makeEnemies(level, walls)
     };
 
     selected = [];
@@ -1440,10 +1430,9 @@ function move(dx, dy) {
         blockingEnemy.x = oldPosition.x;
         blockingEnemy.y = oldPosition.y;
 
-        damage(
-            4 + level,
-            "slipping past a glitch"
-        );
+        damage("slipping past a glitch");
+        updateUI();
+        return;
     }
 
     state.player = {
@@ -1496,23 +1485,6 @@ function move(dx, dy) {
     }
 
     if (
-        !state.battery.taken &&
-        newX === state.battery.x &&
-        newY === state.battery.y
-    ) {
-        state.battery.taken = true;
-        HackoAudio.play("unlock");
-        state.hp = Math.min(
-            100,
-            state.hp + 30
-        );
-
-        log(
-            "Energy battery restored 30 HP."
-        );
-    }
-
-    if (
         state.hazards.some(hazard => {
             return (
                 hazard.x === newX &&
@@ -1520,10 +1492,9 @@ function move(dx, dy) {
             );
         })
     ) {
-        damage(
-            7 + level,
-            "data spikes"
-        );
+        damage("data spikes");
+        updateUI();
+        return;
     }
 
     enemyTurn();
@@ -1670,10 +1641,7 @@ function enemyTurn() {
                 newX === state.player.x &&
                 newY === state.player.y
             ) {
-                damage(
-                    5 + level * 2,
-                    "moving glitch"
-                );
+                damage("moving glitch");
 
                 return;
             }
@@ -1711,42 +1679,51 @@ function loseLifeAndMaybeDemote() {
     return false;
 }
 
-function damage(amount, source) {
+/* Client rule: one hit costs one life straight away - there is
+   no energy bar to wear down first. With lives left Hacko goes
+   back to the start tile and keeps the array built so far. */
+function damage(source) {
     HackoAudio.play("hit");
 
-    state.hp = Math.max(
-        0,
-        state.hp - amount
-    );
+    const lastLife = missionLives <= 1;
 
-    log(
-        `-${amount} energy from ${source}.`
-    );
+    if (loseLifeAndMaybeDemote()) {
+        return;
+    }
 
-    setStatus(
-        `Hacko took ${amount} damage from ${source}!`,
-        false
-    );
-
-    if (state.hp <= 0) {
+    if (lastLife) {
 
         state.won = true;
-
-        if (loseLifeAndMaybeDemote()) {
-            return;
-        }
 
         HackoAudio.play("gameover");
 
         setTimeout(() => {
             alert(
-                "Hacko ran out of energy. " +
+                "Hacko is out of lives. " +
                 "The mission will restart."
             );
 
             restartMission();
         }, 80);
+
+        return;
     }
+
+    state.player = {
+        x: 1,
+        y: 1
+    };
+
+    log(
+        `-1 life from ${source}.`
+    );
+
+    setStatus(
+        `Hit by ${source}! ${missionLives} ` +
+        (missionLives === 1 ? "life" : "lives") +
+        " left - back to the start.",
+        false
+    );
 }
 
 function renderInventory() {
@@ -2136,23 +2113,10 @@ function arrayCode() {
 function updateUI() {
     renderInventory();
 
-    const hpStat =
-        document.getElementById(
-            "hpStat"
-        );
-
-    hpStat.textContent =
-        state.hp;
-
     document.getElementById(
         "livesStat"
     ).textContent =
         missionLives;
-
-    hpStat.style.color =
-        state.hp < 35
-            ? "#ff496f"
-            : "#91ff6f";
 
     document.getElementById(
         "lengthStat"
@@ -2427,39 +2391,6 @@ function draw() {
 
     ctx.fill();
     ctx.restore();
-
-    if (!state.battery.taken) {
-        ctx.save();
-
-        ctx.fillStyle = "#ffd34e";
-        ctx.shadowBlur = 16;
-        ctx.shadowColor = "#ffd34e";
-
-        ctx.fillRect(
-            state.battery.x * TILE + 19,
-            state.battery.y * TILE + 12,
-            22,
-            36
-        );
-
-        ctx.fillStyle = "#07111f";
-
-        ctx.fillRect(
-            state.battery.x * TILE + 27,
-            state.battery.y * TILE + 18,
-            6,
-            24
-        );
-
-        ctx.fillRect(
-            state.battery.x * TILE + 21,
-            state.battery.y * TILE + 27,
-            18,
-            6
-        );
-
-        ctx.restore();
-    }
 
     state.world.forEach(
         item => {
