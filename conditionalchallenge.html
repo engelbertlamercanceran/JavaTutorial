@@ -863,6 +863,7 @@
     </style>
 <script src="shared/audio.js" data-track="defuse"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="3"></script>
 </head>
 
@@ -3084,6 +3085,13 @@ ${selected}`
                 currentLevel().id
             )
 
+            /* tell the mission map this level is cleared - now,
+               not when NEXT LEVEL is pressed: level 10 has no
+               NEXT button, so its badge could never be earned */
+            if (window.HackoStore) {
+                HackoStore.completeLevel(3, currentLevelIndex, 100);
+            }
+
             document.getElementById(
                 'winTitle'
             ).textContent =
@@ -4032,11 +4040,6 @@ ${selected}`
         }
 
         function nextLevel() {
-            /* tell the mission map this level is cleared */
-            if (window.HackoStore) {
-                HackoStore.completeLevel(3, currentLevelIndex, 100);
-            }
-
             HackoAudio.play("win");
             if (
                 currentLevelIndex <

@@ -30,16 +30,16 @@
     var DEFAULT_LIVES = 3;
 
     var MISSIONS = {
-        1:  { title: "The Escape Room",          file: "theescaperoom.html",        badge: "VARIABLE HERO" },
-        2:  { title: "The Secret Message",       file: "thesecretmessage.html",     badge: "CODE MESSENGER" },
-        3:  { title: "Conditional Challenge",    file: "conditionalchallenge.html", badge: "DECISION MASTER" },
-        4:  { title: "Loop Labyrinth",           file: "looplabyrinth.html",        badge: "LOOP RUNNER" },
-        5:  { title: "Array Adventure",          file: "arrayadventure.html",       badge: "ARRAY EXPLORER" },
-        6:  { title: "Function Fortress",        file: "functionfortress.html",     badge: "FUNCTION KNIGHT" },
-        7:  { title: "Debugging Duel",           file: "",                          badge: "BUG SLAYER" },
-        8:  { title: "Classroom Rescue",         file: "classroomrescue.html",      badge: "OBJECT HERO" },
-        9:  { title: "Conditional Labyrinth II", file: "",                          badge: "LOGIC MASTER" },
-        10: { title: "Loop Boss Battle",         file: "loopboss.html",             badge: "LOOP LEGEND" }
+        1:  { title: "The Escape Room",          file: "theescaperoom.html",        badge: "VARIABLE HERO", image: "variablehero.png" },
+        2:  { title: "The Secret Message",       file: "thesecretmessage.html",     badge: "CODE MESSENGER", image: "codemessenger.png" },
+        3:  { title: "Conditional Challenge",    file: "conditionalchallenge.html", badge: "DECISION MASTER", image: "decisionmaster.png" },
+        4:  { title: "Loop Labyrinth",           file: "looplabyrinth.html",        badge: "LOOP RUNNER", image: "looprunner.png" },
+        5:  { title: "Array Adventure",          file: "arrayadventure.html",       badge: "ARRAY EXPLORER", image: "arrayexplorer.png" },
+        6:  { title: "Function Fortress",        file: "functionfortress.html",     badge: "FUNCTION KNIGHT", image: "functionknight.png" },
+        7:  { title: "Debugging Duel",           file: "",                          badge: "BUG SLAYER", image: "bugslayer.png" },
+        8:  { title: "Classroom Rescue",         file: "classroomrescue.html",      badge: "OBJECT HERO", image: "objecthero.png" },
+        9:  { title: "Conditional Labyrinth II", file: "",                          badge: "LOGIC MASTER", image: "LOGICMASTER.png" },
+        10: { title: "Loop Boss Battle",         file: "loopboss.html",             badge: "LOOP LEGEND", image: "LOOPLEGEND.png" }
     };
 
 
@@ -406,8 +406,10 @@
         var key = String(id);
         var index = Number(levelIndex);
         var gained = Number(xp) || 0;
+        var newBadge = false;
+        var finished = false;
 
-        return update(function (record) {
+        var result = update(function (record) {
 
             var m = record.missions[key] || blankMission();
 
@@ -426,6 +428,7 @@
             if (m.completed && !m.badge) {
 
                 m.badge = true;
+                newBadge = true;
 
                 var badgeName = MISSIONS[key] && MISSIONS[key].badge;
 
@@ -433,6 +436,11 @@
                     record.badges.push(badgeName);
                 }
             }
+
+            /* the end of the game: the badge was just earned, or a
+               finished mission's last level was cleared again */
+            finished = m.completed &&
+                (newBadge || index === m.totalLevels - 1);
 
             record.missions[key] = m;
 
@@ -442,6 +450,31 @@
                 record.currentMission = Math.max(record.currentMission, next);
             }
         });
+
+        /* shared/badges.js listens for this and shows the badge */
+        if (result && finished) {
+            announce("hacko:missioncomplete", {
+                mission: Number(id),
+                badge: MISSIONS[key] && MISSIONS[key].badge,
+                newBadge: newBadge,
+                badges: result.badges.slice()
+            });
+        }
+
+        return result;
+    }
+
+    function announce(name, detail) {
+
+        if (!global.dispatchEvent || typeof global.CustomEvent !== "function") {
+            return;
+        }
+
+        try {
+            global.dispatchEvent(new global.CustomEvent(name, { detail: detail }));
+        } catch (e) {
+            /* a listener failing must never break saving */
+        }
     }
 
     function setResumeLevel(id, levelIndex) {

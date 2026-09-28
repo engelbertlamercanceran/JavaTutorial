@@ -1313,6 +1313,20 @@ body {
     margin-bottom: 18px;
 }
 
+#badgeCount {
+    display: inline-block;
+
+    margin-left: 10px;
+
+    padding: 2px 12px;
+
+    border: 1px solid #ffd36a;
+
+    border-radius: 999px;
+
+    font-size: 0.8em;
+}
+
 .badges-grid {
     display: grid;
 
@@ -2448,10 +2462,11 @@ window.addEventListener("load", function () {
                  BADGES
             ============================================== -->
 
-            <section class="badges-panel">
+            <section class="badges-panel" id="badges">
 
                 <h2>
                     🏆 BADGE COLLECTION
+                    <span id="badgeCount">0 / 10</span>
                 </h2>
 
                 <div
@@ -3195,6 +3210,15 @@ function updateBadges() {
 
     grid.innerHTML = "";
 
+    document.getElementById(
+        "badgeCount"
+    ).textContent =
+        Object.keys(missions)
+            .filter(n => gameState.badges.includes(missions[n].badge))
+            .length +
+        " / " +
+        Object.keys(missions).length;
+
 
     Object.keys(missions)
         .forEach(number => {
@@ -3202,10 +3226,11 @@ function updateBadges() {
             const mission =
                 missions[number];
 
+            /* shared/storage.js keeps badge names, not numbers */
             const earned =
                 gameState.badges
                     .includes(
-                        Number(number)
+                        mission.badge
                     );
 
 
@@ -3377,38 +3402,23 @@ function completeMission() {
     }
 
 
-    /* Add points */
+    /* Teacher override: record every level through the store,
+       exactly as playing them would - this is what earns the
+       badge and keeps it after a refresh. */
+    const before =
+        gameState.points;
 
-    gameState.points +=
-        mission.points;
+    const levels =
+        HackoStore.totalLevels(number);
 
-
-    /* Add completed mission */
-
-    gameState.completed.push(
-        number
-    );
-
-
-    /* Add badge */
-
-    gameState.badges.push(
-        number
-    );
-
-
-    /* Keep order */
-
-    gameState.completed.sort(
-        (a, b) => a - b
-    );
-
-    gameState.badges.sort(
-        (a, b) => a - b
-    );
-
+    for (let i = 0; i < levels; i++) {
+        HackoStore.completeLevel(number, i, 100);
+    }
 
     saveGame();
+
+    const gained =
+        gameState.points - before;
 
     updateUI();
 
@@ -3423,7 +3433,7 @@ function completeMission() {
         "completeMessage"
     ).textContent =
         "🏆 MISSION COMPLETE! +" +
-        mission.points +
+        gained +
         " POINTS • BADGE EARNED!";
 
 

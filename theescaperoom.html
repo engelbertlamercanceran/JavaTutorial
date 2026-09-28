@@ -368,6 +368,7 @@
     </style>
 <script src="shared/audio.js" data-track="escape"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="1"></script>
 </head>
 
@@ -2420,6 +2421,13 @@
 
             gameState = 'won'
 
+            /* tell the mission map this level is cleared - now,
+               not when NEXT is pressed, so the last vault counts
+               (and earns the badge) even if the player leaves */
+            if (window.HackoStore) {
+                HackoStore.completeLevel(1, currentLevelIndex, 100);
+            }
+
             const level = LEVELS[currentLevelIndex]
 
             document.getElementById(
@@ -2597,11 +2605,6 @@
         })
 
         function nextLevel() {
-            /* tell the mission map this level is cleared */
-            if (window.HackoStore) {
-                HackoStore.completeLevel(1, currentLevelIndex, 100);
-            }
-
             HackoAudio.play("win");
             document.getElementById(
                 'game-overlay'

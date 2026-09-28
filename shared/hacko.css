@@ -209,6 +209,7 @@
 --------------------------------------------------- */
 
 .hk-input {
+    box-sizing: border-box; /* keep padding inside the 100% width */
     width: 100%;
     padding: 12px 14px;
     border: 1px solid var(--hk-line);

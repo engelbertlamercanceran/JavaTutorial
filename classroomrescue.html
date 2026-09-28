@@ -504,6 +504,7 @@ button{
 </style>
 <script src="shared/audio.js" data-track="rescue"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="8"></script>
 </head>
 
@@ -1927,6 +1928,13 @@ function showMissionComplete(){
 
     paused=true;
 
+    /* tell the mission map this level is cleared - now, not
+       when the button is pressed, so level 10 counts (and earns
+       the badge) even if the player heads back to the map */
+    if (window.HackoStore) {
+        HackoStore.completeLevel(8, game.level - 1, levels[game.level-1].xp);
+    }
+
     if(game.level===10){
 
         $("completeTitle").textContent=
@@ -1968,11 +1976,6 @@ NEXT LEVEL
 ========================= */
 
 function nextLevel(){
-    /* tell the mission map this level is cleared */
-    if (window.HackoStore) {
-        HackoStore.completeLevel(8, game.level - 1, levels[game.level-1].xp);
-    }
-
     HackoAudio.play("win");
 
     if(game.level<10){
