@@ -250,9 +250,10 @@ ok("certificate sends signed-out players to sign in",
     cert.indexOf("login.html") !== -1);
 ok("certificate prints on one A4 landscape page",
     /size:\s*A4 landscape/.test(cert));
-ok("map only shows the certificate once it is earned",
+ok("map shows the certificate locked until it is earned",
     map.indexOf("HackoStore.hasCertificate()") !== -1 &&
-    /id="certificatePanel"[\s\S]{0,40}hidden/.test(map));
+    /class="certificate-panel locked"/.test(map) &&
+    /\.certificate-panel\.locked \.certificate-button\s*\{[^}]*pointer-events:\s*none/.test(map));
 
 
 /* ---------------------------------------------------

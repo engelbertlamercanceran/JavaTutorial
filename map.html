@@ -1495,7 +1495,78 @@ body {
         0 6px 12px rgba(0,0,0,.45);
 }
 
-.certificate-panel[hidden] {
+/* not earned yet: greyed out, and the button does nothing */
+.certificate-panel.locked {
+    border-color: #6b5a3c;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(50,44,36,.95),
+            rgba(28,25,21,.95)
+        );
+
+    box-shadow: 0 6px 12px rgba(0,0,0,.45);
+}
+
+.certificate-panel.locked .certificate-seal {
+    filter: grayscale(1) brightness(.45);
+}
+
+.certificate-panel.locked .certificate-text h2 {
+    color: #c9b48a;
+}
+
+.certificate-panel.locked .certificate-button {
+    pointer-events: none;
+
+    background: linear-gradient(#6d6255, #3f382f);
+
+    color: #cfc3ad;
+
+    border-color: #2b2520;
+
+    box-shadow: 0 5px 0 #1d1915;
+}
+
+.certificate-progress {
+    margin-top: 10px;
+
+    width: min(420px, 100%);
+
+    height: 10px;
+
+    border-radius: 20px;
+
+    overflow: hidden;
+
+    background: #181714;
+
+    border: 2px solid #544533;
+}
+
+.certificate-progress-fill {
+    width: 0%;
+
+    height: 100%;
+
+    background: linear-gradient(90deg, #c9792d, #ffd75e);
+
+    transition: width .5s ease;
+}
+
+.certificate-count {
+    margin-top: 5px;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+    color: #ffd16a;
+}
+
+.certificate-panel:not(.locked) .certificate-progress,
+.certificate-panel:not(.locked) .certificate-count {
     display: none;
 }
 
@@ -2650,13 +2721,14 @@ window.addEventListener("load", function () {
 
 
             <!-- =============================================
-                 CERTIFICATE - hidden until all 10 are done
+                 CERTIFICATE - shown locked until all 10 are
+                 done, so students can see what they are
+                 working towards
             ============================================== -->
 
             <section
-                class="certificate-panel"
+                class="certificate-panel locked"
                 id="certificatePanel"
-                hidden
             >
 
                 <div
@@ -2666,23 +2738,39 @@ window.addEventListener("load", function () {
 
                 <div class="certificate-text">
 
-                    <h2>
-                        🎓 JAVA BASIC PROGRAMMING - COMPLETE!
+                    <h2 id="certificateTitle">
+                        🔒 CERTIFICATE LOCKED
                     </h2>
 
-                    <p>
-                        You finished all ten missions and collected
-                        every badge. Your certificate of completion
-                        is ready to view, print or save as a PDF.
+                    <p id="certificateText">
+                        Finish every level of all ten missions to
+                        earn your Java Basic Programming certificate.
                     </p>
+
+                    <div class="certificate-progress">
+                        <div
+                            class="certificate-progress-fill"
+                            id="certificateProgress"
+                        ></div>
+                    </div>
+
+                    <div
+                        class="certificate-count"
+                        id="certificateCount"
+                    >
+                        0 / 10 missions complete
+                    </div>
 
                 </div>
 
                 <a
                     class="certificate-button"
+                    id="certificateButton"
                     href="certificate.html"
+                    aria-disabled="true"
+                    tabindex="-1"
                 >
-                    VIEW CERTIFICATE
+                    🔒 LOCKED
                 </a>
 
             </section>
@@ -3203,25 +3291,78 @@ function paintCardBadges() {
 }
 
 
-/* The certificate only appears once every mission is 100%
-   complete - see "CERTIFICATE" in shared/storage.js. */
+/* The certificate sits at the bottom of the map from the start,
+   locked, with a count of finished missions. It opens once every
+   mission is 100% complete - see "CERTIFICATE" in
+   shared/storage.js. */
 function updateCertificate() {
-
-    const panel =
-        document.getElementById(
-            "certificatePanel"
-        );
 
     const earned =
         HackoStore.hasCertificate();
 
-    panel.hidden = !earned;
+    const done =
+        gameState.completed.length;
 
-    if (earned) {
+    const total =
+        Object.keys(missions).length;
+
+    document.getElementById(
+        "certificatePanel"
+    ).classList.toggle(
+        "locked",
+        !earned
+    );
+
+    const seal =
         document.getElementById(
             "certificateSeal"
-        ).innerHTML =
+        );
+
+    if (!seal.firstChild) {
+        seal.innerHTML =
             HackoBadgeArt.svg(10, { ribbon: false });
+    }
+
+    document.getElementById(
+        "certificateTitle"
+    ).textContent =
+        earned
+            ? "🎓 JAVA BASIC PROGRAMMING - COMPLETE!"
+            : "🔒 CERTIFICATE LOCKED";
+
+    document.getElementById(
+        "certificateText"
+    ).textContent =
+        earned
+            ? "You finished all ten missions and collected every badge. " +
+              "Your certificate of completion is ready to view, print or save as a PDF."
+            : "Finish every level of all ten missions to earn your " +
+              "Java Basic Programming certificate.";
+
+    document.getElementById(
+        "certificateProgress"
+    ).style.width =
+        Math.round((done / total) * 100) + "%";
+
+    document.getElementById(
+        "certificateCount"
+    ).textContent =
+        done + " / " + total + " missions complete";
+
+    const button =
+        document.getElementById(
+            "certificateButton"
+        );
+
+    button.textContent =
+        earned ? "VIEW CERTIFICATE" : "🔒 LOCKED";
+
+    if (earned) {
+        button.removeAttribute("aria-disabled");
+        button.removeAttribute("tabindex");
+    } else {
+        button.setAttribute("aria-disabled", "true");
+        button.setAttribute("tabindex", "-1");
     }
 
 }
