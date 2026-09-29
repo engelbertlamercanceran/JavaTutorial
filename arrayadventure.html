@@ -196,6 +196,26 @@ canvas {
     color: #abd4e3;
 }
 
+.steps {
+    margin: 8px 0 0;
+    padding: 8px 8px 8px 28px;
+    border: 1px solid #2c6384;
+    border-radius: 8px;
+    background: #071525;
+    line-height: 1.4;
+}
+
+.steps li {
+    margin: 3px 0;
+}
+
+.steps-title {
+    margin-top: 10px;
+    color: var(--amber);
+    font: 700 0.72rem Orbitron, sans-serif;
+    letter-spacing: 1px;
+}
+
 .inventory {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -387,6 +407,7 @@ footer {
 </style>
 <script src="shared/audio.js" data-track="adventure"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="5"></script>
 </head>
@@ -438,6 +459,8 @@ footer {
         <section class="panel">
             <h2 id="missionTitle"></h2>
             <div id="missionGoal" class="mission"></div>
+            <div class="steps-title">WHAT TO DO</div>
+            <ol id="missionSteps" class="steps"></ol>
             <div id="missionRule" class="rule"></div>
             <div id="lesson" class="lesson"></div>
         </section>
@@ -857,6 +880,11 @@ const missions = [
             "An array stores several values. length tells you " +
             "how many values it holds.",
         items: ["Apple", "BlueGem", "Rope"],
+        steps: [
+            "Walk over any 3 items. Each one drops into the next empty slot.",
+            "When your array has 3 items, press CHECK ARRAY.",
+            "Walk into the portal at the bottom-right."
+        ],
         check: state => state.items.length === 3
     },
     {
@@ -869,6 +897,11 @@ const missions = [
         lesson:
             "Array positions start at index 0, not index 1.",
         items: ["RedCrystal", "BlueCrystal", "Map"],
+        steps: [
+            "Pick up the Red Crystal FIRST, so it lands in INDEX 0.",
+            "Pick up at least one more item.",
+            "Press CHECK ARRAY, then walk into the portal."
+        ],
         check: state => {
             return (
                 state.items[0]?.name === "RedCrystal" &&
@@ -886,6 +919,12 @@ const missions = [
         lesson:
             "Each value has an exact numbered slot.",
         items: ["Potion", "GoldenKey", "Shield"],
+        steps: [
+            "Pick up all 3 items.",
+            "The Golden Key must end up in the INDEX 1 slot (the second slot).",
+            "If it is somewhere else, click its slot, click the INDEX 1 slot, then press SWAP SLOTS.",
+            "Press CHECK ARRAY, then walk into the portal."
+        ],
         swap: true,
         check: state => {
             return (
@@ -904,6 +943,12 @@ const missions = [
             "items[2] retrieves the third value because indexing " +
             "starts at zero.",
         items: ["Torch", "Rune", "MoonOrb", "Feather"],
+        steps: [
+            "Pick up at least 3 items.",
+            "Click the INDEX 2 slot (the third slot) so it lights up.",
+            "Press USE ON PEDESTAL.",
+            "Press CHECK ARRAY, then walk into the portal."
+        ],
         swap: true,
         use: true,
         check: state => state.usedIndex === 2
@@ -923,6 +968,12 @@ const missions = [
             "Lantern",
             "Junk",
             "Coin"
+        ],
+        steps: [
+            "Pick up all 6 items.",
+            "Click a Junk slot, then press DISCARD. Do it for both Junk items.",
+            "You should be left with exactly 4 items.",
+            "Press CHECK ARRAY, then walk into the portal."
         ],
         swap: true,
         discard: true,
@@ -948,6 +999,12 @@ const missions = [
             "Orb",
             "FlameCrystal",
             "Tablet"
+        ],
+        steps: [
+            "Pick up all 4 items.",
+            "Flame Crystal goes in INDEX 0 (first slot). Ancient Key goes in INDEX 3 (last slot).",
+            "To move an item, click two slots, then press SWAP SLOTS.",
+            "Press CHECK ARRAY, then walk into the portal."
         ],
         swap: true,
         discard: true,
@@ -976,6 +1033,12 @@ const missions = [
             "Token",
             "Charm"
         ],
+        steps: [
+            "Pick up items. Make sure the Master Scroll is one of them - do not discard it.",
+            "Click the INDEX 1 slot (the second slot), whatever is in it.",
+            "Press USE ON PEDESTAL.",
+            "Press CHECK ARRAY, then walk into the portal."
+        ],
         swap: true,
         discard: true,
         use: true,
@@ -997,6 +1060,12 @@ const missions = [
         lesson:
             "Sorting places array values into a meaningful order.",
         items: ["Green", "Red", "Yellow", "Blue"],
+        steps: [
+            "Pick up all 4 colors.",
+            "The order must be INDEX 0 Red, INDEX 1 Blue, INDEX 2 Green, INDEX 3 Yellow.",
+            "Click two slots and press SWAP SLOTS until the order matches.",
+            "Press CHECK ARRAY, then walk into the portal."
+        ],
         swap: true,
         discard: true,
         check: state => {
@@ -1037,6 +1106,12 @@ const missions = [
             "CrystalA",
             "Extra"
         ],
+        steps: [
+            "Pick up the items. You need exactly 5 in the end, so DISCARD one you do not need.",
+            "Crystal A goes in INDEX 0, Crystal B in INDEX 2, Crystal C in INDEX 4.",
+            "Any item can sit in INDEX 1 and INDEX 3. Use SWAP SLOTS to move things.",
+            "Press CHECK ARRAY, then walk into the portal."
+        ],
         swap: true,
         discard: true,
         check: state => {
@@ -1066,6 +1141,13 @@ const missions = [
             { name: "Rune12", value: 12 },
             { name: "Cursed", value: -5 },
             { name: "Rune9", value: 9 }
+        ],
+        steps: [
+            "Pick up all 6 items - every one must be collected.",
+            "DISCARD both Cursed items. 4 runes remain.",
+            "SWAP until the VALUES go from smallest (INDEX 0) to biggest (INDEX 3).",
+            "Press CALCULATE SUM. It must say 42.",
+            "Press CHECK ARRAY, then walk into the portal."
         ],
         swap: true,
         discard: true,
@@ -1247,11 +1329,23 @@ function loadMission(index) {
         `Mission ${level + 1}: ${mission.title}`;
 
     document.getElementById("missionGoal").textContent =
-        mission.goal +
-        " Survive the board, validate the array, then reach the portal.";
+        mission.goal;
+
+    /* Client request: the question has to be clear, so every
+       mission spells out its steps with the real button names. */
+    const stepList =
+        document.getElementById("missionSteps");
+
+    stepList.innerHTML = "";
+
+    mission.steps.forEach(text => {
+        const item = document.createElement("li");
+        item.textContent = text;
+        stepList.appendChild(item);
+    });
 
     document.getElementById("missionRule").textContent =
-        mission.rule;
+        "Java check: " + mission.rule;
 
     document.getElementById("lesson").innerHTML =
         `<strong>Array lesson:</strong> ${mission.lesson}`;
@@ -1387,14 +1481,184 @@ function makeEnemies(missionIndex, walls) {
             )
         )
         .map((position, index) => {
+            /* each glitch runs on its own clock and has its own
+               way of moving - see enemyTick() */
+            const speed =
+                Math.max(
+                    340,
+                    900 - missionIndex * 55
+                ) +
+                index * 90;
+
             return {
                 x: position[0],
                 y: position[1],
                 type: index % 3,
-                phase: index
+                phase: index,
+                behaviour: ENEMY_BEHAVIOURS[index % 3],
+                dir: index % 2 ? -1 : 1,
+                heading: { x: 0, y: index % 2 ? 1 : -1 },
+                speed,
+                nextMove:
+                    performance.now() +
+                    speed +
+                    index * 250
             };
         });
 }
+
+/* Client request: the glitches used to take one step every time
+   Hacko did, and most of them headed straight for him, so the
+   whole board moved in lock-step with the player. Now:
+
+     sweeper - walks left and right, turning at walls
+     climber - walks up and down, turning at walls
+     roamer  - wanders at random, and only hunts Hacko when he
+               comes within 3 tiles (from mission 4 on)
+*/
+const ENEMY_BEHAVIOURS = [
+    "sweeper",
+    "climber",
+    "roamer"
+];
+
+const ENEMY_STEPS = [
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 }
+];
+
+function enemyCanEnter(enemy, x, y) {
+    return (
+        !state.walls.has(`${x},${y}`) &&
+        /* keep the portal and Hacko's start tile clear */
+        !(x === 13 && y === 8) &&
+        !(x === 1 && y === 1) &&
+        !state.enemies.some(other => {
+            return (
+                other !== enemy &&
+                other.x === x &&
+                other.y === y
+            );
+        })
+    );
+}
+
+function chooseEnemyStep(enemy) {
+    const fits = step =>
+        enemyCanEnter(
+            enemy,
+            enemy.x + step.x,
+            enemy.y + step.y
+        );
+
+    if (
+        enemy.behaviour === "sweeper" ||
+        enemy.behaviour === "climber"
+    ) {
+        const along =
+            enemy.behaviour === "sweeper"
+                ? { x: enemy.dir, y: 0 }
+                : { x: 0, y: enemy.dir };
+
+        if (fits(along)) {
+            return along;
+        }
+
+        enemy.dir *= -1;
+
+        const back = {
+            x: -along.x,
+            y: -along.y
+        };
+
+        return fits(back) ? back : null;
+    }
+
+    /* roamer */
+    const dx = state.player.x - enemy.x;
+    const dy = state.player.y - enemy.y;
+
+    if (
+        level >= 3 &&
+        Math.abs(dx) + Math.abs(dy) <= 3
+    ) {
+        const toward =
+            Math.abs(dx) > Math.abs(dy)
+                ? [{ x: Math.sign(dx), y: 0 }, { x: 0, y: Math.sign(dy) }]
+                : [{ x: 0, y: Math.sign(dy) }, { x: Math.sign(dx), y: 0 }];
+
+        const hunt =
+            toward.find(step => {
+                return (step.x || step.y) && fits(step);
+            });
+
+        if (hunt) {
+            return hunt;
+        }
+    }
+
+    if (
+        Math.random() < 0.7 &&
+        fits(enemy.heading)
+    ) {
+        return enemy.heading;
+    }
+
+    const open =
+        ENEMY_STEPS.filter(fits);
+
+    if (!open.length) {
+        return null;
+    }
+
+    enemy.heading =
+        open[Math.floor(Math.random() * open.length)];
+
+    return enemy.heading;
+}
+
+function enemyTick() {
+    if (!state || state.won) {
+        return;
+    }
+
+    const now = performance.now();
+
+    state.enemies.forEach(enemy => {
+        if (now < enemy.nextMove) {
+            return;
+        }
+
+        enemy.nextMove = now + enemy.speed;
+
+        const step = chooseEnemyStep(enemy);
+
+        if (!step) {
+            return;
+        }
+
+        const newX = enemy.x + step.x;
+        const newY = enemy.y + step.y;
+
+        if (
+            newX === state.player.x &&
+            newY === state.player.y
+        ) {
+            damage("moving glitch");
+            updateUI();
+            return;
+        }
+
+        enemy.x = newX;
+        enemy.y = newY;
+    });
+}
+
+/* the briefing holds intervals too, so glitches freeze
+   while the player is reading it */
+setInterval(enemyTick, 60);
 
 function move(dx, dy) {
     if (state.won) {
@@ -1498,8 +1762,6 @@ function move(dx, dy) {
         return;
     }
 
-    enemyTurn();
-
     if (
         state.gateOpen &&
         newX === 13 &&
@@ -1518,139 +1780,6 @@ function move(dx, dy) {
     }
 
     updateUI();
-}
-
-function enemyTurn() {
-    const moveEvery =
-        level < 2
-            ? 3
-            : level < 5
-                ? 2
-                : 1;
-
-    if (
-        state.moves % moveEvery !== 0
-    ) {
-        return;
-    }
-
-    state.enemies.forEach(
-        (enemy, enemyIndex) => {
-            const distanceX =
-                state.player.x - enemy.x;
-
-            const distanceY =
-                state.player.y - enemy.y;
-
-            const distance =
-                Math.abs(distanceX) +
-                Math.abs(distanceY);
-
-            const chase =
-                distance <= 4 + level;
-
-            const horizontal = {
-                x: Math.sign(distanceX),
-                y: 0
-            };
-
-            const vertical = {
-                x: 0,
-                y: Math.sign(distanceY)
-            };
-
-            const towardPlayer =
-                Math.abs(distanceX) >
-                Math.abs(distanceY)
-                    ? [horizontal, vertical]
-                    : [vertical, horizontal];
-
-            const patrol = [
-                { x: 1, y: 0 },
-                { x: 0, y: 1 },
-                { x: -1, y: 0 },
-                { x: 0, y: -1 }
-            ];
-
-            const patrolOffset =
-                (
-                    state.moves +
-                    enemyIndex
-                ) % 4;
-
-            const options =
-                chase
-                    ? [
-                        ...towardPlayer,
-                        ...patrol
-                    ]
-                    : patrol
-                        .slice(patrolOffset)
-                        .concat(
-                            patrol.slice(
-                                0,
-                                patrolOffset
-                            )
-                        );
-
-            const step =
-                options.find(option => {
-                    if (
-                        option.x === 0 &&
-                        option.y === 0
-                    ) {
-                        return false;
-                    }
-
-                    const x =
-                        enemy.x + option.x;
-
-                    const y =
-                        enemy.y + option.y;
-
-                    const occupied =
-                        state.enemies.some(
-                            otherEnemy => {
-                                return (
-                                    otherEnemy !== enemy &&
-                                    otherEnemy.x === x &&
-                                    otherEnemy.y === y
-                                );
-                            }
-                        );
-
-                    return (
-                        !state.walls.has(
-                            `${x},${y}`
-                        ) &&
-                        !(x === 13 && y === 8) &&
-                        !occupied
-                    );
-                });
-
-            if (!step) {
-                return;
-            }
-
-            const newX =
-                enemy.x + step.x;
-
-            const newY =
-                enemy.y + step.y;
-
-            if (
-                newX === state.player.x &&
-                newY === state.player.y
-            ) {
-                damage("moving glitch");
-
-                return;
-            }
-
-            enemy.x = newX;
-            enemy.y = newY;
-        }
-    );
 }
 
 /* No lives at all before this - running out of energy simply
@@ -1978,8 +2107,16 @@ function checkMission() {
         missions[level].check(state);
 
     if (!success) {
+        const current =
+            state.items.length
+                ? state.items
+                    .map((item, index) => `[${index}] ${item.name}`)
+                    .join(", ")
+                : "empty";
+
         setStatus(
-            "Not quite. Compare your array with the required condition.",
+            `Not quite. Your array is: ${current}. ` +
+            "Go through the WHAT TO DO steps again.",
             false
         );
 

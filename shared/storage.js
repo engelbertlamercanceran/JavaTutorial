@@ -113,6 +113,8 @@
             currentMission: 1,
             missions: {},
             badges: [],
+            hintSpent: 0,
+            hintsBought: {},
             settings: { muted: false }
         };
     }
@@ -131,6 +133,22 @@
         safe.totalXP = Number(record.totalXP) || 0;
         safe.currentMission = Number(record.currentMission) || 1;
         safe.badges = Array.isArray(record.badges) ? record.badges : [];
+        safe.hintSpent = Math.max(0, Number(record.hintSpent) || 0);
+
+        if (typeof record.certifiedAt === "string") {
+            safe.certifiedAt = record.certifiedAt;
+        }
+
+        safe.hintsBought = {};
+
+        if (record.hintsBought && typeof record.hintsBought === "object") {
+            Object.keys(record.hintsBought).forEach(function (id) {
+                var n = Number(record.hintsBought[id]) || 0;
+                if (n > 0) {
+                    safe.hintsBought[id] = n;
+                }
+            });
+        }
 
         safe.settings = {
             muted: !!(record.settings && record.settings.muted)
@@ -444,6 +462,12 @@
 
             record.missions[key] = m;
 
+            /* the day the whole course was finished goes on
+               the certificate */
+            if (!record.certifiedAt && allCompleteIn(record)) {
+                record.certifiedAt = new Date().toISOString();
+            }
+
             var next = Number(id) + 1;
 
             if (next <= 10 && isUnlockedIn(record, next)) {
@@ -464,6 +488,52 @@
         return result;
     }
 
+    /* ---------------------------------------------------
+       CERTIFICATE
+       Earned by completing every level of all ten missions -
+       the same 100% that earns each badge, so the certificate
+       and a full badge collection always agree.
+    --------------------------------------------------- */
+
+    function allCompleteIn(record) {
+
+        return Object.keys(MISSIONS).every(function (id) {
+            var m = record.missions[id];
+            return !!(m && m.completed);
+        });
+    }
+
+    function hasCertificate() {
+
+        var record = load();
+
+        return !!record && allCompleteIn(record);
+    }
+
+    /* Details to print, or null if not earned yet. A player
+       who finished before certificates existed gets today's
+       date the first time they open it, and keeps it. */
+    function certificate() {
+
+        var record = load();
+
+        if (!record || !allCompleteIn(record)) {
+            return null;
+        }
+
+        if (!record.certifiedAt) {
+            record.certifiedAt = new Date().toISOString();
+            save(record);
+        }
+
+        return {
+            username: record.username,
+            date: record.certifiedAt,
+            totalXP: record.totalXP,
+            badges: record.badges.slice()
+        };
+    }
+
     function announce(name, detail) {
 
         if (!global.dispatchEvent || typeof global.CustomEvent !== "function") {
@@ -475,6 +545,96 @@
         } catch (e) {
             /* a listener failing must never break saving */
         }
+    }
+
+    /* ---------------------------------------------------
+       HINT POINTS
+
+       The client asked for hints to be bought with points
+       earned in the game, and for the points to stay small.
+
+         - every player starts with HINT_START points, so a
+           student stuck on their very first level can still
+           get help
+         - each level cleared for the first time in a game
+           that sells hints earns one point
+         - each hint costs HINT_COST; a hint already bought
+           stays free to read again
+
+       Kept apart from totalXP on purpose: the map shows XP
+       as the player's score, and buying help should never
+       lower it. Earned points are derived from levelsDone
+       rather than stored, so existing players get the points
+       for levels they had already cleared.
+    --------------------------------------------------- */
+
+    var HINT_MISSIONS = [4, 8, 9, 10];
+    var HINT_START = 3;
+    var HINT_COST = 1;
+
+    function hintEarnedIn(record) {
+
+        return HINT_MISSIONS.reduce(function (total, id) {
+            var m = record.missions[String(id)];
+            return total + (m ? m.levelsDone.length : 0);
+        }, HINT_START);
+    }
+
+    function hintBalanceIn(record) {
+        return Math.max(0, hintEarnedIn(record) - record.hintSpent);
+    }
+
+    function hintBalance() {
+
+        var record = load();
+
+        return record ? hintBalanceIn(record) : HINT_START;
+    }
+
+    /* how many tiers of this puzzle's hints are already paid for */
+    function hintsOwned(puzzleId) {
+
+        var record = load();
+
+        return record ? (record.hintsBought[String(puzzleId)] || 0) : 0;
+    }
+
+    /* Pays for tier `tier` (0-based) of a puzzle's hints.
+       Tiers are bought in order, and one already owned is
+       free. Returns { ok, charged, balance }. */
+    function buyHint(puzzleId, tier) {
+
+        var key = String(puzzleId);
+        var index = Number(tier) || 0;
+        var outcome = { ok: false, charged: false, balance: 0 };
+
+        var result = update(function (record) {
+
+            var owned = record.hintsBought[key] || 0;
+
+            if (index < owned) {
+                outcome.ok = true;
+            } else if (hintBalanceIn(record) >= HINT_COST) {
+                record.hintSpent += HINT_COST;
+                record.hintsBought[key] = index + 1;
+                outcome.ok = true;
+                outcome.charged = true;
+            }
+
+            outcome.balance = hintBalanceIn(record);
+        });
+
+        /* no signed-in player (a game opened on its own):
+           hints stay free rather than locking the player out */
+        if (!result) {
+            return { ok: true, charged: false, balance: HINT_START };
+        }
+
+        if (outcome.charged) {
+            announce("hacko:hintpoints", { balance: outcome.balance });
+        }
+
+        return outcome;
     }
 
     function setResumeLevel(id, levelIndex) {
@@ -940,6 +1100,16 @@
         setLives: setLives,
         getLives: getLives,
         loseAllLives: loseAllLives,
+
+        HINT_MISSIONS: HINT_MISSIONS,
+        HINT_START: HINT_START,
+        HINT_COST: HINT_COST,
+        hintBalance: hintBalance,
+        hintsOwned: hintsOwned,
+        buyHint: buyHint,
+
+        hasCertificate: hasCertificate,
+        certificate: certificate,
 
         bindAutosave: bindAutosave,
 

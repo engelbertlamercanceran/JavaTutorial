@@ -504,8 +504,10 @@ button{
 </style>
 <script src="shared/audio.js" data-track="rescue"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="8"></script>
+<script src="shared/hint.js"></script>
 </head>
 
 <body>
@@ -1117,6 +1119,13 @@ function loadLevel(){
 
     $("editor").value=
         level.starter;
+
+    hint=HackoHint.paid({
+        id:"m8-l"+game.level,
+        tiers:level.hints
+    });
+
+    $("hint").textContent=hint.label();
 
     $("output").innerHTML=
         `<span class="info">
@@ -1848,10 +1857,17 @@ function runCode(){
 HINT
 ========================= */
 
+/* Hints used to cost 10 XP and then print "undefined": this
+   read levels[...].hint while every level stores its tiers in
+   hints[]. They now cost one hint point each, shared with the
+   other hint games - see shared/hint.js paid(). */
+let hint=null;
+
 function useHint(){
-    HackoAudio.play("open");
 
     if(!started){
+
+        HackoAudio.play("wrong");
 
         terminalOutput(
             "error",
@@ -1862,31 +1878,23 @@ function useHint(){
 
     }
 
-    if(game.xp<10){
-
-        terminalOutput(
-            "error",
-            "❌ You need 10 XP for a hint."
-        );
-
+    if(!hint){
         return;
-
     }
 
+    const next=hint.next();
 
-    game.xp-=10;
-
-    updateHUD();
-    saveGame();
-
+    HackoAudio.play(next.ok?"open":"wrong");
 
     terminalOutput(
-        "info",
+        next.ok?"info":"error",
 
-        "💡 HINT\n\n"+
-        levels[game.level-1].hint+
-        "\n\n⭐ -10 XP"
+        "💡 "+next.name.toUpperCase()+"\n\n"+
+        next.text+
+        (next.charged?"\n\n💡 -1 hint point":"")
     );
+
+    $("hint").textContent=hint.label();
 
 }
 

@@ -198,6 +198,153 @@ section("migration from the old per-game keys");
 
 
 /* ---------------------------------------------------
+   HINT POINTS
+--------------------------------------------------- */
+
+section("hint points");
+(function () {
+
+    var win = fakeWindow();
+    loadModule("storage.js", win);
+    loadModule("hint.js", win);
+
+    var S = win.HackoStore;
+    var H = win.HackoHint;
+
+    S.login("h");
+
+    ok("a new player starts with 3 hint points", S.hintBalance() === 3);
+
+    S.completeLevel(4, 0, 100);
+    ok("clearing a level in a hint game earns 1", S.hintBalance() === 4);
+
+    S.completeLevel(4, 0, 100);
+    ok("replaying a level earns nothing", S.hintBalance() === 4);
+
+    S.completeLevel(1, 0, 100);
+    ok("a game without hints earns nothing", S.hintBalance() === 4);
+
+    var hint = H.paid({ id: "m4-l1", tiers: ["nudge", "structure", "example"] });
+
+    var first = hint.next();
+    ok("buying a hint shows it", first.ok && first.text === "nudge");
+    ok("buying a hint costs 1 point", S.hintBalance() === 3 && first.charged);
+
+    var again = H.paid({ id: "m4-l1", tiers: ["nudge", "structure", "example"] });
+    var reread = again.next();
+    ok("a bought hint is free to read again later",
+        reread.ok && !reread.charged && S.hintBalance() === 3);
+    ok("the label says the next owned tier is free",
+        H.paid({ id: "m4-l1", tiers: ["a", "b"] }).label().indexOf("free") !== -1);
+
+    again.next();
+    again.next();
+    ok("all three tiers bought leaves 1 point", S.hintBalance() === 1);
+
+    var repeat = again.next();
+    ok("reading past the last tier is free",
+        repeat.ok && !repeat.charged && S.hintBalance() === 1);
+
+    var other = H.paid({ id: "m9-l1", tiers: ["x", "y"] });
+    other.next();
+    var broke = other.next();
+    ok("with no points left the hint is refused", broke.ok === false);
+    ok("a refused hint costs nothing", S.hintBalance() === 0);
+
+    S.completeLevel(9, 0, 100);
+    ok("clearing another level earns the next hint",
+        other.next().ok === true && S.hintBalance() === 0);
+
+    ok("hint points leave the XP score alone", S.load().totalXP === 300);
+
+    var saved = JSON.parse(win.localStorage.getItem("hacko:user:h"));
+    /* 3 tiers of m4-l1, then 2 tiers of m9-l1 */
+    ok("spent points survive a reload", saved.hintSpent === 5);
+
+    S.login("fresh");
+    ok("points are per player", S.hintBalance() === 3);
+
+    var loose = fakeWindow();
+    loadModule("hint.js", loose);
+    ok("without a signed-in player hints are free",
+        loose.HackoHint.paid({ id: "x", tiers: ["t"] }).next().ok === true);
+}());
+
+
+/* ---------------------------------------------------
+   CERTIFICATE
+--------------------------------------------------- */
+
+section("certificate");
+(function () {
+
+    var S = newStore();
+    S.login("c");
+
+    function finish(mission) {
+        for (var i = 0; i < 10; i++) {
+            S.completeLevel(mission, i, 10);
+        }
+    }
+
+    for (var m = 1; m <= 9; m++) {
+        finish(m);
+    }
+
+    ok("nine of ten missions is not enough", S.hasCertificate() === false);
+    ok("no certificate details before it is earned", S.certificate() === null);
+
+    for (var i = 0; i < 9; i++) {
+        S.completeLevel(10, i, 10);
+    }
+
+    ok("the last mission at 90% is not enough", S.hasCertificate() === false);
+
+    S.completeLevel(10, 9, 10);
+
+    ok("all ten missions at 100% earns it", S.hasCertificate() === true);
+
+    var info = S.certificate();
+    ok("it names the player", info && info.username === "c");
+    ok("it records the date it was earned", info && !isNaN(Date.parse(info.date)));
+    ok("the date stays the same on a replay",
+        (S.completeLevel(4, 0, 10), S.certificate().date === info.date));
+    ok("it lists all ten badges", info && info.badges.length === 10);
+
+    S.login("other");
+    ok("certificates are per player", S.hasCertificate() === false);
+}());
+
+
+section("badge art");
+(function () {
+
+    var win = fakeWindow();
+    loadModule("badgeart.js", win);
+    var A = win.HackoBadgeArt;
+
+    var ranks = [];
+
+    for (var n = 1; n <= 10; n++) {
+        var svg = A.svg(n);
+        ok("badge " + n + " draws", /^<svg[\s\S]*<\/svg>$/.test(svg));
+        ok("badge " + n + " carries its name", svg.indexOf(A.NAMES[n]) !== -1);
+        ranks.push(A.TIERS.indexOf(A.tierOf(n)));
+    }
+
+    ok("ranks never go down along the course",
+        ranks.every(function (r, i) { return i === 0 || r >= ranks[i - 1]; }));
+    ok("the final boss has the top rank", A.tierOf(10) === "IMMORTAL");
+
+    var one = A.svg(1);
+    var two = A.svg(1);
+    ok("two copies on one page never share gradient ids",
+        one.match(/id='(hkb\d+_)/)[1] !== two.match(/id='(hkb\d+_)/)[1]);
+    ok("an unknown mission draws nothing", A.svg(11) === "");
+}());
+
+
+/* ---------------------------------------------------
    STORAGE - HOSTILE ENVIRONMENT
 --------------------------------------------------- */
 

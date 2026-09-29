@@ -8,9 +8,11 @@
 <link rel="stylesheet" href="shared/hacko.css">
 <script src="shared/audio.js" data-track="boss"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="10"></script>
 <script src="shared/javaloop.js"></script>
+<script src="shared/hint.js"></script>
 
 <style>
 body { margin: 0; display: grid; grid-template-rows: auto 1fr auto; min-height: 100vh; }
@@ -493,10 +495,11 @@ footer {
         xp: 0,
         vars: {},
         expected: "",
-        hintTier: 0,
         won: false,
         playing: false
     };
+
+    var hint = null;
 
     function $(id) { return document.getElementById(id); }
 
@@ -1273,9 +1276,16 @@ footer {
 
         state.phase = Math.max(0, Math.min(index, PHASES.length - 1));
         state.won = false;
-        state.hintTier = 0;
 
         var phase = PHASES[state.phase];
+
+        /* each hint tier costs a hint point - see shared/hint.js */
+        hint = HackoHint.paid({
+            id: "m10-l" + (state.phase + 1),
+            tiers: phase.hints
+        });
+
+        $("hintBtn").textContent = hint.label();
 
         rollAttack();
 
@@ -1485,16 +1495,11 @@ footer {
 
     $("hintBtn").addEventListener("click", function () {
 
-        var tiers = PHASES[state.phase].hints;
-        var tier = Math.min(state.hintTier, tiers.length - 1);
-        var label = ["NUDGE", "STRUCTURE", "EXAMPLE"][tier] || "HINT";
+        var next = hint.next();
 
-        setVerdict(label + ": " + tiers[tier], true);
-        HackoAudio.play("select");
-
-        if (state.hintTier < tiers.length - 1) {
-            state.hintTier += 1;
-        }
+        setVerdict(next.name.toUpperCase() + ": " + next.text, next.ok);
+        $("hintBtn").textContent = hint.label();
+        HackoAudio.play(next.ok ? "select" : "wrong");
     });
 
     loadPhase(0);

@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>HACKO - Certificate of Completion</title>
+
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Great+Vibes&family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+/* =========================================================
+   HACKO - certificate.html
+   The certificate for finishing the whole course.
+
+   Only reachable once all ten missions are 100% complete -
+   the map hides its link until then, and this page checks
+   again itself (HackoStore.certificate() returns null) so
+   typing the address does not skip the course.
+
+   Built to print: the card is an A4 landscape page, and
+   "PRINT / SAVE AS PDF" is the browser's own print dialog.
+========================================================= */
+
+:root {
+    --ink: #2a1d0c;
+    --ink-soft: #5c4a2e;
+    --gold: #b8872b;
+    --gold-light: #e9c46a;
+    --paper: #fbf5e6;
+    --paper-edge: #efe2c2;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    min-height: 100vh;
+
+    padding: 24px 16px 40px;
+
+    background:
+        radial-gradient(circle at 50% 0%, #1d3550, #07111d 70%);
+
+    font-family: Rajdhani, "Segoe UI", sans-serif;
+
+    color: var(--ink);
+}
+
+/* ---------- toolbar ---------- */
+
+.toolbar {
+    width: min(1100px, 100%);
+
+    margin: 0 auto 16px;
+
+    display: flex;
+
+    gap: 10px;
+
+    justify-content: space-between;
+
+    flex-wrap: wrap;
+}
+
+.toolbar a,
+.toolbar button {
+    padding: 11px 20px;
+
+    border-radius: 999px;
+
+    font: 700 13px Orbitron, sans-serif;
+
+    letter-spacing: .06em;
+
+    cursor: pointer;
+
+    text-decoration: none;
+}
+
+.toolbar .back {
+    border: 1px solid #45f3ff;
+
+    background: rgba(69,243,255,.1);
+
+    color: #45f3ff;
+}
+
+.toolbar .print {
+    border: 0;
+
+    background: linear-gradient(#ffe08a, #c98a2c);
+
+    color: #2a1a06;
+}
+
+/* ---------- the certificate ---------- */
+
+.cert {
+    container-type: inline-size;
+
+    width: min(1100px, 100%);
+
+    aspect-ratio: 297 / 210;
+
+    margin: 0 auto;
+
+    position: relative;
+
+    background:
+        radial-gradient(ellipse at center, #fffdf6 0%, var(--paper) 55%, var(--paper-edge) 100%);
+
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+
+    overflow: hidden;
+}
+
+/* double gold frame */
+.cert::before,
+.cert::after {
+    content: "";
+
+    position: absolute;
+
+    pointer-events: none;
+}
+
+.cert::before {
+    inset: 1.6cqw;
+
+    border: .5cqw solid var(--gold);
+}
+
+.cert::after {
+    inset: 2.6cqw;
+
+    border: .15cqw solid var(--gold);
+}
+
+/* corner ornaments */
+.corner {
+    position: absolute;
+
+    width: 7cqw;
+    height: 7cqw;
+
+    border: .45cqw solid var(--gold);
+
+    z-index: 1;
+}
+
+.corner.tl { top: 3.4cqw; left: 3.4cqw; border-right: 0; border-bottom: 0; }
+.corner.tr { top: 3.4cqw; right: 3.4cqw; border-left: 0; border-bottom: 0; }
+.corner.bl { bottom: 3.4cqw; left: 3.4cqw; border-right: 0; border-top: 0; }
+.corner.br { bottom: 3.4cqw; right: 3.4cqw; border-left: 0; border-top: 0; }
+
+/* faint watermark */
+.watermark {
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font: 900 22cqw Orbitron, sans-serif;
+
+    color: var(--gold);
+
+    opacity: .05;
+
+    letter-spacing: 1cqw;
+
+    pointer-events: none;
+}
+
+.content {
+    position: relative;
+
+    z-index: 2;
+
+    height: 100%;
+
+    padding: 5.2cqw 8cqw 4.6cqw;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    text-align: center;
+}
+
+.brand {
+    font: 900 1.5cqw Orbitron, sans-serif;
+
+    letter-spacing: .8cqw;
+
+    color: var(--gold);
+}
+
+.title {
+    margin-top: .8cqw;
+
+    font: 900 4.1cqw Cinzel, Georgia, serif;
+
+    letter-spacing: .35cqw;
+
+    color: var(--ink);
+}
+
+.course {
+    margin-top: .4cqw;
+
+    padding: .45cqw 2.4cqw;
+
+    border-top: .15cqw solid var(--gold);
+    border-bottom: .15cqw solid var(--gold);
+
+    font: 800 1.7cqw Cinzel, Georgia, serif;
+
+    letter-spacing: .3cqw;
+
+    color: var(--gold);
+}
+
+.lead {
+    margin-top: 1.8cqw;
+
+    font-size: 1.6cqw;
+
+    font-style: italic;
+
+    color: var(--ink-soft);
+}
+
+.name {
+    margin-top: .2cqw;
+
+    max-width: 100%;
+
+    font: 400 6cqw "Great Vibes", "Brush Script MT", cursive;
+
+    line-height: 1.15;
+
+    color: var(--ink);
+
+    overflow-wrap: anywhere;
+}
+
+.rule {
+    width: 46cqw;
+
+    height: .15cqw;
+
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.body {
+    margin-top: 1.2cqw;
+
+    max-width: 70cqw;
+
+    font-size: 1.55cqw;
+
+    line-height: 1.45;
+
+    color: var(--ink-soft);
+}
+
+.topics {
+    margin-top: .9cqw;
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    justify-content: center;
+
+    gap: .5cqw .7cqw;
+
+    max-width: 78cqw;
+}
+
+.topics span {
+    padding: .2cqw .9cqw;
+
+    border: .12cqw solid var(--gold-light);
+
+    border-radius: 99cqw;
+
+    font-size: 1.2cqw;
+
+    font-weight: 700;
+
+    color: var(--ink);
+
+    background: rgba(233,196,106,.14);
+}
+
+.medals {
+    margin-top: 1.4cqw;
+
+    display: grid;
+
+    grid-template-columns: repeat(10, 1fr);
+
+    gap: .6cqw;
+
+    width: 70cqw;
+}
+
+.medals svg {
+    width: 100%;
+
+    height: auto;
+
+    filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.35));
+}
+
+.footer {
+    margin-top: auto;
+
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns: 1fr auto 1fr;
+
+    align-items: end;
+
+    gap: 3cqw;
+}
+
+.sign {
+    text-align: center;
+}
+
+.sign .value {
+    font: 700 1.6cqw Cinzel, Georgia, serif;
+
+    color: var(--ink);
+
+    padding-bottom: .4cqw;
+
+    border-bottom: .15cqw solid var(--ink-soft);
+}
+
+.sign .label {
+    margin-top: .4cqw;
+
+    font-size: 1.15cqw;
+
+    letter-spacing: .2cqw;
+
+    text-transform: uppercase;
+
+    color: var(--ink-soft);
+}
+
+.seal {
+    width: 13cqw;
+}
+
+.seal svg {
+    width: 100%;
+
+    height: auto;
+
+    filter: drop-shadow(0 .3cqw .5cqw rgba(0,0,0,.4));
+}
+
+.serial {
+    margin-top: .5cqw;
+
+    font: 700 .9cqw Orbitron, sans-serif;
+
+    letter-spacing: .15cqw;
+
+    color: var(--ink-soft);
+
+    opacity: .7;
+}
+
+/* ---------- not earned yet ---------- */
+
+.locked {
+    width: min(560px, 100%);
+
+    margin: 60px auto 0;
+
+    padding: 34px 26px;
+
+    border: 2px solid #ffd34e;
+
+    border-radius: 16px;
+
+    background: linear-gradient(160deg, #0f2742, #081626 75%);
+
+    color: #dff4ff;
+
+    text-align: center;
+}
+
+.locked h1 {
+    font: 900 1.5rem Orbitron, sans-serif;
+
+    color: #ffd34e;
+
+    margin-bottom: 12px;
+}
+
+.locked p {
+    font-size: 1.1rem;
+
+    line-height: 1.5;
+
+    margin-bottom: 20px;
+}
+
+.locked a {
+    display: inline-block;
+
+    padding: 12px 22px;
+
+    border-radius: 999px;
+
+    background: #45f3ff;
+
+    color: #06111c;
+
+    font: 700 13px Orbitron, sans-serif;
+
+    text-decoration: none;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+/* storage.js adds a floating HOME link to every page; the
+   toolbar already has one, and it must not print */
+#hacko-map-link {
+    display: none !important;
+}
+
+/* ---------- print: one A4 landscape page ---------- */
+
+@page {
+    size: A4 landscape;
+    margin: 0;
+}
+
+@media print {
+
+    html,
+    body {
+        width: 297mm;
+        height: 210mm;
+        padding: 0;
+        background: #fff;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .toolbar {
+        display: none;
+    }
+
+    .cert {
+        width: 297mm;
+        height: 210mm;
+        box-shadow: none;
+    }
+}
+
+</style>
+
+<script src="shared/storage.js"></script>
+<script src="shared/badgeart.js"></script>
+</head>
+
+<body>
+
+<div class="toolbar" id="toolbar" hidden>
+    <a class="back" href="map.html">◀ BACK TO MAP</a>
+    <button class="print" type="button" id="printButton">🖨 PRINT / SAVE AS PDF</button>
+</div>
+
+<main class="cert" id="certificate" hidden>
+
+    <div class="watermark">HACKO</div>
+
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <div class="content">
+
+        <div class="brand">HACKO • JAVA ADVENTURE</div>
+
+        <h1 class="title">CERTIFICATE OF COMPLETION</h1>
+
+        <div class="course">JAVA BASIC PROGRAMMING</div>
+
+        <p class="lead">This certifies that</p>
+
+        <div class="name" id="certName">Player</div>
+
+        <div class="rule"></div>
+
+        <p class="body">
+            has completed all ten missions of the HACKO Java adventure
+            and earned every badge, showing a working grasp of the
+            fundamentals of programming in Java:
+        </p>
+
+        <div class="topics">
+            <span>Variables &amp; Data Types</span>
+            <span>Input / Output</span>
+            <span>If-Else Statements</span>
+            <span>Loops</span>
+            <span>Arrays</span>
+            <span>Methods</span>
+            <span>Debugging</span>
+            <span>Classes &amp; Objects</span>
+            <span>Nested Conditionals</span>
+            <span>Nested Loops</span>
+        </div>
+
+        <div class="medals" id="certMedals"></div>
+
+        <div class="footer">
+
+            <div class="sign">
+                <div class="value" id="certDate">-</div>
+                <div class="label">Date completed</div>
+                <!-- matches the serial line opposite, so both rules line up -->
+                <div class="serial">&nbsp;</div>
+            </div>
+
+            <div class="seal" id="certSeal"></div>
+
+            <div class="sign">
+                <div class="value" id="certXP">-</div>
+                <div class="label">Total XP earned</div>
+                <div class="serial" id="certSerial"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</main>
+
+<section class="locked" id="locked" hidden>
+    <h1>🔒 CERTIFICATE LOCKED</h1>
+    <p>
+        The certificate is awarded for finishing every level of all
+        ten missions. Keep going - every badge you collect brings
+        you closer.
+    </p>
+    <a href="map.html">BACK TO THE MAP</a>
+</section>
+
+<script>
+
+(function () {
+
+    if (!HackoStore.isLoggedIn()) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    var info = HackoStore.certificate();
+
+    if (!info) {
+        document.getElementById("locked").hidden = false;
+        return;
+    }
+
+    /* A short code that ties the printout to this player and
+       date. It is not a security feature - there is no server
+       to check it against. */
+    function serial(text) {
+        var hash = 5381;
+        for (var i = 0; i < text.length; i++) {
+            hash = ((hash << 5) + hash + text.charCodeAt(i)) >>> 0;
+        }
+        return "HK-" + hash.toString(36).toUpperCase().padStart(7, "0");
+    }
+
+    var date = new Date(info.date);
+
+    document.getElementById("certName").textContent = info.username;
+
+    document.getElementById("certDate").textContent =
+        isNaN(date)
+            ? "-"
+            : date.toLocaleDateString(undefined, {
+                year: "numeric", month: "long", day: "numeric"
+            });
+
+    document.getElementById("certXP").textContent =
+        Number(info.totalXP || 0).toLocaleString() + " XP";
+
+    document.getElementById("certSerial").textContent =
+        "CERTIFICATE NO. " + serial(info.username + "|" + info.date);
+
+    var medals = "";
+    for (var n = 1; n <= 10; n++) {
+        medals += HackoBadgeArt.svg(n, { ribbon: false });
+    }
+    document.getElementById("certMedals").innerHTML = medals;
+
+    document.getElementById("certSeal").innerHTML =
+        HackoBadgeArt.svg(10, { ribbon: false, title: false });
+
+    document.title = "HACKO Certificate - " + info.username;
+
+    document.getElementById("printButton").addEventListener("click", function () {
+        window.print();
+    });
+
+    document.getElementById("toolbar").hidden = false;
+    document.getElementById("certificate").hidden = false;
+
+}());
+
+</script>
+
+</body>
+</html>

@@ -44,7 +44,11 @@
         "#hk-badge .bd-kicker{font:700 .72rem Orbitron,sans-serif;letter-spacing:.24em;color:#ffd34e}",
         "#hk-badge .bd-img{width:150px;height:150px;margin:10px auto 6px;display:flex;align-items:center;",
         "justify-content:center;font-size:84px;animation:hkBadgePop .6s cubic-bezier(.2,1.6,.4,1) both}",
-        "#hk-badge .bd-img img{max-width:100%;max-height:100%;filter:drop-shadow(0 0 18px rgba(255,211,78,.55))}",
+        "#hk-badge .bd-img img,#hk-badge .bd-img svg{max-width:100%;max-height:100%;filter:drop-shadow(0 0 18px rgba(255,211,78,.45))}",
+        "#hk-badge .bd-img{width:220px;height:210px}",
+        "#hk-badge .bd-rank{margin:0 0 4px;font:700 .7rem Orbitron,sans-serif;letter-spacing:.3em;color:#ffd34e}",
+        "#hk-badge .bd-slot svg{width:100%;height:100%}",
+        "#hk-badge .bd-slot.off svg{filter:grayscale(1) brightness(.35)}",
         "#hk-badge h2{margin:4px 0 2px;font:900 clamp(1.2rem,4.6vw,1.7rem) Orbitron,sans-serif;color:#45f3ff}",
         "#hk-badge .bd-for{margin:0;color:#91adc0}",
         "#hk-badge .bd-count{margin:16px 0 10px;font:700 1rem Orbitron,sans-serif}",
@@ -74,7 +78,17 @@
         });
     }
 
-    function badgeImg(mission, alt) {
+    /* the shared medal design (shared/badgeart.js); the old
+       image files are only a fallback if that did not load */
+    function badgeImg(id, mission, alt, small) {
+
+        if (global.HackoBadgeArt) {
+            var art = global.HackoBadgeArt.svg(id, { ribbon: !small, title: false });
+            if (art) {
+                return art;
+            }
+        }
+
         return mission && mission.image
             ? "<img src=\"" + esc(ROOT + "Badges/" + mission.image) + "\" alt=\"" + esc(alt || "") +
               "\" onerror=\"this.replaceWith(document.createTextNode('🏅'))\">"
@@ -140,7 +154,7 @@
             return "<div class=\"bd-slot " + (has ? "on" : "off") +
                 (Number(id) === detail.mission ? " now" : "") +
                 "\" title=\"" + esc(has ? m.badge : "Locked - finish " + m.title) + "\">" +
-                badgeImg(m, has ? m.badge : "locked") + "</div>";
+                badgeImg(id, m, has ? m.badge : "locked", true) + "</div>";
         }).join("");
 
         root = doc.createElement("div");
@@ -154,8 +168,11 @@
                 "<div class=\"bd-kicker\">" +
                     (detail.newBadge ? "MISSION COMPLETE • BADGE EARNED" : "MISSION COMPLETE • ALREADY COLLECTED") +
                 "</div>" +
-                "<div class=\"bd-img\">" + badgeImg(mission, mission.badge) + "</div>" +
+                "<div class=\"bd-img\">" + badgeImg(detail.mission, mission, mission.badge) + "</div>" +
                 "<h2>" + esc(mission.badge) + "</h2>" +
+                (global.HackoBadgeArt
+                    ? "<div class=\"bd-rank\">" + esc(global.HackoBadgeArt.tierOf(detail.mission)) + " RANK</div>"
+                    : "") +
                 "<p class=\"bd-for\">for finishing " + esc(mission.title) + "</p>" +
                 "<div class=\"bd-count\">You have <b>" + owned.length + "</b> of " + ids.length + " badges</div>" +
                 "<div class=\"bd-row\">" + slots + "</div>" +

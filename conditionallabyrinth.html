@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="shared/hacko.css">
 <script src="shared/audio.js" data-track="defuse"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="9"></script>
 <script src="shared/hint.js"></script>
@@ -457,6 +458,14 @@ footer {
 
     var hint = null;
 
+    var hackoImage = new Image();
+    var hackoReady = false;
+    hackoImage.onload = function () {
+        hackoReady = true;
+        draw();
+    };
+    hackoImage.src = "hacko.png";
+
     function $(id) { return document.getElementById(id); }
 
     function log(text, cls) {
@@ -511,11 +520,14 @@ footer {
             };
         });
 
-        hint = HackoHint.forPuzzle({
+        /* hints cost a hint point - see shared/hint.js paid() */
+        hint = HackoHint.paid({
             id: "m9-l" + (state.level + 1),
             answer: level.answer,
             tiers: level.hints
         });
+
+        $("hintBtn").textContent = hint.label();
 
         $("levelTitle").textContent =
             "LEVEL " + (state.level + 1) + " - " + level.title;
@@ -615,17 +627,32 @@ footer {
             state.flash -= 1;
         }
 
-        ctx.shadowBlur = 16;
-        ctx.shadowColor = "#91ff6f";
-        ctx.fillStyle = "#91ff6f";
-        ctx.beginPath();
-        ctx.arc(0, 0, 13, 0, Math.PI * 2);
-        ctx.fill();
+        if (hackoReady) {
+            /* Every other mission shows Hacko; this one drew a
+               plain green dot. */
+            var scale = Math.min(
+                TILE * 1.2 / hackoImage.naturalWidth,
+                TILE * 1.3 / hackoImage.naturalHeight
+            );
+            var w = hackoImage.naturalWidth * scale;
+            var h = hackoImage.naturalHeight * scale;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = "#91ff6f";
+            ctx.drawImage(hackoImage, -w / 2, -h * 0.6, w, h);
+            ctx.shadowBlur = 0;
+        } else {
+            ctx.shadowBlur = 16;
+            ctx.shadowColor = "#91ff6f";
+            ctx.fillStyle = "#91ff6f";
+            ctx.beginPath();
+            ctx.arc(0, 0, 13, 0, Math.PI * 2);
+            ctx.fill();
 
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = "#07111f";
-        ctx.fillRect(-6, -4, 4, 4);
-        ctx.fillRect(2, -4, 4, 4);
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "#07111f";
+            ctx.fillRect(-6, -4, 4, 4);
+            ctx.fillRect(2, -4, 4, 4);
+        }
         ctx.restore();
 
         if (state.flash > 0) {
@@ -745,7 +772,8 @@ footer {
     $("hintBtn").addEventListener("click", function () {
         var next = hint.next();
         $("hintBox").textContent = next.name.toUpperCase() + ": " + next.text;
-        HackoAudio.play("select");
+        $("hintBtn").textContent = hint.label();
+        HackoAudio.play(next.ok ? "select" : "wrong");
     });
 
     $("retryBtn").addEventListener("click", function () {

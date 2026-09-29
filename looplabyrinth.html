@@ -516,6 +516,75 @@ textarea:focus {
     box-shadow: 0 0 18px #45f3ff33;
 }
 
+.slot-label {
+    margin: 0 0 6px;
+
+    color: var(--cyan);
+
+    font: 700 0.72rem Orbitron, sans-serif;
+    letter-spacing: 1px;
+}
+
+.slot-label span {
+    margin-left: 6px;
+
+    color: #7fa9bf;
+
+    font: 0.75rem Consolas, monospace;
+    letter-spacing: 0;
+}
+
+.answer-lines,
+.line-pool {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    min-height: 60px;
+    margin-bottom: 12px;
+    padding: 8px;
+
+    border: 1px dashed #3b83a5;
+    border-radius: 10px;
+
+    background: #02070d;
+}
+
+.answer-lines {
+    min-height: 150px;
+}
+
+.code-line {
+    padding: 6px 10px;
+
+    border: 1px solid #2c6384;
+    border-radius: 7px;
+
+    background: #0b2035;
+    color: #9dffc9;
+
+    font: 14px/1.4 Consolas, monospace;
+    white-space: pre;
+    text-align: left;
+
+    cursor: grab;
+    user-select: none;
+}
+
+.code-line:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 10px #45f3ff33;
+}
+
+.code-line.dragging {
+    opacity: 0.4;
+}
+
+.answer-lines.drop,
+.line-pool.drop {
+    border-color: var(--cyan);
+}
+
 .feedback {
     min-height: 42px;
 
@@ -638,8 +707,10 @@ textarea:focus {
 </style>
 <script src="shared/audio.js" data-track="labyrinth"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="4"></script>
+<script src="shared/hint.js"></script>
 </head>
 
 <body>
@@ -840,16 +911,31 @@ textarea:focus {
             </div>
 
             <div class="editor">
-                <textarea
-                    id="answerInput"
-                    spellcheck="false"
-                ></textarea>
+                <div class="slot-label">
+                    YOUR PROGRAM
+                    <span>click a line to send it back</span>
+                </div>
+
+                <div
+                    id="answerLines"
+                    class="answer-lines"
+                ></div>
+
+                <div class="slot-label">
+                    SCRAMBLED LINES
+                    <span>one line is a trap - leave it out</span>
+                </div>
+
+                <div
+                    id="linePool"
+                    class="line-pool"
+                ></div>
 
                 <div
                     id="feedback"
                     class="feedback"
                 >
-                    Enter your answer, then run the loop.
+                    Put the lines in the right order, then run the loop.
                 </div>
             </div>
         </div>
@@ -860,10 +946,11 @@ textarea:focus {
             </button>
 
             <button
+                id="hintBtn"
                 class="secondary"
                 onclick="useHint()"
             >
-                SHOW HINT
+                HINT
             </button>
 
             <button
@@ -1022,6 +1109,16 @@ const challenges = [
             'system.out.println', 'hacko'
         ],
 
+        lines: [
+            'for (int i = 0; i < 3; i++) {',
+            'System.out.println("HACKO");',
+            '}'
+        ],
+
+        decoys: [
+            'for (int i = 0; i <= 3; i++) {'
+        ],
+
         hints: [
             'A loop needs three things: where to start, when to stop, and how to move.',
             'Declare the counter with a type, stop before it reaches 3, and step up by one each pass.',
@@ -1051,6 +1148,18 @@ while (energy ___) {
             'int', 'while', '<=4', 'system.out.println', '++'
         ],
 
+        lines: [
+            'int energy = 1;',
+            'while (energy <= 4) {',
+            'System.out.println(energy);',
+            'energy++;',
+            '}'
+        ],
+
+        decoys: [
+            'while (energy < 4) {'
+        ],
+
         hints: [
             'A while loop only checks a condition - you set up and move the counter yourself.',
             'Start the counter at the first number you want printed, and keep going while it has not passed the last one.',
@@ -1076,6 +1185,16 @@ while (energy ___) {
 
         tokens: [
             'for', 'tile', '<=5', 'tile++', 'buildbridge'
+        ],
+
+        lines: [
+            'for (int tile = 1; tile <= 5; tile++) {',
+            'buildBridge(tile);',
+            '}'
+        ],
+
+        decoys: [
+            'for (int tile = 0; tile <= 5; tile++) {'
         ],
 
         hints: [
@@ -1107,6 +1226,17 @@ while (firewall ___) {
             'firewall=4', 'while', '>0', 'firewall--'
         ],
 
+        lines: [
+            'int firewall = 4;',
+            'while (firewall > 0) {',
+            'firewall--;',
+            '}'
+        ],
+
+        decoys: [
+            'firewall++;'
+        ],
+
         hints: [
             'This loop counts down instead of up.',
             'Keep draining while there is still something left to drain.',
@@ -1132,6 +1262,16 @@ while (firewall ___) {
 
         tokens: [
             'for', 'n=2', '<=10', '+=2', 'system.out.println'
+        ],
+
+        lines: [
+            'for (int n = 2; n <= 10; n += 2) {',
+            'System.out.println(n);',
+            '}'
+        ],
+
+        decoys: [
+            'for (int n = 2; n <= 10; n++) {'
         ],
 
         hints: [
@@ -1163,6 +1303,18 @@ while (sector ___) {
             'sector=1', 'while', '<=6', 'scan', 'sector++'
         ],
 
+        lines: [
+            'int sector = 1;',
+            'while (sector <= 6) {',
+            'scan(sector);',
+            'sector++;',
+            '}'
+        ],
+
+        decoys: [
+            'while (sector < 6) {'
+        ],
+
         hints: [
             'Sector 6 must be scanned too, not stopped at.',
             'Call scan with the current sector before moving on.',
@@ -1188,6 +1340,18 @@ while (sector ___) {
 
         tokens: [
             'for', 'row', '<3', 'row++', 'col', 'col++', 'check'
+        ],
+
+        lines: [
+            'for (int row = 0; row < 3; row++) {',
+            'for (int col = 0; col < 3; col++) {',
+            'check(row, col);',
+            '}',
+            '}'
+        ],
+
+        decoys: [
+            'for (int col = 0; col < 3; row++) {'
         ],
 
         minFor: 2,
@@ -1221,6 +1385,18 @@ while (timer ___) {
             'timer=8', 'while', '>=0', 'system.out.println', '-=2'
         ],
 
+        lines: [
+            'int timer = 8;',
+            'while (timer >= 0) {',
+            'System.out.println(timer);',
+            'timer -= 2;',
+            '}'
+        ],
+
+        decoys: [
+            'while (timer > 0) {'
+        ],
+
         hints: [
             'Zero has to be printed, so the loop cannot stop the moment it arrives.',
             'This counts down in steps of two rather than one.',
@@ -1248,6 +1424,17 @@ for (int i = 0; i < ___; i++) {
 
         tokens: [
             'key=""', 'for', 'i<3', 'i++', 'key+=', 'loop'
+        ],
+
+        lines: [
+            'String key = "";',
+            'for (int i = 0; i < 3; i++) {',
+            'key += "LOOP";',
+            '}'
+        ],
+
+        decoys: [
+            'key = "LOOP";'
         ],
 
         hints: [
@@ -1279,6 +1466,20 @@ for (int i = 0; i < ___; i++) {
         tokens: [
             'keys=0', 'for', 'i<5', 'keys++',
             'while', 'keys>0', 'keys--'
+        ],
+
+        lines: [
+            'int keys = 0;',
+            'for (int i = 0; i < 5; i++) {',
+            'keys++;',
+            '}',
+            'while (keys > 0) {',
+            'keys--;',
+            '}'
+        ],
+
+        decoys: [
+            'while (keys >= 0) {'
         ],
 
         minFor: 1,
@@ -2508,12 +2709,17 @@ function interact() {
         'challengeHint'
     ).textContent = ''
 
-    /* fresh puzzle, so hints start from the gentlest tier */
-    hintTier = 0
+    /* fresh puzzle, so hints start from the gentlest tier.
+       Each tier costs a hint point - see shared/hint.js. */
+    hint = HackoHint.paid({
+        id: 'm4-l' + (levelIndex + 1),
+        tiers: challenge.hints
+    })
 
-    document.getElementById(
-        'answerInput'
-    ).value = ''
+    document.getElementById('hintBtn').textContent =
+        hint.label()
+
+    setupArrange(challenge)
 
     const feedback =
         document.getElementById(
@@ -2524,7 +2730,7 @@ function interact() {
         'feedback'
 
     feedback.textContent =
-        'Enter your answer, then run the loop.'
+        'Put the lines in the right order, then run the loop.'
 
     document
         .getElementById(
@@ -2533,104 +2739,219 @@ function interact() {
         .classList.add('show')
 
     paused = true
-
-    setTimeout(() => {
-        document
-            .getElementById(
-                'answerInput'
-            )
-            .focus()
-    }, 50)
 }
 
-function normalize(value) {
-    return value
-        .toLowerCase()
-        .replace(/\s+/g, '')
-        .replace(/;/g, '')
+/* ---------------------------------------------------
+   ARRANGE THE LINES
+
+   Players used to type the whole loop from scratch.
+   The client asked for the lines to be handed over
+   scrambled instead, so the job is putting them in
+   the right order - plus one trap line that looks
+   right but is not.
+
+   Lines are compared by text, so two identical "}"
+   lines are interchangeable.
+--------------------------------------------------- */
+
+let answerOrder = []
+let poolOrder = []
+let draggedLine = null
+
+function shuffle(list) {
+    const copy = list.slice()
+
+    for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        const temp = copy[i]
+        copy[i] = copy[j]
+        copy[j] = temp
+    }
+
+    return copy
 }
+
+function setupArrange(challenge) {
+    const all =
+        challenge.lines
+            .concat(challenge.decoys || [])
+            .map((text, id) => ({ id, text }))
+
+    poolOrder = shuffle(all)
+    answerOrder = []
+
+    renderArrange()
+}
+
+function takeLine(id) {
+    const fromPool = poolOrder.find(l => l.id === id)
+    const fromAnswer = answerOrder.find(l => l.id === id)
+
+    poolOrder = poolOrder.filter(l => l.id !== id)
+    answerOrder = answerOrder.filter(l => l.id !== id)
+
+    return fromPool || fromAnswer
+}
+
+function placeLine(id, target, beforeId) {
+    const line = takeLine(id)
+
+    if (!line) {
+        return
+    }
+
+    const list =
+        target === 'answer' ? answerOrder : poolOrder
+
+    const at =
+        beforeId === null
+            ? -1
+            : list.findIndex(l => l.id === beforeId)
+
+    if (at === -1) {
+        list.push(line)
+    } else {
+        list.splice(at, 0, line)
+    }
+
+    HackoAudio.play('tick')
+    renderArrange()
+}
+
+function lineElement(line, where, indent) {
+    const el = document.createElement('div')
+
+    el.className = 'code-line'
+    el.textContent = '    '.repeat(indent) + line.text
+    el.draggable = true
+
+    el.addEventListener('click', () => {
+        placeLine(
+            line.id,
+            where === 'answer' ? 'pool' : 'answer',
+            null
+        )
+    })
+
+    el.addEventListener('dragstart', event => {
+        draggedLine = line.id
+        el.classList.add('dragging')
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData('text/plain', String(line.id))
+    })
+
+    el.addEventListener('dragend', () => {
+        draggedLine = null
+        el.classList.remove('dragging')
+    })
+
+    /* dropping on a line inserts before it */
+    el.addEventListener('dragover', event => {
+        event.preventDefault()
+    })
+
+    el.addEventListener('drop', event => {
+        event.preventDefault()
+        event.stopPropagation()
+
+        if (draggedLine !== null && draggedLine !== line.id) {
+            placeLine(draggedLine, where, line.id)
+        }
+    })
+
+    return el
+}
+
+function renderArrange() {
+    const answerBox = document.getElementById('answerLines')
+    const poolBox = document.getElementById('linePool')
+
+    answerBox.innerHTML = ''
+    poolBox.innerHTML = ''
+
+    /* indent the player's program by its braces, so they
+       can see the shape they are building */
+    let depth = 0
+
+    answerOrder.forEach(line => {
+        const text = line.text.trim()
+
+        if (text.startsWith('}')) {
+            depth = Math.max(0, depth - 1)
+        }
+
+        answerBox.appendChild(lineElement(line, 'answer', depth))
+
+        if (text.endsWith('{')) {
+            depth += 1
+        }
+    })
+
+    poolOrder.forEach(line => {
+        poolBox.appendChild(lineElement(line, 'pool', 0))
+    })
+}
+
+;['answerLines', 'linePool'].forEach(boxId => {
+    const box = document.getElementById(boxId)
+    const target = boxId === 'answerLines' ? 'answer' : 'pool'
+
+    box.addEventListener('dragover', event => {
+        event.preventDefault()
+        box.classList.add('drop')
+    })
+
+    box.addEventListener('dragleave', () => {
+        box.classList.remove('drop')
+    })
+
+    box.addEventListener('drop', event => {
+        event.preventDefault()
+        box.classList.remove('drop')
+
+        if (draggedLine !== null) {
+            placeLine(draggedLine, target, null)
+        }
+    })
+})
 
 function submitAnswer() {
     HackoAudio.play("select");
     const challenge =
         challenges[levelIndex]
 
-    const rawAnswer =
-        document.getElementById(
-            'answerInput'
-        ).value
+    const placed =
+        answerOrder.map(l => l.text.trim())
 
-    const normalizedAnswer =
-        normalize(rawAnswer)
-
-    let correct =
-        rawAnswer.trim().length > 12 &&
-        challenge.tokens.every(
-            token => {
-                return normalizedAnswer.includes(
-                    normalize(token)
-                )
-            }
+    const usedTrap =
+        placed.some(text =>
+            (challenge.decoys || []).includes(text)
         )
 
-    const forCount =
-        (
-            rawAnswer.match(
-                /\bfor\s*\(/gi
-            ) || []
-        ).length
-
-    const whileCount =
-        (
-            rawAnswer.match(
-                /\bwhile\s*\(/gi
-            ) || []
-        ).length
-
-    if (
-        challenge.minFor &&
-        forCount <
-        challenge.minFor
-    ) {
-        correct = false
-    }
-
-    if (
-        challenge.minWhile &&
-        whileCount <
-        challenge.minWhile
-    ) {
-        correct = false
-    }
-
-    if (
-        challenge.kind === 'for' &&
-        forCount < 1
-    ) {
-        correct = false
-    }
-
-    if (
-        challenge.kind === 'while' &&
-        whileCount < 1
-    ) {
-        correct = false
-    }
-
-    if (
-        challenge.kind === 'mixed' &&
-        (
-            forCount < 1 ||
-            whileCount < 1
+    const correct =
+        !usedTrap &&
+        placed.length === challenge.lines.length &&
+        placed.every((text, i) =>
+            text === challenge.lines[i].trim()
         )
-    ) {
-        correct = false
-    }
 
     const feedback =
         document.getElementById(
             'feedback'
         )
+
+    let problem =
+        'ACCESS DENIED — the order is not right yet. ' +
+        'Where does the loop start, and what runs inside it?'
+
+    if (usedTrap) {
+        problem =
+            'ACCESS DENIED — one of your lines is the trap. ' +
+            'Read each condition carefully.'
+    } else if (placed.length < challenge.lines.length) {
+        problem =
+            'ACCESS DENIED — some lines are still missing.'
+    }
 
     if (correct) {
         feedback.className =
@@ -2674,9 +2995,7 @@ function submitAnswer() {
         feedback.className =
             'feedback bad'
 
-        feedback.textContent =
-            'ACCESS DENIED — check the loop type, condition, ' +
-            'update step and required action.'
+        feedback.textContent = problem
     }
 }
 
@@ -2693,28 +3012,24 @@ function submitAnswer() {
  * answer. tools/audit-hints.js fails the build if one ever
  * contains its own answer again.
  */
-let hintTier = 0
+let hint = null
 
 function useHint() {
-    HackoAudio.play("open");
-    const challenge =
-        challenges[levelIndex]
+    if (!hint) {
+        return
+    }
 
-    const tiers =
-        challenge.hints || [challenge.hint]
+    const next = hint.next()
 
-    const label =
-        ['HINT', 'STRUCTURE', 'EXAMPLE'][hintTier] ||
-        'EXAMPLE'
+    HackoAudio.play(next.ok ? 'open' : 'wrong')
 
     document.getElementById(
         'challengeHint'
     ).textContent =
-        label + ': ' + tiers[hintTier]
+        next.name.toUpperCase() + ': ' + next.text
 
-    if (hintTier < tiers.length - 1) {
-        hintTier++
-    }
+    document.getElementById('hintBtn').textContent =
+        hint.label()
 }
 
 function closeChallenge() {
@@ -4260,8 +4575,9 @@ window.addEventListener(
         ) {
             interact()
         } else if (
-            event.key === 'r' ||
-            event.key === 'R'
+            (event.key === 'r' ||
+            event.key === 'R') &&
+            !paused
         ) {
             restartLevel()
         } else if (

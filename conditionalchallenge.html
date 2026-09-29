@@ -863,6 +863,7 @@
     </style>
 <script src="shared/audio.js" data-track="defuse"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="3"></script>
 </head>
@@ -946,7 +947,7 @@
                     class="hud-card timer-card"
                     id="timerCard"
                 >
-                    <span>Timer</span>
+                    <span id="timerLabel">Timer</span>
                     <strong id="timerText">02:00</strong>
                 </div>
 
@@ -1195,7 +1196,9 @@
 
                 <br><br>
 
-                The bomb explodes when the two-minute timer reaches zero.
+                You have two minutes to reach the bomb. Opening it
+                starts a 30-second defuse countdown - cut the right
+                wire before it reaches zero.
             </div>
 
             <div class="modal-actions">
@@ -1342,6 +1345,9 @@
             x: 1,
             y: 1
         }
+
+        /* seconds on the bomb once its terminal is opened */
+        const DEFUSE_SECONDS = 30
 
         const BOMB_POSITION = {
             x: 12,
@@ -1798,6 +1804,8 @@
             lives: 3,
             score: 0,
             timeRemaining: 120,
+            /* null until the bomb is first opened - see DEFUSE_SECONDS */
+            defuseRemaining: null,
             bombDefused: false,
             gameOver: false,
             gameWon: false,
@@ -1875,6 +1883,7 @@
             state.lives = 3
             state.score = 0
             state.timeRemaining = 120
+            state.defuseRemaining = null
             state.bombDefused = false
             state.gameOver = false
             state.gameWon = false
@@ -2006,6 +2015,23 @@
                         state.gameWon ||
                         state.bombDefused
                     ) {
+                        return
+                    }
+
+                    /* once the bomb is open, only the defuse
+                       countdown runs */
+                    if (state.defuseRemaining !== null) {
+                        state.defuseRemaining--
+
+                        updateUI()
+                        updateBombSubtitle()
+
+                        if (state.defuseRemaining <= 0) {
+                            explodeBomb(
+                                `The ${DEFUSE_SECONDS}-second defuse countdown reached zero.`
+                            )
+                        }
+
                         return
                     }
 
@@ -2880,10 +2906,24 @@
             state.bombOpen = true
             selectedWire = null
 
-            document.getElementById(
-                'bombSubtitle'
-            ).textContent =
-                `${formatTime(state.timeRemaining)} remaining`
+            /* Client request: 30 seconds before the bomb goes
+               off. The first time the bomb is opened the
+               defuse countdown starts, and it keeps running
+               even if Hacko steps back into the maze. */
+            if (state.defuseRemaining === null) {
+                state.defuseRemaining = DEFUSE_SECONDS
+
+                HackoAudio.play('zap')
+
+                addConsole(
+                    'error',
+                    `Defuse sequence armed: ${DEFUSE_SECONDS} seconds!`
+                )
+
+                updateUI()
+            }
+
+            updateBombSubtitle()
 
             const collectedClues =
                 clues
@@ -2919,6 +2959,15 @@
                 .classList.add(
                     'visible'
                 )
+        }
+
+        function updateBombSubtitle() {
+            document.getElementById(
+                'bombSubtitle'
+            ).textContent =
+                state.defuseRemaining === null
+                    ? `${formatTime(state.timeRemaining)} remaining`
+                    : `DEFUSE COUNTDOWN: ${Math.max(0, state.defuseRemaining)} seconds`
         }
 
         function closeBombModal() {
@@ -3044,22 +3093,32 @@ ${selected}`
 
             HackoAudio.play("wrong")
 
-            state.timeRemaining =
+            /* The bomb is always open here, so the defuse clock
+               is the one running. A full level penalty (up to
+               22s) would empty a 30s clock in one miss, so the
+               defuse clock loses half of it. */
+            const penalty =
+                Math.ceil(
+                    currentLevel().wrongPenalty / 2
+                )
+
+            state.defuseRemaining =
                 Math.max(
                     1,
-                    state.timeRemaining -
-                    currentLevel().wrongPenalty
+                    state.defuseRemaining -
+                    penalty
                 )
 
             addConsole(
                 'error',
-                `Incorrect branch. ${currentLevel().wrongPenalty} seconds removed.`
+                `Incorrect branch. ${penalty} seconds removed from the defuse countdown.`
             )
 
             closeBombModal()
+            updateUI()
 
             if (
-                state.timeRemaining <= 1
+                state.defuseRemaining <= 1
             ) {
                 explodeBomb(
                     'The wrong wire triggered the final countdown.'
@@ -3102,7 +3161,7 @@ ${selected}`
             document.getElementById(
                 'winSubtitle'
             ).textContent =
-                `Bomb defused with ${formatTime(state.timeRemaining)} remaining.`
+                `Bomb defused with ${state.defuseRemaining} seconds to spare.`
 
             document.getElementById(
                 'resultBox'
@@ -3137,6 +3196,10 @@ ${selected}`
 
             state.gameOver = true
             state.timeRemaining = 0
+
+            if (state.defuseRemaining !== null) {
+                state.defuseRemaining = 0
+            }
 
             clearInterval(
                 timerInterval
@@ -3707,17 +3770,28 @@ ${selected}`
             ).textContent =
                 `${level.id} / 10`
 
+            const defusing =
+                state.defuseRemaining !== null
+
+            document.getElementById(
+                'timerLabel'
+            ).textContent =
+                defusing ? 'Defuse' : 'Timer'
+
             document.getElementById(
                 'timerText'
             ).textContent =
                 formatTime(
-                    state.timeRemaining
+                    defusing
+                        ? state.defuseRemaining
+                        : state.timeRemaining
                 )
 
             document.getElementById(
                 'timerCard'
             ).classList.toggle(
                 'warning',
+                defusing ||
                 state.timeRemaining <= 30
             )
 
@@ -3992,7 +4066,7 @@ ${selected}`
                 case 'status':
                     addConsole(
                         'system',
-                        `Level: ${currentLevel().id}/10\nTimer: ${formatTime(state.timeRemaining)}\nLives: ${state.lives}\nClues: ${state.cluesCollected}/${currentLevel().requiredClues}`
+                        `Level: ${currentLevel().id}/10\nTimer: ${state.defuseRemaining !== null ? formatTime(state.defuseRemaining) + ' (defusing)' : formatTime(state.timeRemaining)}\nLives: ${state.lives}\nClues: ${state.cluesCollected}/${currentLevel().requiredClues}`
                     )
                     break
 

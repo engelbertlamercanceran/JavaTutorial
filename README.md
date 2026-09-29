@@ -21,6 +21,7 @@ hack/
   Badges/          the ten mission badges
   login.html       pick a player
   map.html         mission map - the way in to every game
+  certificate.html printable certificate, unlocked by finishing all 10 missions
   <mission>.html   the games
 ```
 
@@ -113,6 +114,18 @@ any lesson. Both catch classes of bug that shipped unnoticed before.
 - **Hints never contain their answer.** Three tiers: nudge, structure, then a
   worked example using *different* values. `HackoHint.leaks()` blocks a leaking
   hint at runtime and `test-shared.js` fails the build.
+- **Badges are one medal design**, drawn as SVG by `shared/badgeart.js` in
+  the style of Dota 2 rank medals. The emblem shows the topic; the metal shows
+  progress (bronze, silver, gold, emerald, divine, immortal). The PNGs in
+  `Badges/` are only a fallback.
+- **The certificate needs every level of all ten missions** - the same 100%
+  as the badges. `HackoStore.certificate()` enforces it, so the page cannot be
+  reached by typing its address.
+- **Hints cost hint points**, in the four games where a hint can teach
+  without answering (4, 8, 9, 10). Start with 3, earn 1 per level cleared in
+  those games, 1 point per tier, and a bought tier stays free. Kept apart from
+  XP so buying help never lowers the score. Use `HackoHint.paid()`; the rules
+  live in `HINT POINTS` in `shared/storage.js`.
 - **Starter code is a skeleton, never the solution.** Several games used to
   pre-fill the finished answer, so pressing RUN won instantly.
 - **Lesson content is Java.** Four games previously taught PHP or JavaScript.

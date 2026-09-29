@@ -30,6 +30,12 @@
     var LIVES_RULE = "You have 3 lives. Lose all 3 and you go back one level - " +
         "so a mistake costs a little, never the whole mission.";
 
+    /* the games that sell hints - see HINT POINTS in storage.js */
+    var HINT_GAMES = (global.HackoStore && global.HackoStore.HINT_MISSIONS) || [4, 8, 9, 10];
+
+    var HINT_RULE = "Hints cost 1 hint point each. You start with 3 and earn " +
+        "1 more for every level you clear in a game with hints. A hint you already bought is free to read again.";
+
     var BRIEFS = {
 
         1: {
@@ -103,7 +109,7 @@
                 "Move through the maze and collect the clues shown in the objective.",
                 "Avoid the security birds. Grab a power core and, for a short time, you can catch them.",
                 "With enough clues, reach the bomb chamber and press E.",
-                "Write the if statement that defuses it. Watch the timer!"
+                "Opening the bomb starts a 30-second defuse countdown - pick the right wire before it hits zero!"
             ],
             controls: [
                 ["W A S D  /  ARROWS", "Move"],
@@ -127,10 +133,10 @@
             title: "Loop Labyrinth",
             topic: "for and while loops",
             goal: "Escape the labyrinth. Collect the data cores, open the loop " +
-                "gate by writing a loop, and reach the exit alive.",
+                "gate by building a loop, and reach the exit alive.",
             steps: [
                 "Collect every glowing data core.",
-                "Stand beside the loop gate and press E - write the loop it asks for.",
+                "Stand beside the loop gate and press E - put the scrambled lines in order. One line is a trap.",
                 "Avoid spikes, blades, acid and the patrolling enemies.",
                 "With every core collected and the gate open, walk to the exit."
             ],
@@ -187,12 +193,12 @@
             topic: "Functions (methods)",
             goal: "The fortress is sealed by machines that only obey functions. " +
                 "Build the right functions, call them in the right order, and " +
-                "escape through the portal.",
+                "escape through the door.",
             steps: [
-                "Run to the Code Console to switch it on. Collect the Function Stones on the way.",
+                "Stand on the CODE button beside the door - the question only unlocks while you are on it.",
                 "Build a function from blocks, then press SAVE FUNCTION.",
                 "Pick a function in the Call Console, fill in its arguments, press ADD CALL, then RUN PROGRAM.",
-                "When the program works the lasers switch off - reach the green portal on the far right."
+                "When the program works the lasers switch off and the door opens - walk through it."
             ],
             controls: [
                 ["← →  /  A D", "Move"],
@@ -528,6 +534,9 @@
                             return "<div class='b-key'><kbd>" + esc(c[0]) + "</kbd><span>" + esc(c[1]) + "</span></div>";
                         }).join("") +
                         "<div class='b-lives'>&#10084; " + esc(LIVES_RULE) + "</div>" +
+                        (HINT_GAMES.indexOf(MISSION) !== -1
+                            ? "<div class='b-lives'>&#128161; " + esc(HINT_RULE) + "</div>"
+                            : "") +
                     "</div>" +
                 "</div>" +
                 "<div class='b-level' id='hk-brief-level'></div>" +

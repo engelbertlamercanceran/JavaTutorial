@@ -218,6 +218,42 @@ unique.forEach(function (badge) {
 
 console.log("  " + unique.length + " badge images referenced");
 
+/* The badges share one medal design (shared/badgeart.js)
+   instead of ten unrelated images. */
+ok("map draws badges with the shared medal art",
+    map.indexOf("shared/badgeart.js") !== -1 &&
+    map.indexOf("HackoBadgeArt.svg(") !== -1);
+
+Object.keys(GAMES).concat(["aa/debugging.html"]).forEach(function (file) {
+    var src = read(file);
+    if (src.indexOf("shared/badges.js") !== -1) {
+        ok(file + " loads the medal art for its badge pop-up",
+            src.indexOf("shared/badgeart.js") !== -1 &&
+            src.indexOf("shared/badgeart.js") < src.indexOf("shared/badges.js"));
+    }
+});
+
+
+/* ---------------------------------------------------
+   CERTIFICATE
+--------------------------------------------------- */
+
+console.log("\ncertificate");
+
+ok("certificate page exists", exists("certificate.html"));
+
+var cert = exists("certificate.html") ? read("certificate.html") : "";
+
+ok("certificate checks completion itself, not just the map link",
+    cert.indexOf("HackoStore.certificate()") !== -1);
+ok("certificate sends signed-out players to sign in",
+    cert.indexOf("login.html") !== -1);
+ok("certificate prints on one A4 landscape page",
+    /size:\s*A4 landscape/.test(cert));
+ok("map only shows the certificate once it is earned",
+    map.indexOf("HackoStore.hasCertificate()") !== -1 &&
+    /id="certificatePanel"[\s\S]{0,40}hidden/.test(map));
+
 
 /* ---------------------------------------------------
    LOGIN

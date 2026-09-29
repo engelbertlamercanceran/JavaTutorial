@@ -835,10 +835,38 @@ body {
         .35s ease;
 }
 
-.mission.completed .badge {
+.mission.completed .badge,
+.boss.completed .badge {
     opacity: 1;
 
     transform: scale(1);
+}
+
+/* the medal art replaces the old gold circle and emoji */
+.badge.has-art {
+    width: 78px;
+    height: 75px;
+
+    right: -26px;
+    top: -30px;
+
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,.7));
+}
+
+.badge.has-art svg {
+    width: 100%;
+    height: 100%;
+}
+
+.badge.has-art .badge-label {
+    top: 74px;
+    right: 50%;
+    transform: translateX(50%);
 }
 
 .badge-label {
@@ -1396,6 +1424,127 @@ body {
     filter: drop-shadow(0 2px 2px rgba(0,0,0,.6));
 }
 
+.badge-icon svg {
+    width: 58px;
+    height: 56px;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,.6));
+}
+
+.badge-item:not(.earned) .badge-icon svg {
+    filter: grayscale(1) brightness(.4);
+}
+
+.badge-item .badge-icon {
+    width: 58px;
+    height: 56px;
+    position: relative;
+}
+
+.badge-lock {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    font-size: 16px;
+}
+
+.badge-rank {
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: #d3bd8b;
+}
+
+
+/* =========================================================
+   CERTIFICATE - shown only once all ten missions are done
+========================================================= */
+
+.certificate-panel {
+    width: min(1050px, 100%);
+
+    margin: 30px auto 0;
+
+    padding: 22px;
+
+    position: relative;
+
+    z-index: 20;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 22px;
+
+    flex-wrap: wrap;
+
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(90,64,20,.95),
+            rgba(35,28,18,.95)
+        );
+
+    border: 3px solid #e7c066;
+
+    box-shadow:
+        0 0 24px rgba(255,211,106,.35),
+        0 6px 12px rgba(0,0,0,.45);
+}
+
+.certificate-panel[hidden] {
+    display: none;
+}
+
+.certificate-seal {
+    width: 110px;
+    height: 105px;
+}
+
+.certificate-text h2 {
+    color: #ffd36a;
+    margin-bottom: 6px;
+}
+
+.certificate-text p {
+    color: #eadfc8;
+    line-height: 1.5;
+    max-width: 520px;
+}
+
+.certificate-button {
+    display: inline-block;
+
+    padding: 14px 26px;
+
+    border-radius: 8px;
+
+    border: 3px solid #57351f;
+
+    background:
+        linear-gradient(
+            #ffe08a,
+            #c98a2c
+        );
+
+    color: #2a1a06;
+
+    font-weight: 1000;
+
+    font-size: 16px;
+
+    text-decoration: none;
+
+    box-shadow: 0 5px 0 #372117;
+}
+
+.certificate-button:hover {
+    filter: brightness(1.1);
+}
+
 .badge-name {
     font-size: 9px;
 
@@ -1507,6 +1656,12 @@ body {
     justify-content: center;
     margin-bottom: 22px;
     min-height: 180px;
+}
+
+.badge-viewer-image-wrap svg {
+    width: min(300px, 100%);
+    height: auto;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,.7));
 }
 
 .badge-viewer-image-wrap img {
@@ -1756,6 +1911,7 @@ body {
 <link rel="stylesheet" href="shared/hacko.css">
 <script src="shared/audio.js" data-track="menu"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/badgeart.js"></script>
 <script>
 /* A visible switch for opening every mission while testing, so a
    game can be checked without playing the ones before it. */
@@ -1957,6 +2113,22 @@ window.addEventListener("load", function () {
                     id="heartsDisplay"
                 >
                     ❤️❤️❤️
+                </span>
+
+            </div>
+
+
+            <div class="stat-card" title="Spend these on hints in Loop Labyrinth, Classroom Rescue, Conditional Labyrinth II and Loop Boss">
+
+                <span class="stat-label">
+                    HINT POINTS
+                </span>
+
+                <span
+                    class="stat-value points"
+                    id="hintPointsDisplay"
+                >
+                    💡 3
                 </span>
 
             </div>
@@ -2477,6 +2649,45 @@ window.addEventListener("load", function () {
             </section>
 
 
+            <!-- =============================================
+                 CERTIFICATE - hidden until all 10 are done
+            ============================================== -->
+
+            <section
+                class="certificate-panel"
+                id="certificatePanel"
+                hidden
+            >
+
+                <div
+                    class="certificate-seal"
+                    id="certificateSeal"
+                ></div>
+
+                <div class="certificate-text">
+
+                    <h2>
+                        🎓 JAVA BASIC PROGRAMMING - COMPLETE!
+                    </h2>
+
+                    <p>
+                        You finished all ten missions and collected
+                        every badge. Your certificate of completion
+                        is ready to view, print or save as a PDF.
+                    </p>
+
+                </div>
+
+                <a
+                    class="certificate-button"
+                    href="certificate.html"
+                >
+                    VIEW CERTIFICATE
+                </a>
+
+            </section>
+
+
             <button
                 class="reset-button"
                 onclick="resetGame()"
@@ -2599,13 +2810,15 @@ window.addEventListener("load", function () {
             Badge
         </div>
 
-        <div class="badge-viewer-image-wrap">
-            <img
-                id="badgeViewerImage"
-                src=""
-                alt="Badge"
-            >
-        </div>
+        <div
+            class="badge-viewer-image-wrap"
+            id="badgeViewerArt"
+        ></div>
+
+        <div
+            class="modal-topic"
+            id="badgeViewerRank"
+        ></div>
 
         <button
             class="modal-button secondary"
@@ -2625,128 +2838,128 @@ window.addEventListener("load", function () {
    HACKO GAME DATA
 ========================================================= */
 
-const missions = {
-
-    1: {
-        title: "The Escape Room",
-        topic: "Variables + Data Types",
-        icon: "🚪",
-        badge: "VARIABLE HERO",
-        badgeImage: "Badges/variablehero.png",
-        description:
-            "Escape the room by learning how Java variables and data types work.",
+const missions = {
+
+    1: {
+        title: "The Escape Room",
+        topic: "Variables + Data Types",
+        icon: "🚪",
+        badge: "VARIABLE HERO",
+        badgeImage: "Badges/variablehero.png",
+        description:
+            "Escape the room by learning how Java variables and data types work.",
         points: 100,
-        file: "theescaperoom.html"
-    },
-
-    2: {
-        title: "The Secret Message",
-        topic: "Input / Output",
-        icon: "✉️",
-        badge: "CODE MESSENGER",
-        badgeImage: "Badges/codemessenger.png",
-        description:
-            "Decode the secret message using Java input and output commands.",
+        file: "theescaperoom.html"
+    },
+
+    2: {
+        title: "The Secret Message",
+        topic: "Input / Output",
+        icon: "✉️",
+        badge: "CODE MESSENGER",
+        badgeImage: "Badges/codemessenger.png",
+        description:
+            "Decode the secret message using Java input and output commands.",
         points: 100,
-        file: "thesecretmessage.html"
-    },
-
-    3: {
-        title: "Conditional Challenge",
-        topic: "If-Else Statements",
-        icon: "⚔️",
-        badge: "DECISION MASTER",
-        badgeImage: "Badges/decisionmaster.png",
-        description:
-            "Use if-else statements to make the correct decisions and defeat the challenge.",
+        file: "thesecretmessage.html"
+    },
+
+    3: {
+        title: "Conditional Challenge",
+        topic: "If-Else Statements",
+        icon: "⚔️",
+        badge: "DECISION MASTER",
+        badgeImage: "Badges/decisionmaster.png",
+        description:
+            "Use if-else statements to make the correct decisions and defeat the challenge.",
         points: 150,
-        file: "conditionalchallenge.html"
-    },
-
-    4: {
-        title: "Loop Labyrinth",
-        topic: "Loops",
-        icon: "🌀",
-        badge: "LOOP RUNNER",
-        badgeImage: "Badges/looprunner.png",
-        description:
-            "Navigate the labyrinth by solving Java loop challenges.",
+        file: "conditionalchallenge.html"
+    },
+
+    4: {
+        title: "Loop Labyrinth",
+        topic: "Loops",
+        icon: "🌀",
+        badge: "LOOP RUNNER",
+        badgeImage: "Badges/looprunner.png",
+        description:
+            "Navigate the labyrinth by solving Java loop challenges.",
         points: 150,
-        file: "looplabyrinth.html"
-    },
-
-    5: {
-        title: "Array Adventure",
-        topic: "Arrays",
-        icon: "🧰",
-        badge: "ARRAY EXPLORER",
-        badgeImage: "Badges/arrayexplorer.png",
-        description:
-            "Explore arrays, organize data, and discover the hidden treasure.",
+        file: "looplabyrinth.html"
+    },
+
+    5: {
+        title: "Array Adventure",
+        topic: "Arrays",
+        icon: "🧰",
+        badge: "ARRAY EXPLORER",
+        badgeImage: "Badges/arrayexplorer.png",
+        description:
+            "Explore arrays, organize data, and discover the hidden treasure.",
         points: 175,
-        file: "arrayadventure.html"
-    },
-
-    6: {
-        title: "Function Fortress",
-        topic: "Methods / Functions",
-        icon: "🏰",
-        badge: "FUNCTION KNIGHT",
-        badgeImage: "Badges/functionknight.png",
-        description:
-            "Master Java methods and functions to unlock the fortress.",
+        file: "arrayadventure.html"
+    },
+
+    6: {
+        title: "Function Fortress",
+        topic: "Methods / Functions",
+        icon: "🏰",
+        badge: "FUNCTION KNIGHT",
+        badgeImage: "Badges/functionknight.png",
+        description:
+            "Master Java methods and functions to unlock the fortress.",
         points: 175,
-        file: "functionfortress.html"
-    },
-
-    7: {
-        title: "Debugging Duel",
-        topic: "Debugging",
-        icon: "⚔️",
-        badge: "BUG SLAYER",
-        badgeImage: "Badges/bugslayer.png",
-        description:
-            "Find the bugs hidden inside broken Java code and defeat them.",
+        file: "functionfortress.html"
+    },
+
+    7: {
+        title: "Debugging Duel",
+        topic: "Debugging",
+        icon: "⚔️",
+        badge: "BUG SLAYER",
+        badgeImage: "Badges/bugslayer.png",
+        description:
+            "Find the bugs hidden inside broken Java code and defeat them.",
         points: 200,
-        file: "aa/debugging.html"
-    },
-
-    8: {
-        title: "Classroom Rescue",
-        topic: "Classes & Objects",
-        icon: "🖥️",
-        badge: "OBJECT HERO",
-        badgeImage: "Badges/objecthero.png",
-        description:
-            "Use Java classes and objects to rescue the classroom.",
+        file: "aa/debugging.html"
+    },
+
+    8: {
+        title: "Classroom Rescue",
+        topic: "Classes & Objects",
+        icon: "🖥️",
+        badge: "OBJECT HERO",
+        badgeImage: "Badges/objecthero.png",
+        description:
+            "Use Java classes and objects to rescue the classroom.",
         points: 200,
-        file: "classroomrescue.html"
-    },
-
-    9: {
-        title: "Conditional Labyrinth II",
-        topic: "Nested Conditionals",
-        icon: "🚪",
-        badge: "LOGIC MASTER",
-        badgeImage: "Badges/LOGICMASTER.png",
-        description:
-            "Solve advanced nested conditional puzzles to reach the final challenge.",
+        file: "classroomrescue.html"
+    },
+
+    9: {
+        title: "Conditional Labyrinth II",
+        topic: "Nested Conditionals",
+        icon: "🚪",
+        badge: "LOGIC MASTER",
+        badgeImage: "Badges/LOGICMASTER.png",
+        description:
+            "Solve advanced nested conditional puzzles to reach the final challenge.",
         points: 250,
-        file: "conditionallabyrinth.html"
-    },
-
-    10: {
-        title: "Loop Boss Battle",
-        topic: "Nested Loops",
-        icon: "👹",
-        badge: "LOOP LEGEND",
-        badgeImage: "Badges/LOOPLEGEND.png",
-        description:
-            "FINAL CHALLENGE! Defeat the Loop Boss using nested loops to generate sequences and solve patterns.",
+        file: "conditionallabyrinth.html"
+    },
+
+    10: {
+        title: "Loop Boss Battle",
+        topic: "Nested Loops",
+        icon: "👹",
+        badge: "LOOP LEGEND",
+        badgeImage: "Badges/LOOPLEGEND.png",
+        description:
+            "FINAL CHALLENGE! Defeat the Loop Boss using nested loops to generate sequences and solve patterns.",
         points: 500,
-        file: "loopboss.html"
-    }
-
+        file: "loopboss.html"
+    }
+
 };
 
 
@@ -2932,6 +3145,11 @@ function updateUI() {
         gameState.points;
 
 
+    document.getElementById(
+        "hintPointsDisplay"
+    ).textContent =
+        "💡 " + HackoStore.hintBalance();
+
     updateHearts();
 
     updateMissions();
@@ -2939,6 +3157,72 @@ function updateUI() {
     updateProgress();
 
     updateBadges();
+
+    paintCardBadges();
+
+    updateCertificate();
+
+}
+
+
+/* The badge that pops onto a finished mission card - now the
+   same medal as everywhere else instead of a 🏅 emoji. */
+function paintCardBadges() {
+
+    document
+        .querySelectorAll(".mission, #bossMission")
+        .forEach(card => {
+
+            const number =
+                card.id === "bossMission"
+                    ? 10
+                    : Number(card.dataset.mission);
+
+            const badge =
+                card.querySelector(".badge");
+
+            if (!badge || badge.classList.contains("has-art")) {
+                return;
+            }
+
+            const label =
+                badge.querySelector(".badge-label");
+
+            badge.innerHTML =
+                HackoBadgeArt.svg(number, { ribbon: false });
+
+            if (label) {
+                badge.appendChild(label);
+            }
+
+            badge.removeAttribute("style");
+            badge.classList.add("has-art");
+
+        });
+
+}
+
+
+/* The certificate only appears once every mission is 100%
+   complete - see "CERTIFICATE" in shared/storage.js. */
+function updateCertificate() {
+
+    const panel =
+        document.getElementById(
+            "certificatePanel"
+        );
+
+    const earned =
+        HackoStore.hasCertificate();
+
+    panel.hidden = !earned;
+
+    if (earned) {
+        document.getElementById(
+            "certificateSeal"
+        ).innerHTML =
+            HackoBadgeArt.svg(10, { ribbon: false });
+    }
 
 }
 
@@ -3248,23 +3532,29 @@ function updateBadges() {
                 );
 
 
+            /* every badge is the same medal design (shared/
+               badgeart.js); a locked one shows greyed out, so
+               students can see what they are working towards */
             item.innerHTML = `
 
                 <div class="badge-icon">
-                    ${earned
-                        ? `<img src="${mission.badgeImage}" alt="${mission.badge}" onerror="this.style.display='none'; this.parentElement.innerHTML='🏅';">`
-                        : "🔒"}
+                    ${HackoBadgeArt.svg(number, { ribbon: false })}
+                    ${earned ? "" : '<span class="badge-lock">🔒</span>'}
                 </div>
 
                 <div class="badge-name">
                     ${mission.badge}
                 </div>
 
+                <div class="badge-rank">
+                    ${HackoBadgeArt.tierOf(number)}
+                </div>
+
             `;
 
             if (earned) {
                 item.onclick = function () {
-                    openBadgeViewer(mission.badge, mission.badgeImage);
+                    openBadgeViewer(mission.badge, number);
                 };
             }
 
@@ -3473,18 +3763,22 @@ function closeMission() {
    BADGE IMAGE VIEWER
 ========================================================= */
 
-function openBadgeViewer(title, imageSrc) {
+function openBadgeViewer(title, number) {
 
     document.getElementById(
         "badgeViewerTitle"
     ).textContent = title;
 
-    const img = document.getElementById(
-        "badgeViewerImage"
-    );
+    document.getElementById(
+        "badgeViewerArt"
+    ).innerHTML =
+        HackoBadgeArt.svg(number);
 
-    img.src = imageSrc;
-    img.alt = title;
+    document.getElementById(
+        "badgeViewerRank"
+    ).textContent =
+        HackoBadgeArt.tierOf(number) + " RANK • " +
+        missions[number].title;
 
     document.getElementById(
         "badgeModal"

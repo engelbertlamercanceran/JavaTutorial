@@ -174,6 +174,19 @@ main {
         0 6px 17px #0006;
 }
 
+/* the question stays locked until Hacko stands on the CODE button */
+.side.locked .gated > *:not(h3):not(.feedback) {
+    opacity: 0.3;
+    filter: grayscale(0.8);
+    pointer-events: none;
+}
+
+.side.locked .gated h3::after {
+    content: "  🔒 STAND ON THE CODE BUTTON";
+    color: var(--amber);
+    font-size: 0.68rem;
+}
+
 .panel h2,
 .panel h3 {
     margin: 0 0 7px;
@@ -406,6 +419,7 @@ footer {
 </style>
 <script src="shared/audio.js" data-track="fortress"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="6"></script>
 </head>
@@ -456,11 +470,11 @@ footer {
             id="stageMessage"
             class="stage-message"
         >
-            Find the glowing Code Console.
+            Find the glowing CODE button by the door.
         </div>
     </section>
 
-    <aside class="side">
+    <aside class="side" id="side">
         <section class="panel">
             <h2 id="missionTitle"></h2>
             <div id="missionGoal" class="goal"></div>
@@ -468,7 +482,7 @@ footer {
             <div id="dialogue" class="dialogue"></div>
         </section>
 
-        <section class="panel">
+        <section class="panel gated">
             <h3>FUNCTION GAUNTLET</h3>
 
             <div class="builder">
@@ -540,7 +554,7 @@ footer {
             ></div>
         </section>
 
-        <section class="panel">
+        <section class="panel gated">
             <h3>CALL CONSOLE</h3>
 
             <div class="builder">
@@ -595,7 +609,7 @@ footer {
                 id="feedback"
                 class="feedback"
             >
-                Reach the console to activate the Function Gauntlet.
+                Locked - stand on the CODE button by the door.
             </div>
         </section>
 
@@ -1444,6 +1458,21 @@ shutdownDefense(result);`
 
 let level = 0;
 
+/* The CODE button sits on the platform nearest the door, clear
+   of the ground sentry's patrol and the level-10 laser at 675. */
+const CODE_BUTTON = {
+    x: 606,
+    w: 46,
+    top: 410
+};
+
+const DOOR = {
+    x: 790,
+    y: 330,
+    w: 44,
+    h: 155
+};
+
 /* three lives per mission - see loseLifeAndMaybeDemote() */
 let missionLives = 3;
 let lastFootstep = 0;
@@ -1531,6 +1560,7 @@ function loadLevel(index) {
         functions: [],
         calls: [],
         consoleActive: false,
+        doorOpen: 0,
         solved: false,
         won: false,
         stones: makeStones(index),
@@ -1570,11 +1600,11 @@ function loadLevel(index) {
         `${index + 1}/10`;
 
     setFeedback(
-        "Reach the Code Console to activate the Function Gauntlet."
+        "Locked - stand on the CODE button by the door."
     );
 
     setMessage(
-        "Find the glowing Code Console. " +
+        "Find the glowing CODE button by the door. " +
         "Collect the Function Stones on the way."
     );
 
@@ -1832,7 +1862,7 @@ function saveFunction() {
     HackoAudio.play("select");
     if (!state.consoleActive) {
         setFeedback(
-            "Reach the Code Console first.",
+            "Stand on the CODE button first.",
             false
         );
 
@@ -1896,7 +1926,7 @@ function addCall() {
     HackoAudio.play("correct");
     if (!state.consoleActive) {
         setFeedback(
-            "Reach the Code Console first.",
+            "Stand on the CODE button first.",
             false
         );
 
@@ -2001,7 +2031,7 @@ function renderProgram() {
 function executeProgram() {
     if (!state.consoleActive) {
         setFeedback(
-            "Reach the Code Console first.",
+            "Stand on the CODE button first.",
             false
         );
 
@@ -2042,7 +2072,7 @@ function executeProgram() {
     );
 
     setMessage(
-        "Mechanism online! Reach the green exit portal at the far right."
+        "Mechanism online! The door is opening - walk through it."
     );
 }
 
@@ -2154,33 +2184,51 @@ function update(deltaTime) {
         keys.W = false;
     }
 
-    const consoleNear =
-        overlap(
-            player,
-            {
-                x: 210,
-                y: 340,
-                w: 55,
-                h: 60
-            }
-        );
+    /* Client request: the CODE box is now a floor button by the
+       door, and the question only unlocks while Hacko is
+       standing on it. Touching the old box once unlocked it for
+       good. */
+    const centerX =
+        player.x + player.w / 2;
+
+    const onButton =
+        player.onGround &&
+        centerX >= CODE_BUTTON.x &&
+        centerX <= CODE_BUTTON.x + CODE_BUTTON.w &&
+        Math.abs(
+            player.y + player.h - CODE_BUTTON.top
+        ) < 2;
 
     if (
-        consoleNear &&
-        !state.consoleActive
+        !state.solved &&
+        onButton !== state.consoleActive
     ) {
-        state.consoleActive = true;
+        state.consoleActive = onButton;
 
-        HackoAudio.play("open");
+        if (onButton) {
+            HackoAudio.play("open");
 
-        setMessage(
-            "Code Console linked! Build, save, call, and run your functions."
-        );
+            setMessage(
+                "CODE button pressed! Stay on it while you build, save, call, and run."
+            );
 
-        setFeedback(
-            "Function Gauntlet online.",
-            true
-        );
+            setFeedback(
+                "Function Gauntlet online.",
+                true
+            );
+        } else if (performance.now() > hurtTime) {
+            /* after a hit, keep the "Hit by..." message */
+            HackoAudio.play("bump");
+
+            setMessage(
+                "You stepped off the CODE button. Stand on it to unlock the question again."
+            );
+
+            setFeedback(
+                "Locked - stand on the CODE button by the door.",
+                false
+            );
+        }
     }
 
     state.stones.forEach(
@@ -2263,16 +2311,27 @@ function update(deltaTime) {
         }
     );
 
+    /* the door is solid until the program runs */
     if (
         !state.solved &&
-        player.x + player.w > 790
+        player.x + player.w > DOOR.x
     ) {
-        player.x = 752;
+        player.x = DOOR.x - player.w;
     }
 
+    if (state.solved) {
+        state.doorOpen =
+            Math.min(
+                1,
+                state.doorOpen + deltaTime * 1.6
+            );
+    }
+
+    /* walking through the open doorway ends the level */
     if (
         state.solved &&
-        player.x > 870
+        state.doorOpen >= 1 &&
+        player.x + player.w / 2 > DOOR.x + DOOR.w / 2
     ) {
         completeLevel();
     }
@@ -2540,6 +2599,13 @@ function updateUI() {
         ).disabled =
             !state.consoleActive;
     });
+
+    document.getElementById(
+        "side"
+    ).classList.toggle(
+        "locked",
+        !state.consoleActive && !state.solved
+    );
 }
 
 function renderLevels() {
@@ -2728,39 +2794,60 @@ function draw() {
     drawHacko();
 }
 
+/* A floor button: it sinks and turns green while pressed. */
 function drawConsole() {
+    const pressed =
+        state.consoleActive;
+
+    const glow =
+        pressed || state.solved
+            ? "#91ff70"
+            : "#45f3ff";
+
+    const x = CODE_BUTTON.x;
+    const w = CODE_BUTTON.w;
+    const top = CODE_BUTTON.top;
+    const height = pressed ? 4 : 10;
+
     ctx.save();
 
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = "#45f3ff";
-    ctx.fillStyle = "#123f5c";
+    /* base plate */
+    ctx.fillStyle = "#0b2236";
+    ctx.fillRect(x - 6, top - 3, w + 12, 3);
 
-    ctx.fillRect(
-        210,
-        340,
-        55,
-        60
-    );
+    /* the button itself */
+    ctx.shadowBlur = pressed ? 22 : 14;
+    ctx.shadowColor = glow;
+    ctx.fillStyle = pressed ? "#1f5a2e" : "#123f5c";
 
-    ctx.strokeStyle = "#45f3ff";
-    ctx.lineWidth = 3;
+    ctx.fillRect(x, top - 3 - height, w, height);
 
-    ctx.strokeRect(
-        215,
-        345,
-        45,
-        45
-    );
+    ctx.strokeStyle = glow;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, top - 3 - height, w, height);
 
-    ctx.fillStyle = "#45f3ff";
+    /* label floating above it */
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = glow;
     ctx.font = "bold 11px Orbitron";
     ctx.textAlign = "center";
 
     ctx.fillText(
         "CODE",
-        237,
-        373
+        x + w / 2,
+        top - 20
     );
+
+    if (!pressed && !state.solved) {
+        const bob =
+            Math.sin(performance.now() / 220) * 3;
+
+        ctx.fillText(
+            "▼",
+            x + w / 2,
+            top - 34 + bob
+        );
+    }
 
     ctx.restore();
 }
@@ -2963,35 +3050,47 @@ function drawMechanism() {
     ctx.strokeStyle =
         ctx.fillStyle;
 
-    ctx.lineWidth = 5;
+    /* Client request: a proper door at the end. It used to be
+       a red bar that turned into an outline beside a separate
+       portal, so it never looked like it opened. Now the two
+       panels slide apart and the doorway is the exit. */
+    const open = state.doorOpen;
+    const half = DOOR.w / 2;
+    const slide = half * open;
 
+    /* doorway light, visible as the panels part */
+    if (open > 0) {
+        ctx.fillStyle = "#91ff7055";
+        ctx.fillRect(DOOR.x, DOOR.y, DOOR.w, DOOR.h);
+    }
+
+    /* frame */
+    ctx.lineWidth = 5;
     ctx.strokeRect(
-        790,
-        300,
-        25,
-        185
+        DOOR.x - 4,
+        DOOR.y - 4,
+        DOOR.w + 8,
+        DOOR.h + 4
     );
 
-    if (solved) {
-        ctx.beginPath();
+    /* panels */
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = solved ? "#1f5a2e" : "#5a1a2a";
 
-        ctx.arc(
-            900,
-            440,
-            pulse,
-            0,
-            Math.PI * 2
-        );
+    ctx.fillRect(DOOR.x, DOOR.y, half - slide, DOOR.h);
+    ctx.fillRect(DOOR.x + half + slide, DOOR.y, half - slide, DOOR.h);
 
-        ctx.stroke();
-    } else {
-        ctx.fillRect(
-            790,
-            300,
-            25,
-            185
-        );
-    }
+    /* lock light */
+    ctx.fillStyle = solved ? "#91ff70" : "#ff496f";
+    ctx.beginPath();
+    ctx.arc(
+        DOOR.x + DOOR.w / 2,
+        DOOR.y - 14,
+        solved ? pulse / 2 : 6,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
 
     ctx.shadowBlur = 0;
     ctx.fillStyle = "#ffffff";
@@ -3013,8 +3112,8 @@ function drawMechanism() {
 
     ctx.fillText(
         labels[level],
-        802,
-        285
+        DOOR.x + DOOR.w / 2,
+        DOOR.y - 30
     );
 
     if (level === 1) {
@@ -3145,6 +3244,15 @@ function loop(now) {
 window.addEventListener(
     "keydown",
     event => {
+        /* typing an argument like "red" or "5" used to walk
+           Hacko around - and off the CODE button */
+        if (
+            event.target.closest &&
+            event.target.closest("input, select, textarea")
+        ) {
+            return;
+        }
+
         keys[event.key] = true;
 
         if (

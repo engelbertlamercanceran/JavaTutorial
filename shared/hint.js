@@ -208,6 +208,123 @@
 
 
     /* ---------------------------------------------------
+       PAID HINTS
+
+       Same tiers as forPuzzle(), but every tier is bought
+       with a hint point from HackoStore (see "HINT POINTS" in
+       storage.js). A tier the player already paid for - even
+       in an earlier visit - is free to read again.
+
+           var hint = HackoHint.paid({ id, answer, tiers });
+           var result = hint.next();
+           // { ok, text, name, tier, last, charged, balance }
+           button.textContent = hint.label();
+
+       Without a signed-in player (a game opened directly)
+       hints are simply free.
+    --------------------------------------------------- */
+
+    function store() {
+        return global.HackoStore && global.HackoStore.buyHint
+            ? global.HackoStore
+            : null;
+    }
+
+    function balance() {
+        var s = store();
+        return s ? s.hintBalance() : null;
+    }
+
+    function paid(config) {
+
+        var inner = forPuzzle(config);
+        var id = inner.id;
+        var count = ((config && config.tiers) || []).length;
+        var used = 0;
+
+        function nextIsFree() {
+            var s = store();
+            return !s || used >= count || used < s.hintsOwned(id);
+        }
+
+        return {
+
+            id: id,
+
+            next: function () {
+
+                /* all tiers shown: repeat the last one for free */
+                if (used >= count) {
+                    var again = inner.peek(count - 1);
+                    return {
+                        ok: true,
+                        text: again,
+                        tier: count - 1,
+                        name: TIER_NAMES[count - 1] || "Hint",
+                        last: true,
+                        charged: false,
+                        balance: balance()
+                    };
+                }
+
+                var s = store();
+                var bought = s
+                    ? s.buyHint(id, used)
+                    : { ok: true, charged: false, balance: null };
+
+                if (!bought.ok) {
+                    return {
+                        ok: false,
+                        text: "You have no hint points left. Clear a level " +
+                              "to earn one more.",
+                        tier: used,
+                        name: "No hint points",
+                        last: false,
+                        charged: false,
+                        balance: bought.balance
+                    };
+                }
+
+                var index = used;
+                used += 1;
+
+                return {
+                    ok: true,
+                    text: inner.peek(index),
+                    tier: index,
+                    name: TIER_NAMES[index] || "Hint",
+                    last: used >= count,
+                    charged: bought.charged,
+                    balance: bought.balance
+                };
+            },
+
+            /* button text: shows the price and what is left */
+            label: function () {
+
+                var left = balance();
+
+                if (left === null) {
+                    return "HINT";
+                }
+
+                return nextIsFree()
+                    ? "HINT (free) · 💡 " + left
+                    : "HINT (1 pt) · 💡 " + left;
+            },
+
+            get tier() {
+                return used;
+            },
+
+            get exhausted() {
+                return used >= count;
+            }
+        };
+    }
+
+
+    /* ---------------------------------------------------
        AUDIT
        Used by tools/audit-hints.js to fail the build if any
        authored hint gives away its answer.
@@ -240,6 +357,7 @@
 
     global.HackoHint = {
         forPuzzle: forPuzzle,
+        paid: paid,
         leaks: leaks,
         audit: audit,
         MIN_LEAK_RUN: MIN_LEAK_RUN,

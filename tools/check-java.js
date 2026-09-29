@@ -315,6 +315,21 @@ function validateLoop(index, answer) {
     return correct;
 }
 
+/* Mirrors submitAnswer() in looplabyrinth.html: the player
+   now arranges scrambled lines instead of typing. */
+function arrangeCorrect(challenge, placed) {
+
+    var trap = placed.some(function (text) {
+        return (challenge.decoys || []).indexOf(text) !== -1;
+    });
+
+    return !trap &&
+        placed.length === challenge.lines.length &&
+        placed.every(function (text, i) {
+            return text === challenge.lines[i].trim();
+        });
+}
+
 console.log("\nLoop Labyrinth - " + challenges.length + " challenges");
 
 challenges.forEach(function (challenge, index) {
@@ -326,6 +341,27 @@ challenges.forEach(function (challenge, index) {
 
     ok("LL level " + n + " rejects the starter skeleton",
         validateLoop(index, challenge.starter) === false);
+
+    ok("LL level " + n + " scrambled lines form a working loop",
+        Array.isArray(challenge.lines) &&
+        validateLoop(index, challenge.lines.join("\n")) === true);
+
+    ok("LL level " + n + " accepts the lines in order",
+        arrangeCorrect(challenge, challenge.lines.slice()));
+
+    ok("LL level " + n + " rejects the lines reversed",
+        !arrangeCorrect(challenge, challenge.lines.slice().reverse()));
+
+    ok("LL level " + n + " has a trap line that is not a real line",
+        Array.isArray(challenge.decoys) && challenge.decoys.length > 0 &&
+        challenge.decoys.every(function (d) {
+            return challenge.lines.indexOf(d) === -1;
+        }));
+
+    ok("LL level " + n + " rejects the trap swapped in",
+        !arrangeCorrect(challenge, challenge.lines.map(function (l, i) {
+            return i === 0 ? challenge.decoys[0] : l;
+        })));
 
     ok("LL level " + n + " has tiered hints",
         Array.isArray(challenge.hints) && challenge.hints.length >= 2);

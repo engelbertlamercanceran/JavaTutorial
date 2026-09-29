@@ -368,6 +368,7 @@
     </style>
 <script src="shared/audio.js" data-track="escape"></script>
 <script src="shared/storage.js"></script>
+<script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="1"></script>
 </head>
@@ -2205,6 +2206,25 @@
             requestAnimationFrame(gameLoop)
         }
 
+        /* The values and the slots used to be listed in the
+           same order, so the first value always went in the
+           first slot. Both are shuffled when the terminal
+           opens, so the player has to read the types. */
+        let inventoryOrder = []
+
+        function shuffledIndexes(count) {
+            const order = [...Array(count).keys()]
+
+            for (let i = count - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1))
+                const temp = order[i]
+                order[i] = order[j]
+                order[j] = temp
+            }
+
+            return order
+        }
+
         function renderTerminalInventory() {
             const container =
                 document.getElementById(
@@ -2213,7 +2233,8 @@
 
             container.innerHTML = ''
 
-            inventory.forEach((item, index) => {
+            inventoryOrder.forEach(index => {
+                const item = inventory[index]
                 const element =
                     document.createElement('div')
 
@@ -2254,6 +2275,23 @@
             assignedSlots =
                 new Array(levelRequired.length).fill(null)
 
+            inventoryOrder = shuffledIndexes(inventory.length)
+
+            const slotOrder =
+                shuffledIndexes(levelRequired.length)
+
+            /* never leave every value lined up with its slot */
+            if (
+                levelRequired.length > 1 &&
+                slotOrder.every((slotIndex, position) =>
+                    inventory[inventoryOrder[position]] &&
+                    inventory[inventoryOrder[position]].type ===
+                        levelRequired[slotIndex].type
+                )
+            ) {
+                slotOrder.push(slotOrder.shift())
+            }
+
             renderTerminalInventory()
 
             const slotsContainer =
@@ -2263,7 +2301,8 @@
 
             slotsContainer.innerHTML = ''
 
-            levelRequired.forEach((requirement, slotIndex) => {
+            slotOrder.forEach(slotIndex => {
+                const requirement = levelRequired[slotIndex]
                 const slot =
                     document.createElement('div')
 
