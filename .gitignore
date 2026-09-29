@@ -18,3 +18,8 @@ npm-debug.log*
 
 # optional sound files dropped in by hand
 shared/sfx/
+
+# encrypted release build and its private/publish outputs
+release/
+keyhost/
+.release-secret/

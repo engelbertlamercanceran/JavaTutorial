@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HACKO - Locked</title>
+<style>
+  html,body{height:100%;margin:0}
+  body{display:grid;place-items:center;background:#050d18;color:#dff4ff;
+       font-family:Segoe UI,Rajdhani,sans-serif;padding:20px;box-sizing:border-box}
+  .box{width:min(420px,100%);text-align:center;border:2px solid #ffd34e;border-radius:16px;
+       padding:30px 24px;background:linear-gradient(160deg,#0f2742,#081626 75%);
+       box-shadow:0 16px 44px rgba(0,0,0,.6)}
+  .lock{font-size:52px}
+  h1{margin:8px 0 4px;font-size:1.5rem;color:#45f3ff;font-family:Orbitron,Segoe UI,sans-serif}
+  p{margin:6px 0 18px;color:#9fc0d8;line-height:1.5}
+  input{width:100%;box-sizing:border-box;padding:13px 14px;border-radius:10px;
+        border:1px solid #23425f;background:#071421;color:#fff;font-size:1rem;text-align:center;letter-spacing:.04em}
+  input:focus{outline:2px solid #45f3ff}
+  button{width:100%;margin-top:12px;padding:13px;border:0;border-radius:10px;cursor:pointer;
+         background:#ffd34e;color:#1a1400;font-weight:700;font-size:.95rem;letter-spacing:.05em}
+  .msg{min-height:20px;margin-top:12px;font-size:.9rem;color:#ff8fa3}
+  .ok{color:#8bffb0}
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="lock">&#128274;</div>
+    <h1>HACKO &mdash; access</h1>
+    <p>Enter your access password to start.</p>
+    <form id="f">
+      <input id="pw" type="password" placeholder="Access password" autocomplete="off" autofocus>
+      <button type="submit">UNLOCK</button>
+    </form>
+    <div class="msg" id="msg"></div>
+  </div>
+<script>
+  var f = document.getElementById("f");
+  var msg = document.getElementById("msg");
+  f.addEventListener("submit", function (e) {
+    e.preventDefault();
+    msg.className = "msg"; msg.textContent = "Checking...";
+    fetch("/__unlock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: document.getElementById("pw").value })
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.ok) { msg.className = "msg ok"; msg.textContent = "Unlocked. Loading..."; location.href = "/"; }
+      else if (j.reason === "expired") { msg.textContent = "This test period has ended. Please contact the developer."; }
+      else { msg.textContent = "Wrong password. Please try again."; }
+    }).catch(function () { msg.textContent = "Could not reach the local server."; });
+  });
+</script>
+</body>
+</html>
