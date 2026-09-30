@@ -1,0 +1,6 @@
+{
+  "routes": [
+    { "route": "/", "rewrite": "/login.html" },
+    { "route": "/index.html", "redirect": "/", "statusCode": 301 }
+  ]
+}
