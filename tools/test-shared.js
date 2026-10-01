@@ -51,7 +51,9 @@ function fakeWindow(seed) {
                     : null;
             },
             setItem: function (k, v) { store[k] = String(v); },
-            removeItem: function (k) { delete store[k]; }
+            removeItem: function (k) { delete store[k]; },
+            key: function (i) { return Object.keys(store)[i] || null; },
+            get length() { return Object.keys(store).length; }
         },
         addEventListener: function () {},
         document: { visibilityState: "visible" },
@@ -194,6 +196,69 @@ section("migration from the old per-game keys");
     ok("old XP carried over", S.load().totalXP === 250);
     ok("migrated progress unlocks the next mission",
         S.isUnlocked(2) === true);
+}());
+
+section("a new player never inherits old progress");
+(function () {
+
+    var win = fakeWindow({
+        hackoGameState: JSON.stringify({ completed: [1, 2, 3, 4, 5, 6, 7] }),
+        hackoArrayProgress: JSON.stringify({ unlocked: 4, done: [0, 1, 2] })
+    });
+
+    loadModule("storage.js", win);
+
+    var S = win.HackoStore;
+    var ls = win.localStorage;
+
+    S.login("first");
+    ok("the first player gets the pre-account progress",
+        S.mission(7).completed === true);
+
+    /* the games keep writing their own keys while you play */
+    ls.setItem("hackoLoopProgress", JSON.stringify({ completed: [0, 1] }));
+
+    S.deleteUser("first");
+    S.login("newbie");
+
+    ok("a player created after deleting everyone starts blank",
+        Object.keys(S.load().missions).length === 0);
+    ok("...and their games see no old level progress",
+        ls.getItem("hackoGameState") === null &&
+        ls.getItem("hackoArrayProgress") === null &&
+        ls.getItem("hackoLoopProgress") === null);
+
+    ls.setItem("hackoArrayProgress", JSON.stringify({ unlocked: 2, done: [0] }));
+    S.logout();
+    S.login("other");
+
+    ok("a second player does not see the first one's game keys",
+        ls.getItem("hackoArrayProgress") === null &&
+        Object.keys(S.load().missions).length === 0);
+
+    S.login("newbie");
+    ok("switching back restores that player's game keys",
+        JSON.parse(ls.getItem("hackoArrayProgress")).done.join(",") === "0");
+
+    S.deleteUser("newbie");
+    S.login("newbie");
+    ok("map reset (delete + login same name) starts blank",
+        Object.keys(S.load().missions).length === 0 &&
+        ls.getItem("hackoArrayProgress") === null);
+}());
+
+section("browsers migrated by an older build do not re-import");
+(function () {
+
+    var S = newStore({
+        "hacko:migrated:gone": "true",
+        hackoProgress: JSON.stringify({ completedMissions: [1, 2], totalXP: 900 })
+    });
+
+    S.login("fresh");
+    ok("old per-player flag counts as migrated",
+        Object.keys(S.load().missions).length === 0 &&
+        S.load().totalXP === 0);
 }());
 
 

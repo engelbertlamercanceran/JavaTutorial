@@ -219,6 +219,7 @@
             write(userKey(clean), JSON.stringify(blankRecord(clean)));
         }
 
+        switchLegacyTo(clean);
         write(ACTIVE_KEY, clean);
         migrateLegacy();
 
@@ -226,6 +227,13 @@
     }
 
     function logout() {
+
+        var name = activeUser();
+
+        if (name) {
+            stashLegacy(name);
+        }
+
         remove(ACTIVE_KEY);
     }
 
@@ -243,8 +251,11 @@
         remove(userKey(name));
 
         if (activeUser() === name) {
-            logout();
+            remove(ACTIVE_KEY);
+            clearLegacy();
         }
+
+        remove(LEGACY_STASH_PREFIX + name);
     }
 
 
@@ -844,6 +855,7 @@
                     JSON.stringify(normalise(payload.record, name))
                 );
 
+                switchLegacyTo(name);
                 write(ACTIVE_KEY, name);
 
                 resolve(load());
@@ -891,13 +903,115 @@
         "hackoFunctionProgress":       { mission: 6, field: "done" }
     };
 
+    /* The games still read and write these old keys for their
+       own level-select screens, so they are NOT a one-off
+       leftover: whoever played last leaves their progress in
+       them. They used to be folded into every new profile,
+       which handed a brand-new player someone else's missions.
+       Now the migration runs once per browser, and the keys
+       are swapped per player (stashed on sign-out, restored on
+       sign-in) so no player ever sees another's progress. */
+    var LEGACY_KEYS = Object.keys(LEGACY_LEVEL_KEYS).concat([
+        "hackoProgress",
+        "hackoGameState",
+        "classroomRescue"
+    ]);
+
+    var LEGACY_STASH_PREFIX = "hacko:legacy:";
+
+    /* Global, not per player: it must survive every profile
+       being deleted, or the next new player re-imports. */
     var MIGRATED_FLAG = "hacko:migrated";
+
+    function storageKeys() {
+
+        var keys = [];
+
+        try {
+            var ls = global.localStorage;
+
+            for (var i = 0; i < ls.length; i++) {
+                keys.push(ls.key(i));
+            }
+        } catch (e) {
+            /* ignore */
+        }
+
+        return keys;
+    }
+
+    /* Older builds set "hacko:migrated:<name>" per player, so
+       a browser that has any of those has already migrated. */
+    function legacyMigrated() {
+
+        if (read(MIGRATED_FLAG) === "true") {
+            return true;
+        }
+
+        return storageKeys().some(function (k) {
+            return k && k.indexOf(MIGRATED_FLAG + ":") === 0;
+        });
+    }
+
+    function stashLegacy(name) {
+
+        var bag = {};
+
+        LEGACY_KEYS.forEach(function (key) {
+
+            var value = read(key);
+
+            if (value !== null) {
+                bag[key] = value;
+            }
+        });
+
+        write(LEGACY_STASH_PREFIX + name, JSON.stringify(bag));
+    }
+
+    function clearLegacy() {
+        LEGACY_KEYS.forEach(remove);
+    }
+
+    function restoreLegacy(name) {
+
+        var bag = readJSON(LEGACY_STASH_PREFIX + name, {});
+
+        LEGACY_KEYS.forEach(function (key) {
+
+            if (typeof bag[key] === "string") {
+                write(key, bag[key]);
+            } else {
+                remove(key);
+            }
+        });
+    }
+
+    /* Puts the old keys back the way `name` left them. Before
+       the one-time migration they belong to whoever played
+       before accounts existed, so they are left for it. */
+    function switchLegacyTo(name) {
+
+        var current = activeUser();
+
+        if (current === name) {
+            return;
+        }
+
+        if (current) {
+            stashLegacy(current);
+        }
+
+        if (legacyMigrated()) {
+            restoreLegacy(name);
+        }
+    }
 
     function migrateLegacy() {
 
         var name = activeUser();
 
-        if (!name || read(MIGRATED_FLAG + ":" + name) === "true") {
+        if (!name || legacyMigrated()) {
             return;
         }
 
@@ -985,7 +1099,7 @@
         }
 
         save(record);
-        write(MIGRATED_FLAG + ":" + name, "true");
+        write(MIGRATED_FLAG, "true");
     }
 
 
