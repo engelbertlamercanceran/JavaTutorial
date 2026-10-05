@@ -22,7 +22,7 @@
 var fs = require("fs");
 var path = require("path");
 
-var GAME = path.join(__dirname, "..", "looplabyrinth.html");
+var GAME = process.argv[2] || path.join(__dirname, "..", "looplabyrinth.html");
 
 var COLS = 21;
 var ROWS = 13;
@@ -222,10 +222,135 @@ function checkLevel(rows, index) {
 }
 
 
+/* Runs the game's own buildLevel(), so the check sees each
+   level as it is really played: with the hazards it places
+   and the loop gate locked until its terminal is solved.
+
+   A walls-only flood fill passed every level while level 5
+   was still impossible - buildLevel() had dropped an acid
+   pool (one life per step) in the only corridor to a core.
+   This is the check that catches that. */
+function loadBuildLevel(source) {
+
+    var from = source.indexOf("const rawLevels");
+    var to = source.indexOf("function loadLevel");
+
+    if (from === -1 || to === -1) {
+        throw new Error("could not find buildLevel in " + GAME);
+    }
+
+    var code =
+        "var COLS = " + COLS + ", ROWS = " + ROWS + ";" +
+        "var challenges = new Proxy({}, { get: function () {" +
+        "    return { kind: 'loop' }; } });" +
+        source.slice(from, to) +
+        "; return buildLevel;";
+
+    return new Function("console", code)(console);
+}
+
+
+/* Flood fill over a built level, never stepping on a tile in
+   `avoid`, and treating locked gates as walls when asked. */
+function reachableBuilt(level, avoid, gatesLocked) {
+
+    var key = function (x, y) { return x + "," + y; };
+    var seen = {};
+    var queue = [level.start];
+    var moves = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+    seen[key(level.start.x, level.start.y)] = true;
+
+    while (queue.length) {
+
+        var cur = queue.shift();
+
+        for (var i = 0; i < moves.length; i++) {
+
+            var nx = cur.x + moves[i][0];
+            var ny = cur.y + moves[i][1];
+            var k = key(nx, ny);
+
+            if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) {
+                continue;
+            }
+
+            if (seen[k] || avoid[k] || level.grid[ny][nx] === WALL) {
+                continue;
+            }
+
+            var isGate = level.gates.some(function (g) {
+                return g.x === nx && g.y === ny;
+            });
+
+            if (gatesLocked && isGate) {
+                continue;
+            }
+
+            seen[k] = true;
+            queue.push({ x: nx, y: ny });
+        }
+    }
+
+    return seen;
+}
+
+
+function checkBuilt(level) {
+
+    var problems = [];
+    var acid = {};
+
+    level.obstacles.forEach(function (o) {
+        if (o.type === "acid") {
+            acid[o.x + "," + o.y] = true;
+        }
+    });
+
+    var locked = reachableBuilt(level, acid, true);
+    var open = reachableBuilt(level, acid, false);
+    var at = function (p) { return p.x + "," + p.y; };
+
+    level.gates.forEach(function (g) {
+
+        var nextTo = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(function (m) {
+            return locked[(g.x + m[0]) + "," + (g.y + m[1])];
+        });
+
+        if (!nextTo) {
+            problems.push(
+                "loop terminal at " + at(g) +
+                " cannot be reached without crossing acid or the locked gate"
+            );
+        }
+    });
+
+    level.cores.forEach(function (c) {
+        if (!open[at(c)]) {
+            problems.push("core at " + at(c) + " only reachable through acid");
+        }
+    });
+
+    if (!open[at(level.exit)]) {
+        problems.push("exit only reachable through acid");
+    }
+
+    if (level.difficulty.enemyMoveEvery < 2 || level.difficulty.extraMoveEvery) {
+        problems.push(
+            "enemies move as fast as (or faster than) the player - " +
+            "they cannot be outrun in a one-tile corridor"
+        );
+    }
+
+    return problems;
+}
+
+
 function main() {
 
     var source = fs.readFileSync(GAME, "utf8");
     var levels = extractLevels(source);
+    var buildLevel = loadBuildLevel(source);
 
     console.log("Checking " + levels.length + " Loop Labyrinth mazes\n");
 
@@ -234,6 +359,10 @@ function main() {
     levels.forEach(function (rows, index) {
 
         var result = checkLevel(rows, index);
+
+        if (!result.problems.length) {
+            result.problems = checkBuilt(buildLevel(index));
+        }
 
         if (result.problems.length) {
             failed += 1;

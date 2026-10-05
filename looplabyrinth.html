@@ -1693,6 +1693,74 @@ function tileKey(x, y) {
     return `${x},${y}`
 }
 
+/* Tiles reachable from `from` without crossing a wall, a tile
+ * in `avoid`, or (when gatesClosed) a locked gate. */
+function reachableTiles(grid, from, gates, avoid, gatesClosed) {
+    const seen = new Set([
+        tileKey(from.x, from.y)
+    ])
+
+    const queue = [from]
+
+    while (queue.length) {
+        const current = queue.shift()
+
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const x = current.x + dx
+            const y = current.y + dy
+            const key = tileKey(x, y)
+
+            if (
+                x < 0 || y < 0 ||
+                x >= COLS || y >= ROWS ||
+                seen.has(key) ||
+                avoid.has(key) ||
+                grid[y][x] === '#'
+            ) {
+                continue
+            }
+
+            if (
+                gatesClosed &&
+                gates.some(gate => gate.x === x && gate.y === y)
+            ) {
+                continue
+            }
+
+            seen.add(key)
+            queue.push({ x, y })
+        }
+    }
+
+    return seen
+}
+
+/* True when, stepping around every tile in `avoid`, the player
+ * can reach each loop terminal while it is still locked, and
+ * every core and the exit once it is open. */
+function levelPassable(grid, start, exit, cores, gates, avoid) {
+    const locked =
+        reachableTiles(grid, start, gates, avoid, true)
+
+    const unlocked =
+        reachableTiles(grid, start, gates, avoid, false)
+
+    const terminalsReachable =
+        gates.every(gate => {
+            return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(
+                ([dx, dy]) => locked.has(
+                    tileKey(gate.x + dx, gate.y + dy)
+                )
+            )
+        })
+
+    return (
+        terminalsReachable &&
+        cores.every(core => unlocked.has(tileKey(core.x, core.y))) &&
+        unlocked.has(tileKey(exit.x, exit.y))
+    )
+}
+
 function buildLevel(index) {
     const grid = cleanMap(
         rawLevels[index]
@@ -1819,28 +1887,31 @@ function buildLevel(index) {
     gates.forEach(reserve)
     traps.forEach(reserve)
 
+    /* Client report: from level 6 the enemies were too fast to
+     * get past. They used to move on every player step (and
+     * twice on some steps from level 9), chasing from up to 13
+     * tiles away - in one-tile corridors that is unescapable.
+     * Enemies now never move faster than every second step, so
+     * the player can always outpace them, and the curve rises
+     * through numbers and chase range instead of speed.
+     */
     const difficulty = {
         enemyCount:
             Math.min(
                 1 +
-                Math.floor(index * 0.7),
-                7
+                Math.floor(index * 0.4),
+                4
             ),
 
         enemyMoveEvery:
-            index < 2
+            index < 4
                 ? 3
-                : index < 5
-                    ? 2
-                    : 1,
+                : 2,
 
         chaseRange:
-            4 + index,
+            4 + Math.floor(index / 2),
 
-        extraMoveEvery:
-            index >= 8
-                ? 3
-                : 0
+        extraMoveEvery: 0
     }
 
     const enemyCount =
@@ -1972,7 +2043,7 @@ function buildLevel(index) {
                 1
             )[0]
 
-        const type =
+        let type =
             obstacleTypes[
                 (
                     index +
@@ -1980,6 +2051,36 @@ function buildLevel(index) {
                 ) %
                 obstacleTypes.length
             ]
+
+        /* Acid hurts on every step, so acid in the only corridor
+         * to a core, the terminal or the exit made the level
+         * impossible without losing a life - the "dead end" the
+         * client reported on level 5 (and also hit 7 and 9).
+         * Such a tile gets a harmless pressure plate instead. */
+        if (type === 'acid') {
+            const acid = new Set(
+                obstacles
+                    .filter(item => item.type === 'acid')
+                    .map(item => tileKey(item.x, item.y))
+            )
+
+            acid.add(
+                tileKey(position.x, position.y)
+            )
+
+            if (
+                !levelPassable(
+                    grid,
+                    start,
+                    exit,
+                    cores,
+                    gates,
+                    acid
+                )
+            ) {
+                type = 'plate'
+            }
+        }
 
         reserve(position)
 

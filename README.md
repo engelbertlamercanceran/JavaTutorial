@@ -27,16 +27,24 @@ hack/
 
 ## Running it
 
+Double-click **login.html**. Nothing needs a server: there is no build step and
+nothing is fetched, so the pages run straight from disk.
+
+Start at **login.html**, not at a game. The map needs a signed-in player, and
+the games report their progress back to it. A game opened directly, with no one
+signed in, still plays but records nothing.
+
+A local server also works, and is handy while editing:
+
 ```bash
-python -m http.server 8000
+npx http-server -p 8000          # Node
+python -m http.server 8000       # or Python
 # then open http://localhost:8000/login.html
 ```
 
-Start at **login.html**, not at a game. The map needs a signed-in player, and
-the games report their progress back to it.
-
-Individual games still open by double-clicking, but they will not record
-progress that way.
+In VS Code, the free **Live Server** extension does the same: open the whole
+folder, then right-click `login.html` > *Open with Live Server*. It reloads the
+page on every save, which restarts the current level.
 
 ## The missions
 
@@ -48,14 +56,14 @@ progress that way.
 | 4 | Loop Labyrinth | Loops | `looplabyrinth.html` |
 | 5 | Array Adventure | Arrays | `arrayadventure.html` |
 | 6 | Function Fortress | Methods | `functionfortress.html` |
-| 7 | Debugging Duel | Debugging | **not built** - prototype in `aa/` |
+| 7 | Debugging Duel | Debugging | `aa/debugging.html` |
 | 8 | Classroom Rescue | Classes and objects | `classroomrescue.html` |
-| 9 | Conditional Labyrinth II | Nested conditionals | **not built** |
+| 9 | Conditional Labyrinth II | Nested conditionals | `conditionallabyrinth.html` |
 | 10 | The Loop Master | for / while / do-while | `loopboss.html` |
 
-`aa/` holds a working Debugging Gym prototype — ten bug-trainer duels ending in
-a boss fight. It is the intended basis for mission 7 but is not wired into the
-map yet.
+Mission 7 lives in `aa/`: the Debugging Gym, ten bug-trainer duels ending in a
+boss fight. It is the one game outside the root folder, so its pages load the
+shared modules from `../shared/`.
 
 ## How progress works
 

@@ -115,6 +115,7 @@
             badges: [],
             hintSpent: 0,
             hintsBought: {},
+            playSeconds: 0,
             settings: { muted: false }
         };
     }
@@ -134,6 +135,7 @@
         safe.currentMission = Number(record.currentMission) || 1;
         safe.badges = Array.isArray(record.badges) ? record.badges : [];
         safe.hintSpent = Math.max(0, Number(record.hintSpent) || 0);
+        safe.playSeconds = Math.max(0, Math.floor(Number(record.playSeconds) || 0));
 
         if (typeof record.certifiedAt === "string") {
             safe.certifiedAt = record.certifiedAt;
@@ -744,6 +746,114 @@
 
 
     /* ---------------------------------------------------
+       PLAY TIME
+
+       The client asked for the map to show time spent
+       playing instead of lives. Time counts only on game
+       pages (not the map, sign-in or certificate), only
+       while the tab is visible, and only while the player
+       has touched a key, mouse or screen in the last
+       IDLE_LIMIT seconds - a game left open over lunch
+       should not add an hour.
+    --------------------------------------------------- */
+
+    var PLAY_TICK_MS = 15000;
+    var IDLE_LIMIT_MS = 120000;
+
+    var HUB_PAGES = [
+        "", "index.html", "login.html", "map.html",
+        "certificate.html", "dashboard.html", "soundcheck.html"
+    ];
+
+    function playSeconds() {
+
+        var record = load();
+
+        return record ? record.playSeconds : 0;
+    }
+
+    /* "45s", "12m", "1h 05m" */
+    function formatPlayTime(seconds) {
+
+        var s = Math.max(0, Math.floor(Number(seconds) || 0));
+        var h = Math.floor(s / 3600);
+        var m = Math.floor((s % 3600) / 60);
+
+        if (h > 0) {
+            return h + "h " + (m < 10 ? "0" : "") + m + "m";
+        }
+
+        if (m > 0) {
+            return m + "m";
+        }
+
+        return s + "s";
+    }
+
+    function startPlayClock() {
+
+        var doc = global.document;
+        var lastInput = Date.now();
+        var lastCount = Date.now();
+        var visible = doc.visibilityState !== "hidden";
+
+        function onInput() {
+            lastInput = Date.now();
+        }
+
+        /* adds the time since the last count, capped at the idle
+           limit so a sleeping laptop cannot add hours on wake */
+        function count() {
+
+            var now = Date.now();
+            var since = now - lastCount;
+
+            lastCount = now;
+
+            if (!visible || !isLoggedIn()) {
+                return;
+            }
+
+            if (now - lastInput > IDLE_LIMIT_MS) {
+                return;
+            }
+
+            var seconds = Math.floor(Math.min(since, IDLE_LIMIT_MS) / 1000);
+
+            if (seconds <= 0) {
+                return;
+            }
+
+            update(function (record) {
+                record.playSeconds += seconds;
+            });
+        }
+
+        ["keydown", "pointerdown", "pointermove", "touchstart", "wheel"]
+            .forEach(function (name) {
+                global.addEventListener(name, onInput, { passive: true, capture: true });
+            });
+
+        global.setInterval(count, PLAY_TICK_MS);
+
+        global.addEventListener("pagehide", count);
+
+        doc.addEventListener("visibilitychange", function () {
+
+            if (doc.visibilityState === "hidden") {
+                count();
+                visible = false;
+            } else {
+                /* time away from the tab is not play time */
+                visible = true;
+                lastCount = Date.now();
+                lastInput = Date.now();
+            }
+        });
+    }
+
+
+    /* ---------------------------------------------------
        EXPORT / IMPORT
        The only way to move progress between machines in an
        offline-only build.
@@ -1225,6 +1335,9 @@
         hasCertificate: hasCertificate,
         certificate: certificate,
 
+        playSeconds: playSeconds,
+        formatPlayTime: formatPlayTime,
+
         bindAutosave: bindAutosave,
 
         exportToFile: exportToFile,
@@ -1263,6 +1376,11 @@
 
         var page = (global.location && global.location.pathname || "")
             .split("/").pop().toLowerCase();
+
+        /* every page but the hubs is a game, so play time counts */
+        if (HUB_PAGES.indexOf(page) === -1) {
+            startPlayClock();
+        }
 
         /* the hub pages do not need a link to themselves */
         if (page === "map.html" || page === "login.html" || page === "") {

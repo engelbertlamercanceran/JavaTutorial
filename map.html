@@ -280,10 +280,8 @@ body {
     color: #ffd35c;
 }
 
-.hearts {
-    color: #ff5555;
-
-    letter-spacing: 2px;
+.play-time {
+    color: #7fe7ff;
 }
 
 
@@ -2176,14 +2174,14 @@ window.addEventListener("load", function () {
             <div class="stat-card">
 
                 <span class="stat-label">
-                    LIFE
+                    TIME PLAYED
                 </span>
 
                 <span
-                    class="stat-value hearts"
-                    id="heartsDisplay"
+                    class="stat-value play-time"
+                    id="playTimeDisplay"
                 >
-                    ❤️❤️❤️
+                    ⏱ 0s
                 </span>
 
             </div>
@@ -2862,15 +2860,6 @@ window.addEventListener("load", function () {
 
             <button
                 class="modal-button secondary"
-                id="completeButton"
-                onclick="completeMission()"
-                title="Teacher override - marks every level done"
-            >
-                ✓ MARK COMPLETE
-            </button>
-
-            <button
-                class="modal-button secondary"
                 onclick="closeMission()"
             >
                 CLOSE
@@ -3061,8 +3050,6 @@ let gameState = {
 
     points: 0,
 
-    hearts: 3,
-
     completed: [],
 
     badges: []
@@ -3129,7 +3116,6 @@ function loadGameLegacy() {
             gameState = {
                 username: "",
                 points: 0,
-                hearts: 3,
                 completed: [],
                 badges: []
             };
@@ -3198,8 +3184,6 @@ function startGame() {
 
     gameState.points = 0;
 
-    gameState.hearts = 3;
-
     gameState.completed = [];
 
     gameState.badges = [];
@@ -3238,7 +3222,7 @@ function updateUI() {
     ).textContent =
         "💡 " + HackoStore.hintBalance();
 
-    updateHearts();
+    updatePlayTime();
 
     updateMissions();
 
@@ -3369,37 +3353,21 @@ function updateCertificate() {
 
 
 /* =========================================================
-   HEART SYSTEM
+   PLAY TIME
+   The client swapped the map's LIFE hearts for the time
+   spent playing. Lives still exist inside each game; the
+   time is counted by shared/storage.js on game pages.
 ========================================================= */
 
-function updateHearts() {
-
-    let hearts = "";
-
-    for (
-        let i = 0;
-        i < 3;
-        i++
-    ) {
-
-        if (
-            i < gameState.hearts
-        ) {
-
-            hearts += "❤️";
-
-        } else {
-
-            hearts += "🖤";
-
-        }
-
-    }
+function updatePlayTime() {
 
     document.getElementById(
-        "heartsDisplay"
+        "playTimeDisplay"
     ).textContent =
-        hearts;
+        "⏱ " +
+        HackoStore.formatPlayTime(
+            HackoStore.playSeconds()
+        );
 
 }
 
@@ -3758,12 +3726,6 @@ function openMission(number) {
         mission.description;
 
 
-    const completeButton =
-        document.getElementById(
-            "completeButton"
-        );
-
-
     const completeMessage =
         document.getElementById(
             "completeMessage"
@@ -3775,16 +3737,10 @@ function openMission(number) {
             .includes(number)
     ) {
 
-        completeButton.style.display =
-            "none";
-
         completeMessage.textContent =
             "🏆 Mission completed! Badge earned.";
 
     } else {
-
-        completeButton.style.display =
-            "inline-block";
 
         completeMessage.textContent =
             "";
@@ -3797,87 +3753,6 @@ function openMission(number) {
     ).classList.add(
         "active"
     );
-
-}
-
-
-/* =========================================================
-   COMPLETE MISSION
-========================================================= */
-
-function completeMission() {
-
-    if (
-        selectedMission === null
-    ) {
-
-        return;
-
-    }
-
-
-    const number =
-        selectedMission;
-
-    const mission =
-        missions[number];
-
-
-    if (
-        gameState.completed
-            .includes(number)
-    ) {
-
-        return;
-
-    }
-
-
-    /* Teacher override: record every level through the store,
-       exactly as playing them would - this is what earns the
-       badge and keeps it after a refresh. */
-    const before =
-        gameState.points;
-
-    const levels =
-        HackoStore.totalLevels(number);
-
-    for (let i = 0; i < levels; i++) {
-        HackoStore.completeLevel(number, i, 100);
-    }
-
-    saveGame();
-
-    const gained =
-        gameState.points - before;
-
-    updateUI();
-
-
-    document.getElementById(
-        "completeButton"
-    ).style.display =
-        "none";
-
-
-    document.getElementById(
-        "completeMessage"
-    ).textContent =
-        "🏆 MISSION COMPLETE! +" +
-        gained +
-        " POINTS • BADGE EARNED!";
-
-
-    /* Small celebration */
-
-    createConfetti();
-
-
-    setTimeout(() => {
-
-        closeMission();
-
-    }, 1800);
 
 }
 
@@ -3987,7 +3862,7 @@ function resetGame() {
 
     const confirmed =
         confirm(
-            "Reset all HACKO progress, points, hearts and badges?"
+            "Reset all HACKO progress, points, play time and badges?"
         );
 
     if (!confirmed) {
@@ -3997,119 +3872,24 @@ function resetGame() {
     }
 
 
-    localStorage.removeItem(
-        "hackoGameState"
-    );
+    /* Progress lives in shared/storage.js under the player's
+       name. Replace it with a blank record under the same
+       name, so the player stays signed in. The sound setting
+       is a preference, not progress, so it survives. */
+    const name = HackoStore.activeUser();
 
-
-    gameState = {
-
-        username: "",
-
-        points: 0,
-
-        hearts: 3,
-
-        completed: [],
-
-        badges: []
-
-    };
-
-
-    document.getElementById(
-        "loginScreen"
-    ).style.display =
-        "flex";
-
-
-    document.getElementById(
-        "usernameInput"
-    ).value =
-        "";
-
-
-    updateUI();
-
-}
-
-
-/* =========================================================
-   CONFETTI
-========================================================= */
-
-function createConfetti() {
-
-    for (
-        let i = 0;
-        i < 35;
-        i++
-    ) {
-
-        const piece =
-            document.createElement(
-                "div"
-            );
-
-        piece.textContent =
-            Math.random() > .5
-                ? "⭐"
-                : "✨";
-
-        piece.style.position =
-            "fixed";
-
-        piece.style.left =
-            Math.random() * 100 +
-            "%";
-
-        piece.style.top =
-            "-30px";
-
-        piece.style.fontSize =
-            (
-                12 +
-                Math.random() * 18
-            ) +
-            "px";
-
-        piece.style.zIndex =
-            "10000";
-
-        piece.style.pointerEvents =
-            "none";
-
-        piece.style.transition =
-            "transform 1.5s ease, opacity 1.5s ease";
-
-        document.body.appendChild(
-            piece
-        );
-
-
-        setTimeout(() => {
-
-            piece.style.transform =
-                `translateY(${
-                    window.innerHeight +
-                    80
-                }px) rotate(${
-                    Math.random() * 720
-                }deg)`;
-
-            piece.style.opacity =
-                "0";
-
-        }, 50);
-
-
-        setTimeout(() => {
-
-            piece.remove();
-
-        }, 1700);
-
+    if (!name) {
+        window.location.href = "login.html";
+        return;
     }
+
+    const muted = HackoStore.isMuted();
+
+    HackoStore.deleteUser(name);
+    HackoStore.login(name);
+    HackoStore.setMuted(muted);
+
+    window.location.reload();
 
 }
 

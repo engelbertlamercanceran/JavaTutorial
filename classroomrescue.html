@@ -189,12 +189,30 @@ button{
     white-space:nowrap;
 }
 
+/* The player is Hacko, the same robot as every other mission
+   (client request - this used to be a generic student emoji). */
 #player{
-    left:90px;
+    left:170px;
     top:390px;
+    width:52px;
+    height:70px;
+    padding:0;
+    border-radius:0;
+}
+
+.hacko-sprite{
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    filter:drop-shadow(0 0 6px #00d9ff);
+    pointer-events:none;
+}
+
+#player .name{
+    top:100%;
+    margin-top:2px;
     background:#00d9ff;
-    border:3px solid #00748e;
-    box-shadow:0 0 15px #00d9ff;
 }
 
 #alex{
@@ -218,24 +236,156 @@ button{
     border:3px solid #4a5355;
 }
 
+/* EXIT DOOR
+   A real door rather than a labelled box: a frame, a wooden
+   leaf with panels, a handle and a lock light. Solving the
+   level's coding challenge unlocks it and the leaf swings
+   open on its hinge, showing the lit corridor behind. */
 #door{
     position:absolute;
     left:18px;
     top:105px;
-    width:78px;
-    height:150px;
-    background:#553622;
-    border:5px solid #26180f;
+    width:82px;
+    height:154px;
     z-index:25;
-    text-align:center;
-    padding-top:52px;
-    font-size:11px;
+    border:6px solid #3b2414;
+    border-bottom:0;
+    border-radius:4px 4px 0 0;
+    background:
+        linear-gradient(#0d1d16,#081410);
+    box-shadow:
+        inset 0 0 0 2px #26180f,
+        3px 0 0 #26180f;
+    perspective:420px;
+    transition:box-shadow .6s ease;
+}
+
+.exit-sign{
+    position:absolute;
+    left:50%;
+    top:-30px;
+    transform:translateX(-50%);
+    padding:2px 7px;
+    background:#3a0d0d;
+    border:2px solid #222;
+    border-radius:3px;
+    color:#ff5a5a;
+    font-size:10px;
+    font-weight:bold;
+    letter-spacing:2px;
+    text-shadow:0 0 6px #ff3b3b;
+    transition:.4s;
+}
+
+.door-light{
+    position:absolute;
+    inset:0;
+    background:
+        radial-gradient(ellipse at 50% 70%,
+            #7dffbf 0%,
+            #1d8f5a 45%,
+            transparent 80%);
+    opacity:0;
+    transition:opacity .9s ease .2s;
+}
+
+.door-leaf{
+    position:absolute;
+    inset:0;
+    padding:10px 9px;
+    display:flex;
+    flex-direction:column;
+    gap:9px;
+    background:
+        linear-gradient(90deg,
+            #6b4428 0%,
+            #8a5a34 45%,
+            #6b4428 100%);
+    border:2px solid #2e1c0f;
+    transform-origin:left center;
+    transition:transform 1.1s cubic-bezier(.3,.7,.3,1);
+    box-shadow:inset -4px 0 0 rgba(0,0,0,.18);
+}
+
+.door-panel{
+    flex:1;
+    border:3px solid #4e3019;
+    border-radius:2px;
+    box-shadow:
+        inset 2px 2px 0 rgba(255,255,255,.08),
+        inset -2px -2px 0 rgba(0,0,0,.25);
+}
+
+.door-panel.small{
+    flex:.55;
+}
+
+.door-handle{
+    position:absolute;
+    right:7px;
+    top:52%;
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,#fff3b0,#c9971f 60%,#7a5a10);
+    box-shadow:0 1px 2px #000;
+}
+
+.door-lock{
+    position:absolute;
+    right:6px;
+    top:calc(52% - 16px);
+    width:11px;
+    height:11px;
+    border-radius:2px;
+    background:#1b1b1b;
+    border:1px solid #000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.door-lock::after{
+    content:"";
+    width:5px;
+    height:5px;
+    border-radius:50%;
+    background:#ff3b3b;
+    box-shadow:0 0 6px #ff3b3b;
+    transition:.3s;
 }
 
 #door.open{
-    background:#12432d;
-    border-color:#00ff88;
-    box-shadow:0 0 30px #00ff88;
+    box-shadow:
+        inset 0 0 0 2px #26180f,
+        3px 0 0 #26180f,
+        0 0 30px #00ff88;
+}
+
+#door.open .door-leaf{
+    transform:rotateY(-78deg);
+}
+
+#door.open .door-light{
+    opacity:1;
+}
+
+#door.open .door-lock::after{
+    background:#00ff88;
+    box-shadow:0 0 6px #00ff88;
+}
+
+#door.open .exit-sign{
+    background:#0d3a22;
+    color:#7dffbf;
+    text-shadow:0 0 6px #00ff88;
+}
+
+@media (prefers-reduced-motion: reduce){
+    .door-leaf,
+    .door-light{
+        transition:none;
+    }
 }
 
 .item{
@@ -558,9 +708,15 @@ button{
 
     <div class="window"></div>
 
-    <div id="door">
-        🔒<br>
-        EXIT
+    <div id="door" aria-label="Exit door">
+        <div class="exit-sign">EXIT</div>
+        <div class="door-light"></div>
+        <div class="door-leaf">
+            <div class="door-panel small"></div>
+            <div class="door-panel"></div>
+            <div class="door-lock"></div>
+            <div class="door-handle"></div>
+        </div>
     </div>
 
     <div class="desk d1">DESK</div>
@@ -571,8 +727,13 @@ button{
 
 
     <div id="player" class="character">
-        🧑‍🎓
-        <div class="name">YOU</div>
+        <img
+            class="hacko-sprite"
+            src="hacko.png"
+            alt="Hacko"
+            onerror="this.replaceWith('🤖')"
+        >
+        <div class="name">HACKO</div>
     </div>
 
     <div id="alex" class="character">
@@ -751,6 +912,7 @@ starter:
 // create a Robot object named robo`,
 checks:[
 /class\s+Robot/,
+/int\s+energy\s*;/,
 /Robot\s+robo\s*=\s*new\s+Robot\s*\(\s*\)/
 ],
 hints:[
@@ -998,6 +1160,10 @@ let paused=false;
 let keys={};
 let nearby=null;
 
+/* when the exit last swung open - walking through it only
+   counts once it has had a moment to open */
+let doorOpenedAt=0;
+
 let dialogue=[];
 let dialogueIndex=0;
 
@@ -1190,7 +1356,7 @@ function movePlayer(){
     let x=
         parseFloat(
             player.style.left
-        )||90;
+        )||170;
 
     let y=
         parseFloat(
@@ -1238,7 +1404,7 @@ function movePlayer(){
     );
 
     const moved=
-        x!==(parseFloat(player.style.left)||90) ||
+        x!==(parseFloat(player.style.left)||170) ||
         y!==(parseFloat(player.style.top)||390);
 
     player.style.left=x+"px";
@@ -1498,10 +1664,7 @@ function interact(){
                 )
             ){
 
-                terminalOutput(
-                    "success",
-                    "🚪 EXIT OPEN!\n\nYOU ESCAPED!"
-                );
+                exitLevel();
 
             }else{
 
@@ -1660,6 +1823,113 @@ function validateCode(code){
 
 
 /* =========================
+WHY WAS IT REJECTED?
+=========================
+
+"Your solution is not correct" left players guessing - a
+player who named the object robot instead of robo had no way
+to tell what was wrong. This finds the first required piece
+that is missing and says what it is, and spots the common
+case of the right object under the wrong name. */
+
+/* turns a check like /Robot\s+robo\s*=\s*new\s+Robot\s*\(\s*\)/
+   into the code it is looking for: Robot robo = new Robot() */
+function readableCheck(regex){
+
+    return regex.source
+        .replace(/\(\?!=\)/g,"")
+        .replace(/\\s\+/g," ")
+        .replace(/\\s\*/g,"")
+        .replace(/\\w\+/g,"…")
+        .replace(/\\([.()])/g,"$1")
+        .replace(/\s*=\s*/g," = ")
+        .replace(/\s*,\s*/g,", ");
+
+}
+
+function explainMistake(code){
+
+    const level=
+        levels[game.level-1];
+
+    const clean=
+        code
+        .replace(/\/\/.*$/gm,"")
+        .replace(/\s+/g," ")
+        .trim();
+
+    if(level.order){
+
+        const charge=/robo\s*\.\s*charge\s*\(\s*\)/i.test(clean);
+        const activate=/robo\s*\.\s*activate\s*\(\s*\)/i.test(clean);
+
+        if(!charge) return "Missing: robo.charge();";
+        if(!activate) return "Missing: robo.activate();";
+
+        return "Both calls are there, but in the wrong order.\n"+
+            "Robo needs charging BEFORE it can be activated.";
+
+    }
+
+    const missing=
+        (level.checks||[]).find(
+            regex=>!regex.test(clean)
+        );
+
+    if(!missing)
+        return "Check your spelling and semicolons.";
+
+    /* a class, but under the wrong name? Easy to mix up with
+       the object's name - Robot (the class) vs robo (the object) */
+    const wantedClass=
+        missing.source.match(
+            /^class\\s\+(\w+)$/
+        );
+
+    if(wantedClass){
+
+        const madeClass=
+            clean.match(/\bclass\s+(\w+)/);
+
+        if(madeClass && madeClass[1]!==wantedClass[1]){
+            return "Your class is named \""+madeClass[1]+"\",\n"+
+                "but this mission needs it named \""+wantedClass[1]+"\".\n"+
+                "The class (the blueprint) and the object you build\n"+
+                "from it have different names - check the objective.";
+        }
+
+    }
+
+    /* right type of object, wrong variable name? */
+    const wanted=
+        missing.source.match(
+            /^(\w+)\\s\+(\w+)\\s\*=\\s\*new/
+        );
+
+    if(wanted){
+
+        const made=
+            clean.match(
+                new RegExp(
+                    "\\b"+wanted[1]+"\\s+(\\w+)\\s*=\\s*new\\s+"+wanted[1]
+                )
+            );
+
+        if(made && made[1]!==wanted[2]){
+            return "Your "+wanted[1]+" object is named \""+made[1]+"\",\n"+
+                "but this mission needs it named \""+wanted[2]+"\".\n"+
+                "Names must match the objective exactly.";
+        }
+
+    }
+
+    return "Missing: "+readableCheck(missing)+
+        "\nNames and capital letters must match the objective exactly.";
+
+}
+
+
+/* =========================
 RUN CODE
 ========================= */
 
@@ -1687,6 +1957,12 @@ function runCode(){
         return;
 
     }
+
+    /* already solved - the door is open and waiting for the
+       player to walk out; a second submit would award the XP
+       twice */
+    if($("door").classList.contains("open"))
+        return;
 
     const code=
         $("editor").value.trim();
@@ -1744,37 +2020,47 @@ function runCode(){
                 }
 
 
-                if(game.level>=9){
+                /* every level ends with the exit unlocking and
+                   swinging open - it used to stay shut until
+                   level 9 */
+                $("door").classList.add(
+                    "open"
+                );
 
-                    $("door").classList.add(
-                        "open"
-                    );
+                doorOpenedAt=performance.now();
 
-                }
+                HackoAudio.play("unlock");
+
+                setTimeout(function(){
+                    HackoAudio.play("open");
+                },250);
 
 
                 updateHUD();
                 saveGame();
+
+                /* tell the mission map this level is cleared - now,
+                   not when the player reaches the door, so the level
+                   (and on level 10 the badge) counts even if they
+                   head back to the map instead of walking out */
+                if (window.HackoStore) {
+                    HackoStore.completeLevel(8, game.level - 1, level.xp);
+                }
 
 
                 terminalOutput(
                     "success",
 
                     "✅ CODE ACCEPTED!\n\n"+
-                    "🌟 MISSION COMPLETE!\n\n"+
                     "⭐ XP +"+
                     level.xp+
                     (
                         bonus
                         ?"\n🔥 COMBO BONUS +50 XP"
                         :""
-                    )
-                );
-
-
-                setTimeout(
-                    showMissionComplete,
-                    700
+                    )+
+                    "\n\n🚪 THE EXIT IS OPEN!\n"+
+                    "Walk through the door to finish the level."
                 );
 
 
@@ -1790,6 +2076,8 @@ function runCode(){
 
         game.lives=3;
 
+        const wasLevel=game.level;
+
         const back=
             window.HackoStore
             ?HackoStore.loseAllLives(8,game.level-1)
@@ -1800,6 +2088,23 @@ function runCode(){
         HackoAudio.play("gameover");
         updateHUD();
         loadLevel();
+
+        /* loadLevel() leaves "Terminal ready." in the terminal,
+           which on its own read as if the third answer had
+           passed - say plainly what happened instead */
+        terminalOutput(
+            "error",
+
+            "💥 OUT OF LIVES!\n\n"+
+            "That was your 3rd wrong answer.\n"+
+            (
+                game.level===wasLevel
+                ?"Level "+wasLevel+" restarts"
+                :"Back to level "+game.level
+            )+
+            " with 3 new lives.\n\n"+
+            "💡 Read the objective again - names must match exactly."
+        );
 
         return;
 
@@ -1830,8 +2135,9 @@ function runCode(){
                     terminalOutput(
                         "error",
 
-                        "❌ CODE REJECTED!\n\n"+
-                        "Your solution is not correct.\n\n"+
+                        "❌ NOT QUITE!\n\n"+
+                        explainMistake(code)+
+                        "\n\n"+
                         "❤️ Lives remaining: "+
                         game.lives+
                         "\n\n"+
@@ -1936,13 +2242,6 @@ function showMissionComplete(){
 
     paused=true;
 
-    /* tell the mission map this level is cleared - now, not
-       when the button is pressed, so level 10 counts (and earns
-       the badge) even if the player heads back to the map */
-    if (window.HackoStore) {
-        HackoStore.completeLevel(8, game.level - 1, levels[game.level-1].xp);
-    }
-
     if(game.level===10){
 
         $("completeTitle").textContent=
@@ -2045,6 +2344,27 @@ document.addEventListener(
         const key=
             event.key.toLowerCase();
 
+        /* Typing in the code box is typing, not playing: every
+           "e" in the code used to trigger E-to-interact, and
+           W/A/S/D walked Hacko around the room. Only CTRL+ENTER
+           (run code) still works from inside the editor. */
+        const typing=
+            event.target.closest &&
+            event.target.closest(
+                "textarea,input,select,[contenteditable]"
+            );
+
+        if(typing){
+
+            if(event.ctrlKey && key==="enter"){
+                event.preventDefault();
+                runCode();
+            }
+
+            return;
+
+        }
+
         keys[key]=true;
 
 
@@ -2081,6 +2401,16 @@ document.addEventListener(
             event.key.toLowerCase()
         ]=false;
 
+    }
+);
+
+/* clicking into the code box while holding an arrow key would
+   leave Hacko walking forever, as the key-up lands in the
+   editor - stop him when typing starts */
+$("editor").addEventListener(
+    "focus",
+    function(){
+        keys={};
     }
 );
 
@@ -2183,11 +2513,70 @@ $("nextBtn").addEventListener(
 GAME LOOP
 ========================= */
 
+/* Client: the door opens when the challenge is solved, and the
+   player leaves the level by walking through it - no key press.
+   It used to pop the mission-complete box on its own while the
+   door was still opening, and pressing NEXT LEVEL then shut the
+   door on a player who had walked over to it - an open-looking
+   door that said LOCKED. */
+function checkExit(){
+
+    if(
+        !started ||
+        paused ||
+        !$("door").classList.contains("open") ||
+        performance.now()-doorOpenedAt<900
+    ) return;
+
+    if(distance($("player"),$("door"))<60){
+        exitLevel();
+    }
+
+}
+
+
+/* Walking out of the open door goes straight into the next
+   level - no NEXT LEVEL button in between. Only the last level
+   stops on the "classroom rescued" screen, as there is nowhere
+   further to go. */
+function exitLevel(){
+
+    if(game.level>=levels.length){
+        showMissionComplete();
+        return;
+    }
+
+    const cleared=game.level;
+
+    nextLevel();
+
+    /* each level starts Hacko back at the start spot, not in
+       the doorway - jump there rather than slide across the room */
+    const player=$("player");
+
+    player.style.transition="none";
+    player.style.left="170px";
+    player.style.top="390px";
+    player.offsetWidth;
+    player.style.transition="";
+
+    terminalOutput(
+        "success",
+        "🚪 LEVEL "+cleared+" CLEARED!\n\n"+
+        "Welcome to level "+game.level+".\n"+
+        "Read the objective, then write your code."
+    );
+
+}
+
+
 function gameLoop(){
 
     movePlayer();
 
     checkNearby();
+
+    checkExit();
 
     requestAnimationFrame(
         gameLoop
