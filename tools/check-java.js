@@ -205,6 +205,50 @@ var CR_SOLUTIONS = [
     "robo.unlock(door);\ndoor.open();"
 ];
 
+/* Mirrors missingSemicolon() in classroomrescue.html */
+function missingSemicolon(code) {
+
+    var lines = code.split("\n");
+
+    for (var i = 0; i < lines.length; i++) {
+
+        var line = lines[i].replace(/\/\/.*$/, "").trim();
+
+        if (!line || /[;{},]$/.test(line) ||
+            /^(class|public|private|@)\b/.test(line)) {
+            continue;
+        }
+
+        var next = (lines.slice(i + 1).find(function (l) {
+            return l.replace(/\/\/.*$/, "").trim();
+        }) || "").trim();
+
+        if (next.indexOf("{") === 0) {
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+/* Mirrors inOrder() in classroomrescue.html */
+function inOrder(clean, checks, groups) {
+
+    var at = checks.map(function (re) { return clean.search(re); });
+
+    for (var g = 0; g + 1 < groups.length; g++) {
+        var last = Math.max.apply(null, groups[g].map(function (i) { return at[i]; }));
+        var next = Math.min.apply(null, groups[g + 1].map(function (i) { return at[i]; }));
+        if (last >= next) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /* Mirrors validateCode() in classroomrescue.html */
 function validateRescue(levelNumber, code) {
 
@@ -215,10 +259,19 @@ function validateRescue(levelNumber, code) {
         .replace(/\s+/g, " ")
         .trim();
 
+    if (missingSemicolon(code)) {
+        return false;
+    }
+
     if (levelNumber === 8) {
         var charge = clean.search(/robo\s*\.\s*charge\s*\(\s*\)/i);
         var activate = clean.search(/robo\s*\.\s*activate\s*\(\s*\)/i);
         return charge !== -1 && activate !== -1 && charge < activate;
+    }
+
+    if (level.ordered) {
+        return level.checks.every(function (re) { return re.test(clean); }) &&
+            inOrder(clean, level.checks, level.ordered);
     }
 
     if (level.checks) {
@@ -249,6 +302,23 @@ crLevels.forEach(function (level, index) {
 
 ok("CR level 8 rejects the wrong order",
     validateRescue(8, "robo.activate();\nrobo.charge();") === false);
+
+ok("CR rejects a missing semicolon",
+    validateRescue(4, "robo.energy = 100") === false);
+
+ok("CR level 10 rejects the right lines in the wrong order",
+    validateRescue(10,
+        "Student alex = new Student(\"Alex\");\n" +
+        "Robot robo = new Robot(\"Robo\", 100);\n" +
+        "alex.repair(robo);\nrobo.activate();\n" +
+        "door.open();\nrobo.unlock(door);") === false);
+
+ok("CR level 10 lets the two objects be created either way round",
+    validateRescue(10,
+        "Robot robo = new Robot(\"Robo\", 100);\n" +
+        "Student alex = new Student(\"Alex\");\n" +
+        "alex.repair(robo);\nrobo.activate();\n" +
+        "robo.unlock(door);\ndoor.open();") === true);
 
 
 /* ---------------------------------------------------

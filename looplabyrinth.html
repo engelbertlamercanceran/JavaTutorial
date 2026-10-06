@@ -2131,6 +2131,9 @@ function buildLevel(index) {
 function loadLevel(index) {
     levelIndex = index
 
+    /* Client rule: three lives per level, not per mission. */
+    missionLives = 3
+
     const level =
         buildLevel(index)
 

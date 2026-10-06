@@ -1543,6 +1543,9 @@ function calls(
 function loadLevel(index) {
     level = index;
 
+    /* Client rule: three lives per level, not per mission. */
+    missionLives = 3;
+
     const platforms =
         makePlatforms(index);
 

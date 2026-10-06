@@ -859,9 +859,17 @@
        offline-only build.
     --------------------------------------------------- */
 
-    function exportToFile() {
+    /* Pass a name to download that player's file. Without one
+       it falls back to whoever signed in last - which on a
+       shared lab PC was easily a classmate, so the sign-in
+       page always names the player. */
+    function exportToFile(name) {
 
-        var record = load();
+        var record = name
+            ? (listUsers().indexOf(name) !== -1
+                ? normalise(readJSON(userKey(name), null), name)
+                : null)
+            : load();
 
         if (!record) {
             return false;

@@ -27,7 +27,7 @@
     var ownScript = global.document && global.document.currentScript;
     var MISSION = ownScript ? Number(ownScript.getAttribute("data-mission")) : 0;
 
-    var LIVES_RULE = "You have 3 lives. Lose all 3 and you go back one level - " +
+    var LIVES_RULE = "You have 3 lives on every level. Lose all 3 and you go back one level - " +
         "so a mistake costs a little, never the whole mission.";
 
     /* the games that sell hints - see HINT POINTS in storage.js */
@@ -46,7 +46,7 @@
                 "the terminal to get out.",
             steps: [
                 "Run and jump through the vault, collecting every data chip (int, String, boolean...).",
-                "Stand next to a bookshelf, desk or switch and press E to read its clue.",
+                "Stand next to a bookshelf, desk or switch and press E to read its clue. They are solid - jump onto them or over them.",
                 "Reach the terminal at the end and drag each chip into the variable it matches.",
                 "Dodge lasers and security bots - one hit costs a life."
             ],
@@ -60,12 +60,12 @@
                 "VAULT 02 - Adds double: a number with a decimal point, like 1.85.",
                 "VAULT 03 - Adds char: one single character in single quotes, like 'X'.",
                 "VAULT 04 - All five types in one vault. Read every clue before you reach the terminal.",
-                "VAULT 05 - Same five types, more hazards. Take it slowly and use the checkpoints.",
+                "VAULT 05 - Same five types, more hazards. Take it slowly - a hit sends you back to the vault entrance.",
                 "VAULT 06 - The switch clue changes from vault to vault. Read it - do not guess true or false.",
                 "VAULT 07 - A sixth chip appears: a second String, for the backup word.",
-                "VAULT 08 - Two Strings now. Match each one to the right variable name.",
-                "VAULT 09 - Higher platforms. Double jump to reach the chips up top.",
-                "VAULT 10 - Everything at once. Collect every chip, read every clue, then fill the terminal."
+                "VAULT 08 - The floor is electrified! Stay on the platforms, and time your jumps past the flying drones.",
+                "VAULT 09 - Live floor and three drones. Two Strings: match each one to the right variable name.",
+                "VAULT 10 - Live floor, four drones, every type. Collect every chip, read every clue, then fill the terminal."
             ]
         },
 
@@ -255,9 +255,9 @@
                 "classes, creating objects and calling their methods until the " +
                 "door opens.",
             steps: [
-                "Walk around the classroom and press E near people and objects.",
-                "Read the task, then write the Java code in the terminal.",
-                "Press RUN (or CTRL + ENTER) to test it. A wrong answer costs a life.",
+                "Walk around the desks and press E near Professor Byte, Alex and Robo - each explains their part of the mission.",
+                "The code in the terminal is almost right. Find and fix the mistakes: missing semicolons, typos, wrong order.",
+                "Press RUN (or CTRL + ENTER) to test it. A wrong answer costs a life, and the terminal lists everything still wrong.",
                 "Solve all ten tasks to open the classroom door."
             ],
             controls: [
@@ -266,16 +266,16 @@
                 ["CTRL + ENTER", "Run your code"]
             ],
             levels: [
-                "A class is a blueprint. Write Robot with an int energy field, then create robo.",
-                "A String field: make a Student called alex and store his name.",
-                "Methods are actions - call wave() on alex with the dot: alex.wave();",
-                "Change a field through the object: set robo's energy to 100.",
-                "A constructor builds an object with its starting values.",
+                "A class is a blueprint. Fix the code that builds robo from the Robot class.",
+                "A String field: fix the code that creates alex and stores Alex's name.",
+                "Methods are actions - fix the call to wave() on the alex object.",
+                "Change a field through the object: fix the line that sets robo's energy to 100.",
+                "A constructor builds an object with its starting values - make it store both.",
                 "Objects can work together: alex repairs robo.",
                 "Find the bug: charge() should really set energy to 100.",
-                "Order matters: charge robo before you activate him.",
+                "Order matters: charge robo before you activate it.",
                 "A chain of objects: repair, unlock, then open the door.",
-                "The whole rescue in one program, from creating Alex to opening the door."
+                "The whole rescue, scrambled: put every line in order and fix the typos."
             ]
         },
 
@@ -289,6 +289,7 @@
                 "Read the code on the right and trace it line by line.",
                 "Decide exactly what it prints.",
                 "Walk into the gate holding that output. A wrong gate is a trap and costs a life.",
+                "Levels 1-4 are EASY. Levels 5-7 add sentries (and spare hearts in dead ends). Levels 8-10 are a galaxy attack: step off the red markers and catch the falling hearts.",
                 "Clear all ten rooms."
             ],
             controls: [
@@ -318,7 +319,8 @@
                 "Press START. Missiles launch, each tagged with the move that stops it (BLOCK, DODGE...).",
                 "They fly slowly - the clock shows how long you have. Write your loop in the editor.",
                 "Press FIRE. Line 1 of your output hits missile #1, line 2 hits #2, and so on.",
-                "Stop every missile to clear the phase. One that gets through costs a life."
+                "Stop every missile to clear the phase. One that gets through costs a life.",
+                "Phases 1-3 are MEDIUM, 4-7 HARD (missiles 10% faster), 8-10 EXTREME (20% faster)."
             ],
             controls: [
                 ["FIRE  /  CTRL + ENTER", "Run your loop and launch"],

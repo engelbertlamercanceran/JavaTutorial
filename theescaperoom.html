@@ -404,6 +404,14 @@
             </button>
 
             <button
+                onclick="restartLevel()"
+                class="back-btn"
+                style="margin-left:8px;background:#ff6b00;color:white"
+            >
+                ↻ RESTART LEVEL
+            </button>
+
+            <button
                 onclick="togglePause()"
                 class="back-btn"
                 style="margin-left:8px;background:#00d4ff"
@@ -533,11 +541,11 @@
                 </button>
 
                 <button
-                    onclick="restartGame()"
+                    onclick="restartLevel()"
                     class="btn"
                     style="margin-left:15px;background:#ff6b00;color:white"
                 >
-                    RESTART GAME
+                    RESTART LEVEL
                 </button>
             </div>
         </div>
@@ -583,7 +591,7 @@
         let levelRequired = []
         let levelEnemies = []
         let levelHazards = []
-        let levelCheckpoints = []
+        let levelSolids = []
 
         let inventory = []
         let assignedSlots = []
@@ -674,7 +682,7 @@
                 laserCycle: 1700
             },
             {
-                name: 'CHALLENGING',
+                name: 'HARD',
                 enemySpeed: 1.95,
                 chaseSpeed: 2.6,
                 laserCycle: 1600
@@ -723,6 +731,46 @@
                 type: 'laser'
             }
         }
+
+        /* Always live, unlike a laser. Covers the floor from x
+           to the safe landing, so touching the floor anywhere in
+           between costs a life. */
+        function createElectricFloor(x, end) {
+            return {
+                x,
+                y: 430,
+                w: end - x,
+                h: 10,
+                type: 'electric'
+            }
+        }
+
+        /* Flies a patrol between minX and maxX, bobbing around y. */
+        function createDrone(x, minX, maxX, y) {
+            return {
+                x,
+                y,
+                baseY: y,
+                minX,
+                maxX,
+                type: 'drone'
+            }
+        }
+
+        /* the floor is safe up to here, and again this far
+           before the vault door */
+        const SAFE_START = 300
+        const SAFE_END = 300
+
+        /* Each drone guards a gap between data platforms, high
+           enough to cross the jump arc. Level 8 gets the first
+           two, level 9 three, level 10 all four. */
+        const DRONE_ROUTES = [
+            [1130, 1010, 1220, 140],
+            [2450, 2380, 2600, 120],
+            [640, 560, 760, 160],
+            [2060, 1960, 2140, 100]
+        ]
 
         const LEVELS = [
             {
@@ -773,10 +821,6 @@
                 ],
                 enemies: [],
                 hazards: [],
-                checkpoints: [
-                    { x: 900, y: 405 },
-                    { x: 1750, y: 405 }
-                ],
                 terminalX: 2450
             },
             {
@@ -840,11 +884,6 @@
                     createEnemy(1250, 1120, 1550, 'patrol')
                 ],
                 hazards: [],
-                checkpoints: [
-                    { x: 900, y: 405 },
-                    { x: 1450, y: 405 },
-                    { x: 2150, y: 405 }
-                ],
                 terminalX: 2680
             },
             {
@@ -922,44 +961,70 @@
                 hazards: [
                     createHazard(1370, 170)
                 ],
-                checkpoints: [
-                    { x: 1600, y: 405 }
-                ],
                 terminalX: 2850
             },
             ...Array.from({ length: 7 }, (_, index) => {
                 const levelNumber = index + 4
                 const width = 3000 + levelNumber * 120
                 const baseX = 360
+                const terminalX = width - 320
+
+                /* Client request: levels 8-10 needed more to them.
+                   The floor is electrified between a safe start
+                   and a safe landing by the vault, so the whole
+                   run is played on the platforms - where the data
+                   already was - and drones patrol the air above
+                   the gaps instead of bots on the floor. */
+                const danger = levelNumber >= 8
 
                 const enemyCount = Math.min(1 + Math.floor((levelNumber - 4) / 2), 4)
                 const hazardCount = Math.min(1 + Math.floor((levelNumber - 4) / 2), 4)
 
-                const enemies = Array.from(
-                    { length: enemyCount },
-                    (_, enemyIndex) => {
-                        const x = 620 + enemyIndex * 470
+                const enemies = danger
+                    ? DRONE_ROUTES
+                        .slice(0, levelNumber - 6)
+                        .map(route => createDrone(...route))
+                    : Array.from(
+                        { length: enemyCount },
+                        (_, enemyIndex) => {
+                            const x = 620 + enemyIndex * 470
 
-                        return createEnemy(
-                            x,
-                            x - 130,
-                            x + 260,
-                            enemyIndex > 0 && levelNumber >= 5
-                                ? 'chaser'
-                                : 'patrol'
-                        )
-                    }
-                )
+                            return createEnemy(
+                                x,
+                                x - 130,
+                                x + 260,
+                                enemyIndex > 0 && levelNumber >= 5
+                                    ? 'chaser'
+                                    : 'patrol'
+                            )
+                        }
+                    )
 
-                const hazards = Array.from(
-                    { length: hazardCount },
-                    (_, hazardIndex) => {
-                        return createHazard(
-                            980 + hazardIndex * 510,
-                            Math.max(45, 150 - levelNumber * 7)
+                const hazards = danger
+                    ? [
+                        createElectricFloor(
+                            SAFE_START,
+                            terminalX - SAFE_END
                         )
-                    }
-                )
+                    ]
+                    : Array.from(
+                        { length: hazardCount },
+                        (_, hazardIndex) => {
+                            return createHazard(
+                                980 + hazardIndex * 510,
+                                Math.max(45, 150 - levelNumber * 7)
+                            )
+                        }
+                    )
+
+                /* stepping stones from the last data platform down
+                   to the safe landing by the vault */
+                const bridge = danger
+                    ? [
+                        { x: baseX + 2650, y: 290, w: 140, h: 20 },
+                        { x: baseX + 2930, y: 350, w: 130, h: 20 }
+                    ]
+                    : []
 
                 return {
                     id: levelNumber,
@@ -975,14 +1040,17 @@
                         { x: baseX + 920, y: 310, w: 150, h: 20 },
                         { x: baseX + 1380, y: 190, w: 190, h: 20 },
                         { x: baseX + 1840, y: 280, w: 150, h: 20 },
-                        { x: baseX + 2300, y: 160, w: 160, h: 20 }
+                        { x: baseX + 2300, y: 160, w: 160, h: 20 },
+                        ...bridge
                     ],
                     collectibles: [
                         createCollectible(baseX + 80, 250, 'int'),
                         createCollectible(baseX + 520, 145, 'string'),
-                        createCollectible(baseX + 980, 225, 'boolean'),
+                        createCollectible(baseX + 940, 225, 'boolean'),
                         createCollectible(baseX + 1440, 100, 'double'),
-                        createCollectible(baseX + 1900, 195, 'char'),
+                        /* on top of the bookshelf - it is solid now,
+                           and this used to sit inside it */
+                        createCollectible(baseX + 1920, 140, 'char'),
                         ...(levelNumber >= 7
                             ? [
                                 createCollectible(
@@ -1083,22 +1151,73 @@
                     ],
                     enemies,
                     hazards,
-                    checkpoints:
-                        levelNumber >= 8
-                            ? [
-                                { x: 1450, y: 405 },
-                                { x: 2600, y: 405 }
-                            ]
-                            : [{ x: 1550, y: 405 }],
-                    terminalX: width - 320
+                    danger,
+                    terminalX
                 }
             })
         ]
+
+        /* Client report: Hacko walked straight through desks,
+           bookshelves and switch panels - they were only
+           pictures. They are solid now: Hacko can stand on them,
+           is stopped by their sides, and cannot jump up through
+           them from below.
+
+           The level data placed them loosely, sunk into or
+           hanging off their platform, so each one is first stood
+           on the platform under it. */
+        function settleFurniture(interactives, platforms) {
+            return interactives.map(object => {
+                const centre = object.x + object.w / 2
+                const bottom = object.y + object.h
+
+                const support = platforms
+                    .filter(p =>
+                        centre >= p.x &&
+                        centre <= p.x + p.w &&
+                        p.y >= bottom - 60
+                    )
+                    .sort((a, b) => a.y - b.y)[0]
+
+                if (!support) {
+                    return { ...object }
+                }
+
+                return {
+                    ...object,
+                    x: Math.max(
+                        support.x,
+                        Math.min(object.x, support.x + support.w - object.w)
+                    ),
+                    y: support.y - object.h
+                }
+            })
+        }
+
+        /* The boxes Hacko collides with - the shape that is drawn,
+           so a desk is its tabletop plus the monitor on it. */
+        function furnitureSolids(object) {
+            if (object.type === 'desk') {
+                return [
+                    { x: object.x, y: object.y + 40, w: object.w, h: object.h - 40 },
+                    { x: object.x + 10, y: object.y + 20, w: object.w - 40, h: 20 }
+                ]
+            }
+
+            return [{ x: object.x, y: object.y, w: object.w, h: object.h }]
+        }
+
+        /* end of level data - tools/check-escape.js reads up to here */
 
         function loadLevel(index) {
             const level = LEVELS[index]
 
             currentLevelIndex = index
+
+            /* Client rule: three lives per level, not three for
+               the whole mission. */
+            playerLives = 3
+
             /* The room ends at the vault door (90px wide plus its
                6px frame), so the door is the very end of the level
                and there is no floor behind it to wander into. */
@@ -1108,7 +1227,11 @@
                 ...item,
                 collected: false
             }))
-            levelInteractives = level.interactives.map(item => ({ ...item }))
+            levelInteractives = settleFurniture(
+                level.interactives,
+                level.platforms
+            )
+            levelSolids = levelInteractives.flatMap(furnitureSolids)
             levelRequired = level.required.map(item => ({ ...item }))
 
             levelEnemies = (level.enemies || []).map((enemy, index) => ({
@@ -1125,11 +1248,6 @@
                 id: index,
                 active: true,
                 startTime: performance.now() + index * 230
-            }))
-
-            levelCheckpoints = (level.checkpoints || []).map(item => ({
-                ...item,
-                activated: false
             }))
 
             inventory = []
@@ -1427,9 +1545,66 @@
             })
         }
 
+        function drawDrone(enemy) {
+            const screenX = enemy.x - cameraX
+            const cx = screenX + enemy.width / 2
+            const cy = enemy.y + enemy.height / 2
+            const spin = performance.now() / 40
+
+            ctx.save()
+
+            /* rotors */
+            ctx.strokeStyle = 'rgba(255,255,255,0.75)'
+            ctx.lineWidth = 3
+
+            ;[-20, 20].forEach(offset => {
+                const half = Math.abs(Math.cos(spin + offset)) * 16 + 4
+                ctx.beginPath()
+                ctx.moveTo(cx + offset - half, cy - 22)
+                ctx.lineTo(cx + offset + half, cy - 22)
+                ctx.stroke()
+            })
+
+            ctx.fillStyle = '#555'
+            ctx.fillRect(cx - 21, cy - 22, 2, 10)
+            ctx.fillRect(cx + 19, cy - 22, 2, 10)
+
+            /* body */
+            ctx.shadowBlur = 24
+            ctx.shadowColor = '#ff1744'
+            ctx.fillStyle = '#ff1744'
+            ctx.beginPath()
+            ctx.ellipse(cx, cy, 26, 15, 0, 0, Math.PI * 2)
+            ctx.fill()
+
+            ctx.shadowBlur = 0
+            ctx.fillStyle = '#111827'
+            ctx.beginPath()
+            ctx.ellipse(cx, cy, 19, 9, 0, 0, Math.PI * 2)
+            ctx.fill()
+
+            /* scanning eye */
+            ctx.fillStyle = '#ffcc00'
+            ctx.beginPath()
+            ctx.arc(cx + enemy.direction * 8, cy, 5, 0, Math.PI * 2)
+            ctx.fill()
+
+            ctx.fillStyle = '#fff'
+            ctx.font = 'bold 10px Orbitron'
+            ctx.textAlign = 'center'
+            ctx.fillText('DRONE', cx, cy + 30)
+
+            ctx.restore()
+        }
+
         function drawEnemies() {
             levelEnemies.forEach(enemy => {
                 if (!enemy.alive) {
+                    return
+                }
+
+                if (enemy.type === 'drone') {
+                    drawDrone(enemy)
                     return
                 }
 
@@ -1497,12 +1672,76 @@
             })
         }
 
+        function drawElectricFloor(hazard, now) {
+            const left = Math.max(hazard.x - cameraX, -20)
+            const right = Math.min(hazard.x + hazard.w - cameraX, WIDTH + 20)
+
+            if (right <= left) {
+                return
+            }
+
+            const pulse = 0.55 + Math.sin(now / 160) * 0.25
+
+            ctx.save()
+
+            /* the live floor glows red instead of blue */
+            ctx.fillStyle = `rgba(255,23,68,${pulse * 0.35})`
+            ctx.fillRect(left, 440, right - left, HEIGHT - 440)
+
+            ctx.shadowBlur = 22
+            ctx.shadowColor = '#ff1744'
+            ctx.fillStyle = '#ff1744'
+            ctx.fillRect(left, 436, right - left, 6)
+
+            /* crackling arcs */
+            ctx.strokeStyle = `rgba(255,220,90,${pulse})`
+            ctx.lineWidth = 2
+            ctx.beginPath()
+
+            const step = 18
+            const seed = Math.floor(now / 90)
+
+            for (let x = left; x <= right; x += step) {
+                const world = Math.floor((x + cameraX) / step)
+                const jitter = Math.sin(world * 12.9898 + seed) * 9
+
+                if (x === left) {
+                    ctx.moveTo(x, 432 + jitter)
+                } else {
+                    ctx.lineTo(x, 432 + jitter)
+                }
+            }
+
+            ctx.stroke()
+
+            /* warning strip at each end */
+            ctx.shadowBlur = 0
+            ctx.fillStyle = '#ffcc00'
+            ;[hazard.x, hazard.x + hazard.w].forEach(edge => {
+                const x = edge - cameraX
+
+                if (x > -40 && x < WIDTH + 40) {
+                    ctx.fillRect(x - 3, 400, 6, 40)
+                    ctx.font = 'bold 11px Orbitron'
+                    ctx.textAlign = 'center'
+                    ctx.fillText('⚡', x, 394)
+                }
+            })
+
+            ctx.restore()
+        }
+
         function drawHazards() {
             const now = performance.now()
             const difficulty =
                 DIFFICULTY_SETTINGS[currentLevelIndex]
 
             levelHazards.forEach(hazard => {
+                if (hazard.type === 'electric') {
+                    drawElectricFloor(hazard, now)
+                    return
+                }
+
                 const elapsed = now - hazard.startTime
                 const phase =
                     ((elapsed % difficulty.laserCycle) +
@@ -1546,43 +1785,6 @@
                     9,
                     hazard.h + 14
                 )
-
-                ctx.restore()
-            })
-        }
-
-        function drawCheckpoints() {
-            levelCheckpoints.forEach(checkpoint => {
-                const screenX = checkpoint.x - cameraX
-
-                ctx.save()
-
-                ctx.shadowBlur =
-                    checkpoint.activated ? 30 : 12
-
-                ctx.shadowColor =
-                    checkpoint.activated
-                        ? '#00ff88'
-                        : '#00d4ff'
-
-                ctx.fillStyle =
-                    checkpoint.activated
-                        ? '#00ff88'
-                        : '#00d4ff'
-
-                ctx.fillRect(
-                    screenX,
-                    checkpoint.y - 60,
-                    10,
-                    95
-                )
-
-                ctx.beginPath()
-                ctx.moveTo(screenX + 10, checkpoint.y - 60)
-                ctx.lineTo(screenX + 62, checkpoint.y - 42)
-                ctx.lineTo(screenX + 10, checkpoint.y - 24)
-                ctx.closePath()
-                ctx.fill()
 
                 ctx.restore()
             })
@@ -1730,7 +1932,6 @@
             drawBackground()
             drawPlatforms()
             drawHazards()
-            drawCheckpoints()
             drawInteractives()
             drawCollectibles()
             drawEnemies()
@@ -1745,6 +1946,15 @@
                 30,
                 45
             )
+
+            if (LEVELS[currentLevelIndex].danger) {
+                ctx.fillStyle = '#ff1744'
+                ctx.fillText(
+                    '⚡ FLOOR ELECTRIFIED - STAY ON THE PLATFORMS',
+                    30,
+                    99
+                )
+            }
 
             ctx.fillStyle = '#ff6b00'
             ctx.fillText(
@@ -1840,23 +2050,6 @@
             updatePlayerHUD()
         }
 
-        function activateCheckpoint(checkpoint) {
-            if (checkpoint.activated) {
-                return
-            }
-
-            levelCheckpoints.forEach(item => {
-                item.activated = false
-            })
-
-            checkpoint.activated = true
-
-            spawnPoint = {
-                x: checkpoint.x - 20,
-                y: checkpoint.y - player.height
-            }
-        }
-
         function gameOver() {
             HackoAudio.play("gameover");
             gameState = 'lost'
@@ -1923,6 +2116,12 @@
                     enemy.direction *
                     multiplier
 
+                if (enemy.type === 'drone') {
+                    enemy.y =
+                        enemy.baseY +
+                        Math.sin(performance.now() / 520 + enemy.id * 1.7) * 28
+                }
+
                 const enemyRect = {
                     x: enemy.x,
                     y: enemy.y,
@@ -1955,6 +2154,10 @@
 
         function updateHazards() {
             levelHazards.forEach(hazard => {
+                if (hazard.type === 'electric') {
+                    hazard.active = true
+                }
+
                 if (!hazard.active) {
                     return
                 }
@@ -1973,27 +2176,6 @@
                     )
                 ) {
                     damagePlayer()
-                }
-            })
-        }
-
-        function updateCheckpoints() {
-            levelCheckpoints.forEach(checkpoint => {
-                const distanceX =
-                    player.x +
-                    player.width / 2 -
-                    checkpoint.x
-
-                const distanceY =
-                    player.y +
-                    player.height / 2 -
-                    checkpoint.y
-
-                if (
-                    Math.abs(distanceX) < 70 &&
-                    Math.abs(distanceY) < 120
-                ) {
-                    activateCheckpoint(checkpoint)
                 }
             })
         }
@@ -2160,13 +2342,65 @@
                 }
             }
 
+            for (const solid of levelSolids) {
+                const horizontalOverlap =
+                    player.x + player.width > solid.x &&
+                    player.x < solid.x + solid.w
+
+                /* land on top */
+                if (
+                    horizontalOverlap &&
+                    player.vy >= 0 &&
+                    previousY + player.height <= solid.y &&
+                    player.y + player.height >= solid.y
+                ) {
+                    player.y = solid.y - player.height
+                    player.vy = 0
+                    player.onGround = true
+                    player.jumps = 0
+                }
+
+                /* head bump from below */
+                if (
+                    horizontalOverlap &&
+                    player.vy < 0 &&
+                    previousY >= solid.y + solid.h &&
+                    player.y < solid.y + solid.h
+                ) {
+                    player.y = solid.y + solid.h
+                    player.vy = 0
+                }
+
+                const verticalOverlap =
+                    player.y + player.height > solid.y &&
+                    player.y < solid.y + solid.h
+
+                if (!verticalOverlap) {
+                    continue
+                }
+
+                /* blocked from the side */
+                if (
+                    previousX + player.width <= solid.x &&
+                    player.x + player.width > solid.x
+                ) {
+                    player.x = solid.x - player.width
+                    player.vx = 0
+                } else if (
+                    previousX >= solid.x + solid.w &&
+                    player.x < solid.x + solid.w
+                ) {
+                    player.x = solid.x + solid.w
+                    player.vx = 0
+                }
+            }
+
             if (player.y > HEIGHT + 80) {
                 damagePlayer()
             }
 
             updateEnemies(deltaTime)
             updateHazards()
-            updateCheckpoints()
             updateCollectibles()
 
             const targetCamera = Math.max(
@@ -2682,7 +2916,16 @@
             ).style.display = 'flex'
         }
 
+        /* Client request: restart only the level being played,
+           never the whole mission. Safe to press mid-run - the
+           game loop is only started again if it had stopped. */
         function restartLevel() {
+            const wasRunning = gameState === 'playing'
+
+            document.getElementById(
+                'pause-menu'
+            ).style.display = 'none'
+
             document.getElementById(
                 'game-overlay'
             ).style.display = 'none'
@@ -2695,13 +2938,14 @@
                 'next-btn'
             ).style.display = 'inline-block'
 
-            playerLives = 3
-
             loadLevel(currentLevelIndex)
 
             gameState = 'playing'
-            lastFrameTime = performance.now()
-            gameLoop()
+
+            if (!wasRunning) {
+                lastFrameTime = performance.now()
+                gameLoop()
+            }
         }
 
         function togglePause() {
@@ -2797,8 +3041,6 @@
                             'pause-menu'
                         ).style.display = 'none'
 
-                        playerLives = 3
-
                         loadLevel(index)
 
                         gameState = 'playing'
@@ -2819,44 +3061,14 @@
             }
         }
 
-        function restartGame() {
-            localStorage.removeItem('hackoProgress')
-
-            playerLives = 3
-
-            document.getElementById(
-                'pause-menu'
-            ).style.display = 'none'
-
-            document.getElementById(
-                'game-overlay'
-            ).style.display = 'none'
-
-            document.getElementById(
-                'terminal-modal'
-            ).style.display = 'none'
-
-            document.getElementById(
-                'next-btn'
-            ).style.display = 'inline-block'
-
-            loadLevel(0)
-
-            gameState = 'playing'
-            lastFrameTime = performance.now()
-            gameLoop()
-        }
-
         window.onload = () => {
-            playerLives = 3
-
             loadLevel(0)
 
             lastFrameTime = performance.now()
             gameLoop()
 
             console.log(
-                '%c✅ HACKO upgraded with enemies, hazards, checkpoints, lives and progressive difficulty.',
+                '%c✅ HACKO upgraded with enemies, hazards, lives and progressive difficulty.',
                 'background:#00d4ff;color:#0a0e27;padding:4px 8px;border-radius:4px'
             )
         }

@@ -134,6 +134,10 @@ footer {
     font: 700 0.68rem var(--hk-display);
 }
 
+.hk-chip b.tier-easy { color: var(--hk-lime); }
+.hk-chip b.tier-medium { color: var(--hk-amber); }
+.hk-chip b.tier-hard { color: #ff5c7a; }
+
 @media (max-width: 960px) {
     main { grid-template-columns: 1fr; }
 }
@@ -148,6 +152,7 @@ footer {
     <div class="hk-hud">
         <span class="hk-chip">LEVEL <b id="hudLevel">1</b>/10</span>
         <span class="hk-chip hk-chip--lives">LIVES <b id="hudLives">3</b></span>
+        <span class="hk-chip">ROUND <b id="hudTier" class="tier tier-easy">EASY</b></span>
         <span class="hk-chip">XP <b id="hudXP">0</b></span>
     </div>
 </header>
@@ -180,6 +185,7 @@ footer {
 <footer>
     Move with <span class="kbd">WASD</span> or <span class="kbd">ARROWS</span>.
     Trace the code, then walk into the gate holding what it prints.
+    From level 5, dodge the sentries; from level 8, step off the red meteor markers and catch the hearts.
 </footer>
 
 <script>
@@ -442,6 +448,272 @@ footer {
 
 
     /* ---------------------------------------------------
+       DIFFICULTY
+
+       Client request: every level used the same room with
+       the same six pillars, and nothing in it could hurt
+       Hacko except a wrong gate.
+
+         levels 1-4   EASY    a labyrinth to find the way through
+         levels 5-7   MEDIUM  sentries patrol the corridors, and
+                              a spare heart waits in a dead end
+         levels 8-10  HARD    galaxy attack - meteors rain on the
+                              maze (a red marker shows where each
+                              one lands) and hearts fall that
+                              Hacko can catch
+    --------------------------------------------------- */
+
+    var TIERS = [
+        { name: "EASY", from: 0 },
+        { name: "MEDIUM", from: 4 },
+        { name: "HARD", from: 7 }
+    ];
+
+    function tierOf(index) {
+        return index >= 7 ? TIERS[2] : index >= 4 ? TIERS[1] : TIERS[0];
+    }
+
+    /* per level, 0-9 */
+    var SENTRIES = [0, 0, 0, 0, 1, 2, 2, 0, 0, 0];
+    var SENTRY_STEP = [0, 0, 0, 0, 520, 460, 400, 0, 0, 0];
+    var HEARTS = [0, 0, 0, 0, 1, 1, 2, 0, 0, 0];
+    var METEOR_EVERY = [0, 0, 0, 0, 0, 0, 0, 1500, 1200, 950];
+    var METEOR_WARN = 1300;
+    var HEART_DROP_EVERY = 8000;
+    var HEART_LASTS = 6500;
+    var MAX_LIVES = 5;
+
+    var START = { x: 1, y: 11 };
+
+
+    /* ---------------------------------------------------
+       MAZE
+
+       A different labyrinth for every level, the same one
+       every time that level is played. Cells sit on odd
+       columns 1-19 and odd rows 3-11; a recursive
+       backtracker carves the passages, then a few extra
+       walls are knocked out so there is more than one way
+       round - the harder levels get more, so a meteor or a
+       sentry can always be stepped around.
+
+       Row 2 holds the gates and row 1 is solid, so walking
+       along row 3 passes under the gates without choosing
+       one. tools/check-labyrinth.js proves every gate can
+       be reached in every level.
+    --------------------------------------------------- */
+
+    var CELL_COLS = 10;
+    var CELL_ROWS = 5;
+    var LOOPS = [3, 4, 4, 5, 8, 8, 9, 12, 12, 13];
+
+    function seeded(seed) {
+        return function () {
+            seed |= 0;
+            seed = (seed + 0x6D2B79F5) | 0;
+            var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    function gatePositions(count) {
+        var span = Math.floor((COLS - 4) / count);
+        var out = [];
+        for (var i = 0; i < count; i++) {
+            out.push({ x: 2 + i * span + Math.floor(span / 2), y: 2 });
+        }
+        return out;
+    }
+
+    function buildMaze(index) {
+
+        var random = seeded(9001 + index * 7919);
+        var walls = {};
+        var x;
+        var y;
+
+        for (y = 0; y < ROWS; y++) {
+            for (x = 0; x < COLS; x++) {
+                walls[x + "," + y] = true;
+            }
+        }
+
+        function cellTile(cx, cy) {
+            return { x: 1 + cx * 2, y: 3 + cy * 2 };
+        }
+
+        function open(tx, ty) {
+            delete walls[tx + "," + ty];
+        }
+
+        /* recursive backtracker, iterative */
+        var seen = {};
+        var stack = [{ cx: 0, cy: CELL_ROWS - 1 }];
+
+        seen["0," + (CELL_ROWS - 1)] = true;
+        open(1, 11);
+
+        while (stack.length) {
+
+            var here = stack[stack.length - 1];
+            var options = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+                .map(function (d) {
+                    return { cx: here.cx + d[0], cy: here.cy + d[1] };
+                })
+                .filter(function (n) {
+                    return n.cx >= 0 && n.cx < CELL_COLS &&
+                        n.cy >= 0 && n.cy < CELL_ROWS &&
+                        !seen[n.cx + "," + n.cy];
+                });
+
+            if (!options.length) {
+                stack.pop();
+                continue;
+            }
+
+            var next = options[Math.floor(random() * options.length)];
+            var a = cellTile(here.cx, here.cy);
+            var b = cellTile(next.cx, next.cy);
+
+            open(b.x, b.y);
+            open((a.x + b.x) / 2, (a.y + b.y) / 2);
+
+            seen[next.cx + "," + next.cy] = true;
+            stack.push(next);
+        }
+
+        /* knock through some extra walls between cells */
+        var knocked = 0;
+        var tries = 0;
+
+        while (knocked < LOOPS[index] && tries < 500) {
+
+            tries += 1;
+
+            var horizontal = random() < 0.5;
+            var cx = Math.floor(random() * (CELL_COLS - (horizontal ? 1 : 0)));
+            var cy = Math.floor(random() * (CELL_ROWS - (horizontal ? 0 : 1)));
+            var t = cellTile(cx, cy);
+            var wx = t.x + (horizontal ? 1 : 0);
+            var wy = t.y + (horizontal ? 0 : 1);
+
+            if (walls[wx + "," + wy]) {
+                open(wx, wy);
+                knocked += 1;
+            }
+        }
+
+        /* the gate tiles */
+        var gates = gatePositions(LEVELS[index].gates.length);
+
+        gates.forEach(function (gate) {
+            open(gate.x - 1, 2);
+            open(gate.x, 2);
+            open(gate.x + 1, 2);
+        });
+
+        return walls;
+    }
+
+    /* open maze tiles, not counting the gate row */
+    function floorTiles(walls) {
+        var out = [];
+        for (var y = 3; y < ROWS - 1; y++) {
+            for (var x = 1; x < COLS - 1; x++) {
+                if (!walls[x + "," + y]) {
+                    out.push({ x: x, y: y });
+                }
+            }
+        }
+        return out;
+    }
+
+    function openSides(walls, tile) {
+        return [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(function (d) {
+            var ny = tile.y + d[1];
+            return ny >= 3 && !walls[(tile.x + d[0]) + "," + ny];
+        }).length;
+    }
+
+    /* Sentries walk a straight corridor and back. Picked
+       away from the start so the player gets a moment to
+       read the code first. */
+    function buildSentries(index, walls) {
+
+        var random = seeded(4242 + index * 131);
+        var tiles = floorTiles(walls);
+        var out = [];
+        var tries = 0;
+
+        while (out.length < SENTRIES[index] && tries < 400) {
+
+            tries += 1;
+
+            var tile = tiles[Math.floor(random() * tiles.length)];
+
+            if (Math.abs(tile.x - START.x) + Math.abs(tile.y - START.y) < 7) {
+                continue;
+            }
+
+            var horizontal = random() < 0.5;
+            var path = [tile];
+            var d;
+            var step;
+
+            for (d = -1; d <= 1; d += 2) {
+                step = { x: tile.x, y: tile.y };
+                while (true) {
+                    step = horizontal
+                        ? { x: step.x + d, y: step.y }
+                        : { x: step.x, y: step.y + d };
+                    if (step.y < 3 || walls[step.x + "," + step.y]) {
+                        break;
+                    }
+                    if (d < 0) {
+                        path.unshift(step);
+                    } else {
+                        path.push(step);
+                    }
+                }
+            }
+
+            var taken = out.some(function (s) {
+                return s.path.some(function (p) {
+                    return path.some(function (q) { return p.x === q.x && p.y === q.y; });
+                });
+            });
+
+            if (path.length >= 4 && !taken) {
+                out.push({ path: path, at: 0, dir: 1, x: path[0].x, y: path[0].y });
+            }
+        }
+
+        return out;
+    }
+
+    /* Spare hearts sit in dead ends - a reward for exploring. */
+    function buildHearts(index, walls) {
+
+        var ends = floorTiles(walls).filter(function (tile) {
+            return openSides(walls, tile) === 1 &&
+                Math.abs(tile.x - START.x) + Math.abs(tile.y - START.y) > 6;
+        });
+
+        var random = seeded(777 + index * 17);
+        var out = [];
+
+        while (out.length < HEARTS[index] && ends.length) {
+            out.push(ends.splice(Math.floor(random() * ends.length), 1)[0]);
+        }
+
+        return out;
+    }
+
+    /* end of level data - tools/check-labyrinth.js reads up to here */
+
+
+    /* ---------------------------------------------------
        STATE
     --------------------------------------------------- */
 
@@ -449,11 +721,19 @@ footer {
         level: 0,
         lives: 3,
         xp: 0,
-        player: { x: 1, y: 12 },
+        player: { x: START.x, y: START.y },
         gates: [],
-        walls: [],
+        walls: {},
+        sentries: [],
+        hearts: [],
+        meteors: [],
+        drops: [],
         done: false,
-        flash: 0
+        flash: 0,
+        safeUntil: 0,
+        nextSentry: 0,
+        nextMeteor: 0,
+        nextDrop: 0
     };
 
     var hint = null;
@@ -462,7 +742,6 @@ footer {
     var hackoReady = false;
     hackoImage.onload = function () {
         hackoReady = true;
-        draw();
     };
     hackoImage.src = "hacko.png";
 
@@ -476,48 +755,31 @@ footer {
         $("log").scrollTop = $("log").scrollHeight;
     }
 
-    /* A simple room: solid border, a few pillars for texture. */
-    function buildWalls() {
-
-        var walls = {};
-
-        for (var x = 0; x < COLS; x++) {
-            walls[x + ",0"] = true;
-            walls[x + "," + (ROWS - 1)] = true;
-        }
-
-        for (var y = 0; y < ROWS; y++) {
-            walls["0," + y] = true;
-            walls[(COLS - 1) + "," + y] = true;
-        }
-
-        [[5, 6], [5, 7], [10, 4], [10, 5], [15, 8], [15, 9]]
-            .forEach(function (p) {
-                walls[p[0] + "," + p[1]] = true;
-            });
-
-        return walls;
-    }
-
     function loadLevel(index) {
 
         state.level = Math.max(0, Math.min(index, LEVELS.length - 1));
-        state.player = { x: 1, y: 12 };
+        state.player = { x: START.x, y: START.y };
         state.done = false;
-        state.walls = buildWalls();
+
+        /* Client rule: three lives per level, not per mission */
+        state.lives = 3;
+
+        state.walls = buildMaze(state.level);
+        state.sentries = buildSentries(state.level, state.walls);
+        state.hearts = buildHearts(state.level, state.walls);
+        state.meteors = [];
+        state.drops = [];
+
+        var now = performance.now();
+        state.safeUntil = now + 1500;
+        state.nextSentry = now + 1200;
+        state.nextMeteor = now + 2500;
+        state.nextDrop = now + HEART_DROP_EVERY;
 
         var level = LEVELS[state.level];
 
-        /* gates spaced along the top of the room */
-        var count = level.gates.length;
-        var span = Math.floor((COLS - 4) / count);
-
-        state.gates = level.gates.map(function (label, i) {
-            return {
-                label: label,
-                x: 2 + i * span + Math.floor(span / 2),
-                y: 2
-            };
+        state.gates = gatePositions(level.gates.length).map(function (pos, i) {
+            return { label: level.gates[i], x: pos.x, y: pos.y };
         });
 
         /* hints cost a hint point - see shared/hint.js paid() */
@@ -544,14 +806,24 @@ footer {
         });
 
         updateHUD();
-        log("Level " + (state.level + 1) + ": " + level.title, "info");
-        draw();
+        log("Level " + (state.level + 1) + " (" + tierOf(state.level).name + "): " +
+            level.title, "info");
+
+        if (SENTRIES[state.level]) {
+            log("Sentries patrol this maze - keep out of their way. Hearts hide in dead ends.", "info");
+        }
+
+        if (METEOR_EVERY[state.level]) {
+            log("GALAXY ATTACK - step off the red markers before the meteors land. Catch the falling hearts!", "bad");
+        }
     }
 
     function updateHUD() {
         $("hudLevel").textContent = state.level + 1;
         $("hudLives").textContent = state.lives;
         $("hudXP").textContent = state.xp;
+        $("hudTier").textContent = tierOf(state.level).name;
+        $("hudTier").className = "tier tier-" + tierOf(state.level).name.toLowerCase();
     }
 
 
@@ -559,10 +831,38 @@ footer {
        DRAWING
     --------------------------------------------------- */
 
-    function draw() {
+    function centre(tile) {
+        return { x: tile.x * TILE + TILE / 2, y: tile.y * TILE + TILE / 2 };
+    }
 
-        ctx.fillStyle = "#071321";
+    function drawHeart(x, y, size, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.font = size + "px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = "#ff4d6d";
+        ctx.fillText("❤️", x, y);
+        ctx.restore();
+    }
+
+    function draw(now) {
+
+        var hard = METEOR_EVERY[state.level] > 0;
+
+        ctx.fillStyle = hard ? "#060818" : "#071321";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        /* stars behind a galaxy attack */
+        if (hard) {
+            for (var s = 0; s < 70; s++) {
+                var sx = (s * 137.5) % canvas.width;
+                var sy = (s * 89.3 + now / 40 * ((s % 3) + 1)) % canvas.height;
+                ctx.fillStyle = "rgba(255,255,255," + (0.15 + (s % 5) * 0.08) + ")";
+                ctx.fillRect(sx, sy, 2, 2);
+            }
+        }
 
         /* floor grid */
         ctx.strokeStyle = "rgba(69,243,255,.06)";
@@ -588,9 +888,13 @@ footer {
             var x = Number(p[0]) * TILE;
             var y = Number(p[1]) * TILE;
 
-            ctx.fillStyle = "#16233a";
+            /* walls stand out from the dark corridors, so the
+               labyrinth reads at a glance */
+            ctx.fillStyle = "#24476f";
             ctx.fillRect(x, y, TILE, TILE);
-            ctx.strokeStyle = "#243b5c";
+            ctx.fillStyle = "#3a6c9e";
+            ctx.fillRect(x, y, TILE, 5);
+            ctx.strokeStyle = "#14304d";
             ctx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
         });
 
@@ -605,14 +909,107 @@ footer {
             ctx.lineWidth = 2;
             ctx.shadowBlur = 14;
             ctx.shadowColor = "#45f3ff";
-            ctx.fillRect(x - TILE, y - 4, TILE * 3, TILE + 8);
-            ctx.strokeRect(x - TILE, y - 4, TILE * 3, TILE + 8);
+            ctx.fillRect(x - TILE + 2, y - 4, TILE * 3 - 4, TILE + 8);
+            ctx.strokeRect(x - TILE + 2, y - 4, TILE * 3 - 4, TILE + 8);
             ctx.shadowBlur = 0;
 
             ctx.fillStyle = "#eefaff";
-            ctx.font = "bold 13px Orbitron, sans-serif";
+            ctx.font = "bold 12px Orbitron, sans-serif";
             ctx.textAlign = "center";
+            ctx.textBaseline = "alphabetic";
             ctx.fillText(gate.label, x + TILE / 2, y + TILE / 2 + 5);
+        });
+
+        /* hearts waiting in dead ends */
+        state.hearts.forEach(function (heart) {
+            var c = centre(heart);
+            drawHeart(c.x, c.y + Math.sin(now / 300) * 3, 24, 1);
+        });
+
+        /* hearts that fell during a galaxy attack - they blink
+           before they fade */
+        state.drops.forEach(function (drop) {
+            var c = centre(drop);
+            var left = drop.until - now;
+            var blink = left < 1800 && Math.floor(now / 150) % 2 === 0;
+            var fall = Math.min(1, (now - drop.born) / 500);
+            drawHeart(c.x, c.y - (1 - fall) * 200, 24, blink ? 0.3 : 1);
+        });
+
+        /* sentries */
+        state.sentries.forEach(function (sentry) {
+            var c = centre(sentry);
+            ctx.save();
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = "#ff3b5c";
+            ctx.fillStyle = "#ff3b5c";
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, 15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "#1a0710";
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#ffd166";
+            ctx.beginPath();
+            ctx.arc(c.x + (Math.sin(now / 200) * 4), c.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
+
+        /* meteors: a marker on the landing tile, the rock
+           streaking down towards it */
+        state.meteors.forEach(function (meteor) {
+
+            var c = centre(meteor);
+            var t = Math.min(1, (now - meteor.born) / METEOR_WARN);
+
+            ctx.save();
+            ctx.strokeStyle = "rgba(255,59,92," + (0.45 + t * 0.55) + ")";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, 17 - t * 5, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(c.x - 8, c.y);
+            ctx.lineTo(c.x + 8, c.y);
+            ctx.moveTo(c.x, c.y - 8);
+            ctx.lineTo(c.x, c.y + 8);
+            ctx.stroke();
+
+            var mx = c.x - (1 - t) * 160;
+            var my = c.y - (1 - t) * 460;
+
+            ctx.strokeStyle = "rgba(255,170,60,.55)";
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(mx - 34, my - 90);
+            ctx.lineTo(mx, my);
+            ctx.stroke();
+
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = "#ff9f1c";
+            ctx.fillStyle = "#ffb347";
+            ctx.beginPath();
+            ctx.arc(mx, my, 11, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
+
+        /* impacts */
+        state.meteors.forEach(function (meteor) {
+            if (meteor.hitAt) {
+                var c = centre(meteor);
+                var age = (now - meteor.hitAt) / 400;
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, 1 - age);
+                ctx.fillStyle = "#ffcf5a";
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, 10 + age * 30, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
         });
 
         /* player */
@@ -622,9 +1019,8 @@ footer {
         ctx.save();
         ctx.translate(px, py);
 
-        if (state.flash > 0) {
-            ctx.globalAlpha = (Math.floor(state.flash / 4) % 2) ? 0.35 : 1;
-            state.flash -= 1;
+        if (now < state.safeUntil && Math.floor(now / 110) % 2 === 0) {
+            ctx.globalAlpha = 0.35;
         }
 
         if (hackoReady) {
@@ -647,17 +1043,187 @@ footer {
             ctx.beginPath();
             ctx.arc(0, 0, 13, 0, Math.PI * 2);
             ctx.fill();
-
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = "#07111f";
-            ctx.fillRect(-6, -4, 4, 4);
-            ctx.fillRect(2, -4, 4, 4);
         }
         ctx.restore();
 
+        /* red flash when a life is lost */
         if (state.flash > 0) {
-            requestAnimationFrame(draw);
+            ctx.fillStyle = "rgba(255,40,70," + (state.flash / 40) + ")";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            state.flash -= 1;
         }
+    }
+
+
+    /* ---------------------------------------------------
+       HAZARDS
+    --------------------------------------------------- */
+
+    function same(a, b) {
+        return a.x === b.x && a.y === b.y;
+    }
+
+    function hurt(reason, backToStart) {
+
+        if (state.done) {
+            return;
+        }
+
+        var now = performance.now();
+
+        if (!backToStart && now < state.safeUntil) {
+            return;
+        }
+
+        HackoAudio.play("hit");
+        state.lives -= 1;
+        state.flash = 24;
+        state.safeUntil = now + 1400;
+
+        if (backToStart) {
+            state.player = { x: START.x, y: START.y };
+        }
+
+        log(reason + " " + Math.max(0, state.lives) +
+            (state.lives === 1 ? " life" : " lives") + " left.", "bad");
+        updateHUD();
+
+        if (state.lives <= 0) {
+
+            /* Client rule: out of lives drops back one level. */
+            var back = window.HackoStore
+                ? HackoStore.loseAllLives(MISSION, state.level)
+                : Math.max(0, state.level - 1);
+
+            HackoAudio.play("gameover");
+            log("Out of lives. Back to level " + (back + 1) + ".", "bad");
+
+            loadLevel(back);
+        }
+    }
+
+    function gainLife(where) {
+        HackoAudio.play("pickup");
+        if (state.lives < MAX_LIVES) {
+            state.lives += 1;
+            log("❤️ Caught a heart " + where + "! +1 life.", "ok");
+        } else {
+            log("❤️ Caught a heart - lives already full.", "ok");
+        }
+        updateHUD();
+    }
+
+    function checkTile() {
+
+        var p = state.player;
+
+        state.sentries.forEach(function (sentry) {
+            if (same(sentry, p)) {
+                hurt("A sentry caught Hacko!", false);
+            }
+        });
+
+        state.hearts = state.hearts.filter(function (heart) {
+            if (same(heart, p)) {
+                gainLife("in the dead end");
+                return false;
+            }
+            return true;
+        });
+
+        state.drops = state.drops.filter(function (drop) {
+            if (same(drop, p) && performance.now() - drop.born > 400) {
+                gainLife("from the sky");
+                return false;
+            }
+            return true;
+        });
+    }
+
+    function stepSentries() {
+        state.sentries.forEach(function (sentry) {
+            if (sentry.at + sentry.dir < 0 || sentry.at + sentry.dir >= sentry.path.length) {
+                sentry.dir = -sentry.dir;
+            }
+            sentry.at += sentry.dir;
+            sentry.x = sentry.path[sentry.at].x;
+            sentry.y = sentry.path[sentry.at].y;
+        });
+    }
+
+    /* Most meteors aim near Hacko so standing still is not
+       safe; the rest land anywhere in the maze. */
+    function spawnMeteor() {
+
+        var tiles = floorTiles(state.walls);
+        var p = state.player;
+        var near = tiles.filter(function (t) {
+            return Math.abs(t.x - p.x) <= 2 && Math.abs(t.y - p.y) <= 2;
+        });
+
+        var pool = Math.random() < 0.65 && near.length ? near : tiles;
+        var tile = pool[Math.floor(Math.random() * pool.length)];
+
+        state.meteors.push({ x: tile.x, y: tile.y, born: performance.now(), hitAt: 0 });
+    }
+
+    function spawnDrop() {
+        var tiles = floorTiles(state.walls).filter(function (t) {
+            return !same(t, state.player);
+        });
+        var tile = tiles[Math.floor(Math.random() * tiles.length)];
+        var now = performance.now();
+        state.drops.push({ x: tile.x, y: tile.y, born: now, until: now + HEART_LASTS });
+    }
+
+    function updateHazards(now) {
+
+        if (state.done) {
+            return;
+        }
+
+        if (SENTRIES[state.level] && now >= state.nextSentry) {
+            state.nextSentry = now + SENTRY_STEP[state.level];
+            stepSentries();
+            checkTile();
+        }
+
+        if (METEOR_EVERY[state.level]) {
+
+            if (now >= state.nextMeteor) {
+                state.nextMeteor = now + METEOR_EVERY[state.level];
+                spawnMeteor();
+            }
+
+            if (now >= state.nextDrop) {
+                state.nextDrop = now + HEART_DROP_EVERY;
+                spawnDrop();
+            }
+
+            state.meteors.forEach(function (meteor) {
+                if (!meteor.hitAt && now - meteor.born >= METEOR_WARN) {
+                    meteor.hitAt = now;
+                    HackoAudio.play("boom");
+                    if (same(meteor, state.player)) {
+                        hurt("A meteor hit Hacko!", false);
+                    }
+                }
+            });
+
+            state.meteors = state.meteors.filter(function (meteor) {
+                return !meteor.hitAt || now - meteor.hitAt < 400;
+            });
+
+            state.drops = state.drops.filter(function (drop) {
+                return now < drop.until;
+            });
+        }
+    }
+
+    function frame(now) {
+        updateHazards(now);
+        draw(now);
+        requestAnimationFrame(frame);
     }
 
 
@@ -674,12 +1240,8 @@ footer {
         var nx = state.player.x + dx;
         var ny = state.player.y + dy;
 
-        if (state.walls[nx + "," + ny]) {
-            HackoAudio.play("bump");
-            return;
-        }
-
-        if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) {
+        if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS ||
+            state.walls[nx + "," + ny]) {
             HackoAudio.play("bump");
             return;
         }
@@ -695,9 +1257,10 @@ footer {
 
         if (hit) {
             chooseGate(hit);
+            return;
         }
 
-        draw();
+        checkTile();
     }
 
     function chooseGate(gate) {
@@ -708,6 +1271,7 @@ footer {
 
             state.done = true;
             state.xp += 100;
+            state.meteors = [];
 
             HackoAudio.play("win");
             log("Correct. The program prints " + gate.label + ".", "ok");
@@ -730,30 +1294,7 @@ footer {
             return;
         }
 
-        HackoAudio.play("hit");
-        state.lives -= 1;
-        state.flash = 24;
-        state.player = { x: 1, y: 12 };
-
-        log("Trap. " + gate.label + " is not what this code prints.", "bad");
-        updateHUD();
-        draw();
-
-        if (state.lives <= 0) {
-
-            /* Client rule: out of lives drops back one level. */
-            state.lives = 3;
-
-            var back = window.HackoStore
-                ? HackoStore.loseAllLives(MISSION, state.level)
-                : Math.max(0, state.level - 1);
-
-            HackoAudio.play("gameover");
-            log("Out of lives. Back to level " + (back + 1) + ".", "bad");
-
-            updateHUD();
-            loadLevel(back);
-        }
+        hurt("Trap. " + gate.label + " is not what this code prints.", true);
     }
 
     window.addEventListener("keydown", function (event) {
@@ -782,6 +1323,7 @@ footer {
     });
 
     loadLevel(0);
+    requestAnimationFrame(frame);
 
 
     /* ---------------------------------------------------

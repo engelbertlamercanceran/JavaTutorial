@@ -84,8 +84,9 @@ hacko:user:maria  -> { totalXP, missions: { 5: { levelsDone, resumeLevel, ... } 
 - **Resume** — every cleared level is saved as it happens, and `pagehide` /
   `visibilitychange` record the level in progress. Leaving and coming back drops
   the player at the start of the level they had reached.
-- **Export / import** — `login.html` can download a player's progress as JSON
-  and restore it. This is the only way to move between machines.
+- **Export / import** — on `login.html`, clicking a player selects them (it no
+  longer signs straight in); PLAY or DOWNLOAD then act on that named player.
+  Download saves their progress as JSON, and restore loads it back. This is the only way to move between machines.
 
 ### Offline only, on purpose
 
@@ -110,12 +111,16 @@ node tools/test-all.js
 | `check-items.js` | every Array Adventure item is distinguishable, and every silhouette draws |
 | `check-java.js` | lesson content is Java; correct answers pass and starter skeletons do not |
 | `check-jumps.js` | every Escape Room pickup is reachable, flagging anything above 70% of a perfect double jump |
+| `check-escape.js` | plays every Escape Room level with the game's physics - solid furniture, live floor and all - and proves every pickup and the vault door can be reached |
+| `check-classroom.js` | walks Classroom Rescue's room around the solid desks and proves every character, item and the exit can be reached |
+| `check-labyrinth.js` | every Conditional Labyrinth maze: all gates reachable, nothing sealed off, hearts and sentries placed fairly, no two levels alike |
 | `test-javaloop.js` | the Java interpreter: same output from different code must always pass |
 | `check-shields.js` | every Loop Master phase is beatable, a hardcoded count fails the while phases, and a while loop loses the do-while phase |
 | `check-wiring.js` | games load the shared modules, report to the map, resume after boot, carry music, and every badge exists |
 
-Run `check-mazes.js` after editing any maze and `check-java.js` after editing
-any lesson. Both catch classes of bug that shipped unnoticed before.
+Run `check-mazes.js` after editing any maze, `check-escape.js` after editing
+an Escape Room level, `check-classroom.js` after moving classroom furniture,
+and `check-java.js` after editing any lesson. Both catch classes of bug that shipped unnoticed before.
 
 ## Conventions worth keeping
 
@@ -135,7 +140,10 @@ any lesson. Both catch classes of bug that shipped unnoticed before.
   XP so buying help never lowers the score. Use `HackoHint.paid()`; the rules
   live in `HINT POINTS` in `shared/storage.js`.
 - **Starter code is a skeleton, never the solution.** Several games used to
-  pre-fill the finished answer, so pressing RUN won instantly.
+  pre-fill the finished answer, so pressing RUN won instantly. Classroom
+  Rescue goes further at the client's request: each mission starts with
+  nearly-right code (a missing semicolon, a typo, lines out of order) for the
+  player to fix - still never passing as it stands.
 - **Lesson content is Java.** Four games previously taught PHP or JavaScript.
   `check-java.js` scans the text players actually see.
 - **Run the code, do not pattern-match the source.** Mission 10 regex-matched
@@ -144,10 +152,11 @@ any lesson. Both catch classes of bug that shipped unnoticed before.
   diffs the output instead, which is why any working solution now passes.
 - **Items differ by shape as well as colour**, so the games work for
   colour-blind players.
-- **Three lives in every mission, and running out drops the player back one
-  level.** Use `HackoStore.loseAllLives(mission, level)`, which restores the
-  lives and returns the level to load. Three missions previously had no lives
-  at all and simply restarted forever.
+- **Three lives on every level, and running out drops the player back one
+  level.** Lives reset to 3 whenever a level loads - they used to carry across
+  all ten levels of a mission. Use `HackoStore.loseAllLives(mission, level)`,
+  which restores the lives and returns the level to load. Three missions
+  previously had no lives at all and simply restarted forever.
 - **Sound is synthesised**, not sourced. Add new effects to the `SFX` table in
   `shared/audio.js` and new background tracks to `TRACKS` — no audio files
   anywhere. Every page carries a quiet background track, movement sounds and a
@@ -160,9 +169,10 @@ any lesson. Both catch classes of bug that shipped unnoticed before.
 
 ## Known gaps
 
-- Classroom Rescue is a single room. The client asked for a Pokémon-gym-style
-  multi-room escape; the concept conflicts with the spec's "Classes and Objects"
-  brief for mission 8 and needs a decision before building.
+- Classroom Rescue is a single room (now furnished, with solid desks). The
+  client asked for a Pokémon-gym-style multi-room escape; the concept
+  conflicts with the spec's "Classes and Objects" brief for mission 8 and
+  needs a decision before building.
 - `dashboard.html` still reads the old `hackoProgress` key and has not been
   moved onto the shared store.
 - `.removed/` holds six dead files — duplicates, a broken stub and two empty

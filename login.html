@@ -79,6 +79,36 @@ body {
     border-color: var(--hk-cyan);
 }
 
+/* the picked player - PLAY and DOWNLOAD act on this one */
+.user.selected {
+    border-color: var(--hk-cyan);
+    background: #12304d;
+    box-shadow: 0 0 0 2px rgba(69, 243, 255, 0.35);
+}
+
+.user.selected .who::before {
+    content: "✓ ";
+    font-family: Arial, sans-serif;
+    color: var(--hk-lime);
+}
+
+.picked {
+    margin-top: 10px;
+}
+
+.picked[hidden] {
+    display: none;
+}
+
+.picked .hk-btn {
+    width: 100%;
+}
+
+.hk-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 .user .who {
     flex: 1;
     font-weight: 700;
@@ -131,6 +161,14 @@ body {
 
         <div class="users" id="users"></div>
 
+        <!-- Clicking a player selects them; nothing happens until
+             one of these is pressed. -->
+        <div class="picked" id="picked" hidden>
+            <button class="hk-btn" id="play" type="button">
+                &#9654; PLAY AS <span id="playName"></span>
+            </button>
+        </div>
+
         <div style="margin-top:14px">
             <label class="hk-label" for="name">NEW PLAYER</label>
             <input class="hk-input" id="name" maxlength="24"
@@ -148,12 +186,12 @@ body {
 
         <p class="hk-note">
             Progress is saved in this browser on this computer only.
-            Download it to carry on somewhere else, or to keep a copy
-            before the machine is cleared.
+            Click a player above, then download their progress to carry on
+            somewhere else, or to keep a copy before the machine is cleared.
         </p>
 
         <div class="row" style="margin-top:12px">
-            <button class="hk-btn hk-btn--ghost" id="export">
+            <button class="hk-btn hk-btn--ghost" id="export" type="button" disabled>
                 DOWNLOAD PROGRESS
             </button>
 
@@ -212,6 +250,33 @@ body {
             : "new player";
     }
 
+    /* Client: DOWNLOAD PROGRESS could never be used. Clicking a
+       player signed them in and left for the map, so there was
+       no way to pick someone and stay here - and the button
+       quietly downloaded whoever had played last. A click now
+       only selects the player; PLAY and DOWNLOAD both say whose
+       name they act on. */
+    var selected = null;
+
+    function select(name) {
+
+        selected = name;
+
+        [].forEach.call(document.querySelectorAll(".user"), function (row) {
+            var on = row.getAttribute("data-name") === name;
+            row.classList.toggle("selected", on);
+            row.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+
+        $("picked").hidden = !name;
+        $("playName").textContent = name ? name.toUpperCase() : "";
+
+        $("export").disabled = !name;
+        $("export").textContent = name
+            ? "DOWNLOAD " + name.toUpperCase() + "'S PROGRESS"
+            : "DOWNLOAD PROGRESS";
+    }
+
     function renderUsers() {
 
         var box = $("users");
@@ -233,6 +298,8 @@ body {
             var row = document.createElement("button");
             row.className = "user";
             row.type = "button";
+            row.setAttribute("data-name", name);
+            row.title = "Select " + name + " - double-click to play";
 
             var who = document.createElement("span");
             who.className = "who";
@@ -262,17 +329,33 @@ body {
                         "from this browser? This cannot be undone."
                     )) {
                         HackoStore.deleteUser(name);
+
+                        if (selected === name) {
+                            selected = null;
+                        }
+
                         renderUsers();
                     }
 
                     return;
                 }
 
-                signIn(name);
+                HackoAudio.play("select");
+                select(name);
+                say($("status"), "", false);
+            });
+
+            /* a quick way in for players who just want to play */
+            row.addEventListener("dblclick", function (event) {
+                if (event.target !== drop) {
+                    signIn(name);
+                }
             });
 
             box.appendChild(row);
         });
+
+        select(users.indexOf(selected) !== -1 ? selected : null);
     }
 
     function signIn(name) {
@@ -294,6 +377,10 @@ body {
         window.location.href = "map.html";
     }
 
+    $("play").addEventListener("click", function () {
+        signIn(selected);
+    });
+
     $("start").addEventListener("click", function () {
         signIn($("name").value);
     });
@@ -306,14 +393,18 @@ body {
 
     $("export").addEventListener("click", function () {
 
-        if (!HackoStore.isLoggedIn()) {
-            say($("status"),
-                "Pick a player first, then come back to download.", true);
+        if (!selected) {
+            say($("status"), "Click a player above first.", true);
             return;
         }
 
-        HackoStore.exportToFile();
-        say($("status"), "Progress file downloaded.", false);
+        if (HackoStore.exportToFile(selected)) {
+            say($("status"),
+                "Downloaded " + selected + "'s progress file.", false);
+        } else {
+            say($("status"),
+                "Could not find " + selected + "'s progress.", true);
+        }
     });
 
     $("import").addEventListener("click", function () {
@@ -333,6 +424,7 @@ body {
             say($("status"),
                 "Restored " + record.username + "'s progress.", false);
 
+            selected = record.username;
             renderUsers();
             event.target.value = "";
 
@@ -341,6 +433,11 @@ body {
             event.target.value = "";
         });
     });
+
+    /* start with the last player picked, so returning to this
+       page and pressing DOWNLOAD saves the player who was just
+       playing - their name is on the button either way */
+    selected = HackoStore.isLoggedIn() ? HackoStore.activeUser() : null;
 
     renderUsers();
     $("name").focus();

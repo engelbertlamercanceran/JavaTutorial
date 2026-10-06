@@ -119,9 +119,9 @@ button{
 .window{
     position:absolute;
     right:18px;
-    top:102px;
-    width:120px;
-    height:80px;
+    top:8px;
+    width:110px;
+    height:62px;
     background:#72c8e8;
     border:7px solid #63452e;
 }
@@ -146,23 +146,179 @@ button{
     background:#63452e;
 }
 
-.desk{
+/* FURNITURE
+   Client: the room looked bare and the desks were only
+   pictures Hacko walked straight through. The layout now lives
+   in ROOM (script below) - each piece is drawn here and the
+   solid ones block Hacko, so the rows of desks are something
+   to steer around. */
+.furn{
     position:absolute;
-    width:105px;
-    height:53px;
-    background:#89592f;
-    border:4px solid #54341e;
-    border-radius:5px;
-    text-align:center;
-    padding-top:16px;
-    font-size:10px;
+    pointer-events:none;
 }
 
-.d1{left:145px;top:135px}
-.d2{left:315px;top:135px}
-.d3{left:485px;top:135px}
-.d4{left:225px;top:285px}
-.d5{left:400px;top:285px}
+.rug{
+    background:
+        repeating-linear-gradient(45deg,
+            rgba(255,255,255,.05) 0 10px,
+            transparent 10px 20px),
+        #6d2f3a;
+    border:5px solid #8f4a55;
+    border-radius:8px;
+    opacity:.85;
+    z-index:1;
+}
+
+.desk{
+    background:linear-gradient(#a8743f,#8a5a30);
+    border:3px solid #54341e;
+    border-radius:4px;
+    box-shadow:0 5px 0 #4a2e19;
+    z-index:5;
+}
+
+.desk::before{
+    /* open notebook */
+    content:"";
+    position:absolute;
+    left:16px;
+    top:8px;
+    width:26px;
+    height:18px;
+    background:#f4f1e6;
+    border-left:2px solid #c9c2ab;
+    transform:rotate(-6deg);
+}
+
+.desk::after{
+    /* pencil */
+    content:"";
+    position:absolute;
+    right:18px;
+    top:14px;
+    width:24px;
+    height:4px;
+    background:#f2c230;
+    border-right:4px solid #333;
+}
+
+.chair{
+    background:#3d5a80;
+    border:3px solid #253a55;
+    border-radius:6px 6px 3px 3px;
+    z-index:5;
+}
+
+.teacherdesk{
+    background:linear-gradient(#7a4a26,#5c3519);
+    border:3px solid #3b2213;
+    border-radius:4px;
+    box-shadow:0 6px 0 #2d190d;
+    z-index:5;
+}
+
+.teacherdesk::before{
+    /* apple and a pile of papers */
+    content:"🍎 📚";
+    position:absolute;
+    left:14px;
+    top:6px;
+    font-size:16px;
+}
+
+.bookshelf{
+    background:
+        repeating-linear-gradient(0deg,
+            #4e3019 0 5px,
+            transparent 5px 28px),
+        linear-gradient(90deg,
+            #c0392b 0 20%, #2980b9 20% 38%, #27ae60 38% 55%,
+            #f39c12 55% 70%, #8e44ad 70% 85%, #16a085 85%);
+    border:4px solid #4e3019;
+    z-index:5;
+}
+
+.computertable{
+    background:#5d6d7e;
+    border:3px solid #2c3e50;
+    border-radius:3px;
+    box-shadow:0 5px 0 #2c3e50;
+    z-index:5;
+}
+
+.plant{
+    z-index:6;
+    font-size:34px;
+    line-height:1;
+    text-align:center;
+}
+
+.plant::before{content:"🪴";}
+
+.bin{
+    z-index:6;
+    background:linear-gradient(#7f8c8d,#566566);
+    border:2px solid #2c3e50;
+    border-radius:3px 3px 8px 8px;
+}
+
+.lockers{
+    background:
+        repeating-linear-gradient(90deg,
+            #2e86c1 0 30px,
+            #1b4f72 30px 32px);
+    border:3px solid #1b4f72;
+    z-index:5;
+}
+
+.lockers::after{
+    content:"";
+    position:absolute;
+    inset:12px 0 auto;
+    height:4px;
+    background:repeating-linear-gradient(90deg,
+        transparent 0 12px, #154360 12px 20px, transparent 20px 32px);
+}
+
+.clock{
+    position:absolute;
+    top:14px;
+    left:112px;
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    background:#fff;
+    border:4px solid #333;
+    box-shadow:inset 0 0 0 2px #ccc;
+}
+
+.clock::before,
+.clock::after{
+    content:"";
+    position:absolute;
+    left:50%;
+    bottom:50%;
+    width:2px;
+    background:#222;
+    transform-origin:bottom center;
+}
+
+.clock::before{height:14px;transform:rotate(40deg);}
+.clock::after{height:10px;transform:rotate(-80deg);}
+
+.poster{
+    position:absolute;
+    top:10px;
+    width:74px;
+    height:58px;
+    border:3px solid #fff;
+    font:bold 9px/1.25 Consolas,monospace;
+    padding:4px;
+    color:#111;
+    box-shadow:2px 2px 0 rgba(0,0,0,.2);
+}
+
+.poster.p1{left:22px;background:#ffe082;transform:rotate(-3deg);}
 
 .character{
     position:absolute;
@@ -193,7 +349,7 @@ button{
    (client request - this used to be a generic student emoji). */
 #player{
     left:170px;
-    top:390px;
+    top:400px;
     width:52px;
     height:70px;
     padding:0;
@@ -216,22 +372,16 @@ button{
 }
 
 #alex{
-    left:240px;
-    top:390px;
     background:#f39c12;
     border:3px solid #8b5605;
 }
 
 #teacher{
-    left:425px;
-    top:95px;
     background:#8e44ad;
     border:3px solid #512965;
 }
 
 #robo{
-    left:650px;
-    top:390px;
     background:#858f91;
     border:3px solid #4a5355;
 }
@@ -399,15 +549,13 @@ button{
     z-index:22;
 }
 
-#key{left:140px;top:310px}
-#battery{left:600px;top:310px}
-#book{left:350px;top:370px}
-
 #computer{
     position:absolute;
-    left:720px;
-    top:220px;
+    width:44px;
+    height:40px;
     font-size:34px;
+    line-height:40px;
+    text-align:center;
     z-index:25;
 }
 
@@ -479,6 +627,86 @@ button{
 #left{grid-column:1}
 #down{grid-column:2}
 #right{grid-column:3}
+
+/* LIFE LOST
+   Client: a wrong answer only printed text in the terminal,
+   easy to miss. Now the room flashes red and shakes, a -1
+   heart rises from Hacko, and the hearts in the top bar pulse. */
+#hitFlash{
+    position:absolute;
+    inset:0;
+    z-index:140;
+    pointer-events:none;
+    background:radial-gradient(ellipse at center,
+        rgba(255,40,60,0) 30%,
+        rgba(255,40,60,.55) 100%);
+    opacity:0;
+}
+
+#world.hit #hitFlash{
+    animation:hitFlash .9s ease-out;
+}
+
+#world.hit{
+    animation:hitShake .45s ease-in-out;
+}
+
+#hitText{
+    position:absolute;
+    z-index:145;
+    pointer-events:none;
+    font:bold 22px Arial,sans-serif;
+    color:#ff4d5e;
+    text-shadow:0 0 8px #000,0 0 3px #000;
+    white-space:nowrap;
+    opacity:0;
+}
+
+#hitText.show{
+    animation:hitRise 1.3s ease-out forwards;
+}
+
+#livesStat.pulse{
+    animation:livesPulse .9s ease-out;
+}
+
+.stat.restart{
+    background:#633443;
+    color:#ffd4d4;
+    border:0;
+}
+
+.stat.restart:hover{
+    background:#7d3f52;
+}
+
+@keyframes hitFlash{
+    0%{opacity:1}
+    100%{opacity:0}
+}
+
+@keyframes hitShake{
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-9px)}
+    40%{transform:translateX(8px)}
+    60%{transform:translateX(-6px)}
+    80%{transform:translateX(4px)}
+}
+
+@keyframes hitRise{
+    0%{opacity:0;transform:translate(-50%,0) scale(.7)}
+    15%{opacity:1;transform:translate(-50%,-10px) scale(1.15)}
+    100%{opacity:0;transform:translate(-50%,-60px) scale(1)}
+}
+
+@keyframes livesPulse{
+    0%{background:#ff2d48;transform:scale(1.25)}
+    100%{background:#16243a;transform:scale(1)}
+}
+
+@media (prefers-reduced-motion: reduce){
+    #world.hit{animation:none}
+}
 
 /* TERMINAL */
 
@@ -676,8 +904,8 @@ button{
             ⭐ XP <span id="xp">0</span>
         </div>
 
-        <div class="stat">
-            ❤️ <span id="lives">3</span>
+        <div class="stat" id="livesStat" title="Lives left on this level">
+            <span id="lives">❤️❤️❤️</span>
         </div>
 
         <div class="stat">
@@ -687,6 +915,10 @@ button{
         <div class="stat">
             LEVEL <span id="level">1</span>/10
         </div>
+
+        <button id="restartLevel" class="stat restart" type="button">
+            ↻ RESTART LEVEL
+        </button>
 
     </div>
 
@@ -708,6 +940,10 @@ button{
 
     <div class="window"></div>
 
+    <div class="poster p1">class Student {<br>&nbsp;String name;<br>}</div>
+
+    <div class="clock" aria-hidden="true"></div>
+
     <div id="door" aria-label="Exit door">
         <div class="exit-sign">EXIT</div>
         <div class="door-light"></div>
@@ -719,11 +955,8 @@ button{
         </div>
     </div>
 
-    <div class="desk d1">DESK</div>
-    <div class="desk d2">DESK</div>
-    <div class="desk d3">DESK</div>
-    <div class="desk d4">DESK</div>
-    <div class="desk d5">DESK</div>
+    <!-- built from ROOM in the script -->
+    <div id="furniture"></div>
 
 
     <div id="player" class="character">
@@ -760,6 +993,10 @@ button{
 
     <div id="interaction"></div>
 
+    <!-- shown for a moment whenever Hacko loses a life -->
+    <div id="hitFlash" aria-hidden="true"></div>
+    <div id="hitText" aria-live="assertive"></div>
+
 
     <div id="dialogue">
 
@@ -791,12 +1028,16 @@ button{
         <p>
 The classroom has been locked down.
 
-Professor Byte needs your help.
+Professor Byte's security system lost all its objects.
+Robo, the classroom robot, holds the lock on the exit -
+and only Alex, Byte's student, knows how to repair Robo.
 
-Explore the classroom.
-Talk to characters.
-Collect objects.
-Solve coding challenges.
+Rebuild them in Java, connect them, and get everyone out.
+
+Talk to Byte, Alex and Robo on every level - each one
+explains their part of the mission.
+The code in the terminal is almost right: find and fix
+the mistakes. Desks are in the way - walk around them.
 
 WASD / ARROW KEYS = MOVE
 E = INTERACT
@@ -892,12 +1133,25 @@ CTRL + ENTER = RUN CODE
 LEVEL DATA
 ========================= */
 
+/* Client: an empty editor with a comment in it left players
+   stuck before they had typed a line. Every mission now starts
+   with code that is nearly right - a missing semicolon, a typo,
+   a wrong capital, lines in the wrong order - for the player to
+   find and fix. It is never the answer: tools/check-java.js
+   fails the build if a starter would pass as it stands.
+
+   talk: what each character says on this level. Professor Byte
+   gives the mission, Alex (a Student object) and Robo (a Robot
+   object) explain where they fit in it, so the three of them
+   tell one story - Byte's classroom system lost its objects,
+   Robo holds the door lock, and only Alex can repair Robo. */
+
 const levels = [
 
 {
-title:"MISSION 1 \u2014 CREATE ROBO",
-mission:"Create your first object.",
-objective:"Write a Robot class with an int field called energy, then create a Robot object named robo.",
+title:"MISSION 1 — CREATE ROBO",
+mission:"Rebuild Robo from its blueprint.",
+objective:"This code should give the Robot class an int field called energy, then build a Robot object named robo from it. It has 2 mistakes - fix them.",
 reference:
 `class ClassName {
     type fieldName;
@@ -906,10 +1160,10 @@ reference:
 ClassName objectName = new ClassName();`,
 starter:
 `class Robot {
-    // declare an int field named energy
+    int energy
 }
 
-// create a Robot object named robo`,
+Robot robo = new Robo();`,
 checks:[
 /class\s+Robot/,
 /int\s+energy\s*;/,
@@ -917,16 +1171,34 @@ checks:[
 ],
 hints:[
 "A class is a blueprint. Nothing can be built from it until the blueprint exists.",
-"Declare the class first, then build one from it: Type name = new Type();",
+"Every statement ends with a semicolon, and new must name the class exactly as it was declared.",
 "Example with a different class: Lamp deskLamp = new Lamp();"
 ],
+talk:{
+teacher:[
+"Hacko, thank goodness! I am Professor Byte - I wrote this classroom's security system in Java.",
+"The lockdown wiped every OBJECT from its memory. The CLASSES - the blueprints - survived.",
+"Robo, our classroom robot, holds the lock on that exit. Right now Robo does not exist in memory, so the door cannot open.",
+"I typed the code to rebuild Robo in a hurry. It has two mistakes. Fix them in the terminal."
+],
+alex:[
+"Hi Hacko, I'm Alex - one of Professor Byte's students. I look after Robo during class.",
+"See Robo over there? The body is here, but it's just an empty shell until the code builds it.",
+"Robo is built FROM the Robot class. Check the class name in Prof. Byte's code - every letter matters."
+],
+robo:[
+"...",
+"NO OBJECT FOUND AT THIS ADDRESS.",
+"(Robo's lights are off. It needs to be created with new.)"
+]
+},
 xp:100
 },
 
 {
-title:"MISSION 2 \u2014 CREATE ALEX",
-mission:"Create a Student object.",
-objective:"Write a Student class with a String field called name, create a Student named alex, then store Alex's name in it.",
+title:"MISSION 2 — CREATE ALEX",
+mission:"Give Alex a name the system knows.",
+objective:"The Student class has a String field called name. Create a Student named alex and store \"Alex\" in its name field. The code has 2 mistakes - fix them.",
 reference:
 `class ClassName {
     String fieldName;
@@ -936,12 +1208,11 @@ ClassName objectName = new ClassName();
 objectName.fieldName = "value";`,
 starter:
 `class Student {
-    // declare a String field named name
+    String name;
 }
 
-// create a Student object named alex
-
-// store Alex's name in that object`,
+Student alex = new Student()
+alex.Name = "Alex";`,
 checks:[
 /class\s+Student/,
 /Student\s+alex\s*=\s*new\s+Student\s*\(\s*\)/,
@@ -949,50 +1220,98 @@ checks:[
 ],
 hints:[
 "Alex needs somewhere to keep a name before you can give them one.",
-"A field is reached through the object it belongs to, using a dot.",
+"A field is reached through the object, using a dot - and Java cares about capital letters.",
 "Example: Student sam = new Student(); then sam.name = \"Sam\";"
 ],
+talk:{
+teacher:[
+"Robo is back in memory - well done.",
+"But Robo only takes orders from a registered Student, and the lockdown wiped Alex too.",
+"Alex is an object of the Student class. Give that object its name. My code has two slips in it."
+],
+alex:[
+"The system says my name is null! Robo won't listen to someone with no name.",
+"The field in the Student class is called name - all lowercase. Look closely at the last line."
+],
+robo:[
+"ROBO ONLINE. ENERGY: 0.",
+"OWNER NOT FOUND. ROBO ONLY OBEYS A NAMED STUDENT."
+]
+},
 xp:120
 },
 
 {
-title:"MISSION 3 \u2014 WAVE",
-mission:"Make Alex interact.",
-objective:"Call the wave method on alex.",
+title:"MISSION 3 — WAVE",
+mission:"Let Robo recognise Alex.",
+objective:"Call the wave method on the alex object. The line has 2 mistakes - fix them.",
 reference:`objectName.methodName();`,
-starter:`// make alex wave`,
+starter:
+`// alex is the object, Student is the class
+Alex.wave()`,
 checks:[
 /alex\s*\.\s*wave\s*\(\s*\)/
 ],
 hints:[
 "A method is something an object knows how to do.",
-"Reach a method the same way as a field - through a dot - but add round brackets.",
+"Call it through the OBJECT's name - lowercase here - and finish the statement.",
 "Example: robo.beep();"
 ],
+talk:{
+teacher:[
+"Objects don't only hold data. They can DO things - those are methods.",
+"Alex and Robo have a greeting: Alex waves, and Robo recognises its friend.",
+"Call wave() on the alex object. Mind the capital letter - Alex with a capital A is not the object's name."
+],
+alex:[
+"Every morning I wave and Robo beeps back. That's how it knows it's me!",
+"A method call is: the object, a dot, the method name, brackets, and a semicolon."
+],
+robo:[
+"SCANNING FOR A FAMILIAR WAVE...",
+"WAITING FOR alex.wave()."
+]
+},
 xp:130
 },
 
 {
-title:"MISSION 4 \u2014 ENERGY",
-mission:"Power Robo.",
-objective:"Set Robo's energy field to 100.",
+title:"MISSION 4 — ENERGY",
+mission:"Charge Robo's battery.",
+objective:"Set the robo object's energy field to 100. The line has 2 mistakes - fix them.",
 reference:`objectName.fieldName = value;`,
-starter:`// give robo a full charge`,
+starter:
+`// the spare battery is in - store a full charge
+robo.enrgy = 100`,
 checks:[
 /robo\s*\.\s*energy\s*=(?!=)\s*100/
 ],
 hints:[
 "Robo already has an energy field. It is simply empty.",
-"Reach the field through the object, then store a value in it.",
+"The field must be spelled exactly as the Robot class declares it, and the statement needs its ending.",
 "Example: lamp.brightness = 50;"
 ],
+talk:{
+teacher:[
+"Robo knows Alex now, but its battery is flat - the energy field is 0.",
+"energy is a FIELD of Robo. Set it to 100. My code misspells the field name, and forgets something at the end."
+],
+alex:[
+"I found the spare battery 🔋 on the floor and plugged it in.",
+"But the code that stores the charge is misspelled - Robo can't find the field."
+],
+robo:[
+"ENERGY: 0.",
+"ERROR: FIELD 'enrgy' DOES NOT EXIST. DID YOU MEAN 'energy'?"
+]
+},
 xp:140
 },
 
 {
-title:"MISSION 5 \u2014 CONSTRUCTOR",
-mission:"Build Robo correctly.",
-objective:"Give Robot a constructor that takes a String and an int, then build Robo with the name Robo and 100 energy.",
+title:"MISSION 5 — CONSTRUCTOR",
+mission:"Build Robo ready to go.",
+objective:"The constructor should store both the name and the energy, and robo should be built with the name Robo and 100 energy. Fix the 2 problems.",
 reference:
 `class ClassName {
     type fieldA;
@@ -1006,29 +1325,48 @@ starter:
     String name;
     int energy;
 
-    // write a constructor that accepts a String and an int
-    // and copies both into the fields above
+    Robot(String name, int energy) {
+        this.name = name;
+        // energy never gets stored - add that line here
+    }
 }
 
-// build robo using that constructor`,
+Robot robo = new Robot("Robo");`,
 checks:[
 /Robot\s*\(\s*String\s+\w+\s*,\s*int\s+\w+\s*\)/,
+/this\s*\.\s*energy\s*=\s*\w+\s*;/,
 /new\s+Robot\s*\(\s*"Robo"\s*,\s*100\s*\)/
 ],
 hints:[
 "Right now Robot objects are born empty and have to be filled in afterwards.",
-"A constructor shares its name with the class and declares no return type.",
-"Example: Lamp(String colour, int watts) { this.colour = colour; }"
+"A constructor copies each value it is given into a field with this. - and the call must pass every value the constructor asks for.",
+"Example: Lamp(String colour, int watts) { this.colour = colour; this.watts = watts; }"
 ],
+talk:{
+teacher:[
+"Setting fields one at a time is slow. A CONSTRUCTOR builds an object with its values in one step.",
+"My constructor stores the name but forgets the energy. And the new Robot(...) call leaves a value out."
+],
+alex:[
+"When Robo restarts, it should come out ready: named Robo, with 100 energy.",
+"The constructor asks for TWO things - a String and an int. Give it both."
+],
+robo:[
+"BOOT PARAMETERS EXPECTED: name, energy.",
+"RECEIVED: name. ENERGY MISSING."
+]
+},
 xp:160
 },
 
 {
-title:"MISSION 6 \u2014 REPAIR",
-mission:"Save Robo.",
-objective:"Make alex repair robo.",
+title:"MISSION 6 — REPAIR",
+mission:"Alex repairs Robo.",
+objective:"Alex's repair method needs to be told WHAT to repair. Fix the call so alex repairs robo. (2 mistakes)",
 reference:`objectA.methodName(objectB);`,
-starter:`// alex has a repair method - give it robo to work on`,
+starter:
+`// Alex is the only one who can fix Robo's wiring
+alex.repair()`,
 checks:[
 /alex\s*\.\s*repair\s*\(\s*robo\s*\)/
 ],
@@ -1037,11 +1375,25 @@ hints:[
 "Whatever a method needs goes inside its round brackets.",
 "Example: nurse.treat(patient);"
 ],
+talk:{
+teacher:[
+"This is where objects work TOGETHER.",
+"Alex has a repair() method. But a repair needs something to repair - pass the robo object into it."
+],
+alex:[
+"I can fix Robo's wiring - I just need you to hand Robo to me.",
+"Put robo between my method's brackets."
+],
+robo:[
+"DAMAGE DETECTED IN WIRING.",
+"AWAITING TECHNICIAN: alex.repair(robo)."
+]
+},
 xp:180
 },
 
 {
-title:"MISSION 7 \u2014 DEBUG",
+title:"MISSION 7 — DEBUG",
 mission:"Fix Robo's code.",
 objective:"charge() is meant to set energy to 100, but it never changes anything. Repair it.",
 reference:
@@ -1060,39 +1412,65 @@ hints:[
 "One of these operators stores a value. The other only answers true or false.",
 "Example: count = 5; changes count. count == 5; just asks about it."
 ],
+talk:{
+teacher:[
+"Robo's own charge() method has a bug. It runs, but the battery never fills.",
+"Look at the operator. Is that line STORING a value, or only COMPARING one?"
+],
+alex:[
+"I read about this in the OOP book 📘: one = stores, two == compare.",
+"Robo keeps asking 'is energy 100?' instead of making it 100."
+],
+robo:[
+"charge() COMPLETE. ENERGY: 0.",
+"QUESTION: WHY IS ENERGY STILL 0?"
+]
+},
 xp:200
 },
 
 {
-title:"MISSION 8 \u2014 ACTIVATION",
+title:"MISSION 8 — ACTIVATION",
 mission:"Bring Robo online.",
-objective:"Charge Robo, then activate Robo. The order matters.",
+objective:"Robo must be charged BEFORE it is activated. These two calls are in the wrong order, and one is missing its semicolon. Fix both.",
 reference:`Statements run top to bottom, in the order you write them.`,
 starter:
 `// robo needs power before it can switch on
-
-// write the two calls in the order that works`,
+robo.activate();
+robo.charge()`,
 order:true,
 hints:[
 "Robo cannot switch on while the battery is flat.",
 "Both calls are needed. Only one order actually works.",
 "Think of it as filling the tank before starting the engine."
 ],
+talk:{
+teacher:[
+"Java runs statements from top to bottom - in the order you write them.",
+"Right now the code switches Robo on first, and only then charges it."
+],
+alex:[
+"Last time someone switched Robo on with a flat battery, it shut down straight away.",
+"Charge first. Then activate."
+],
+robo:[
+"WARNING: activate() ON AN EMPTY BATTERY = SHUTDOWN.",
+"REQUEST: charge() FIRST."
+]
+},
 xp:220
 },
 
 {
-title:"MISSION 9 \u2014 UNLOCK",
+title:"MISSION 9 — UNLOCK",
 mission:"Open the exit.",
-objective:"Alex repairs Robo, Robo unlocks the door, and the door opens.",
+objective:"Alex repairs Robo, Robo unlocks the door, and the door opens. Two of these lines are wrong - fix them.",
 reference:`objectA.methodName(objectB);
 objectB.methodName();`,
 starter:
-`// alex repairs robo
-
-// robo unlocks the door
-
-// the door opens itself`,
+`alex.repair(robo);
+robo.unlock();
+door.Open();`,
 checks:[
 /alex\s*\.\s*repair\s*\(\s*robo\s*\)/,
 /robo\s*\.\s*unlock\s*\(\s*door\s*\)/,
@@ -1101,30 +1479,39 @@ checks:[
 hints:[
 "Three objects, each doing one job, passing the work along.",
 "Every line follows the same shape: which object, which action, what it needs.",
-"The door is an object too - it knows how to open itself."
+"The door is an object too - and method names start with a lowercase letter."
 ],
+talk:{
+teacher:[
+"Now the whole chain: Alex repairs Robo, Robo unlocks the door, the door opens itself.",
+"Each object passes the job to the next. Two of my lines are wrong."
+],
+alex:[
+"I found the key 🔑! Robo knows how to use it - but you have to tell Robo WHICH object to unlock.",
+"And the door's method is open - lowercase o."
+],
+robo:[
+"KEY RECEIVED.",
+"UNLOCK WHAT? PLEASE PASS AN OBJECT: unlock(door)."
+]
+},
 xp:300
 },
 
 {
-title:"FINAL MISSION \u2014 ESCAPE",
+title:"FINAL MISSION — ESCAPE",
 mission:"Defeat the lockdown.",
-objective:"Create Alex, build Robo with 100 energy, repair Robo, activate Robo, unlock the door and open it.",
+objective:"The whole escape is here, but scrambled and with 2 typos. Put the lines in order - create Alex, build Robo with 100 energy, Alex repairs Robo, Robo activates, Robo unlocks the door, the door opens - and fix the typos.",
 reference:
 `ClassName objectName = new ClassName(arguments);
 objectName.methodName(arguments);`,
 starter:
-`// create alex, a Student named Alex
-
-// build robo, a Robot named Robo with 100 energy
-
-// alex repairs robo
-
-// robo activates
-
-// robo unlocks the door
-
-// the door opens`,
+`robo.unlock(door);
+alex.repair(robo);
+Robot robo = new Robot("Robo", 100);
+door.open();
+Student alex = new Student("Alex")
+robo.activat();`,
 checks:[
 /Student\s+alex\s*=\s*new\s+Student\s*\(\s*"Alex"\s*\)/,
 /Robot\s+robo\s*=\s*new\s+Robot\s*\(\s*"Robo"\s*,\s*100\s*\)/,
@@ -1133,15 +1520,143 @@ checks:[
 /robo\s*\.\s*unlock\s*\(\s*door\s*\)/,
 /door\s*\.\s*open\s*\(\s*\)/
 ],
+/* both objects first (either way round), then the chain */
+ordered:[[0,1],[2],[3],[4],[5]],
 hints:[
 "Everything you have learned, in one run. Work down the escape chain in order.",
 "Objects have to exist before they can be used - build them first.",
 "Six statements, each one a step you have already written once before."
 ],
+talk:{
+teacher:[
+"This is it, Hacko - the last lock.",
+"Everything you have built today, in one program: create the objects, connect them, get us out.",
+"An object must exist before you use it, and Robo must be repaired and running before it can unlock anything."
+],
+alex:[
+"Create me first, then Robo. Then I repair Robo, Robo switches on, Robo unlocks the door...",
+"...and the door opens. Watch out for the two typos!"
+],
+robo:[
+"FINAL SEQUENCE LOADED - OUT OF ORDER.",
+"ORDER IS EVERYTHING."
+]
+},
 xp:500
 }
 
 ];
+
+
+/* =========================
+ROOM LAYOUT
+=========================
+
+Everything in the classroom, in pixels from the top-left of
+the room. Solid pieces block Hacko; tools/check-classroom.js
+flood-fills this layout to prove every character and item can
+still be reached around the desks. */
+
+const DESK_COLUMNS=[150,300,450];
+const DESK_ROWS=[196,304];
+
+const ROOM={
+
+    start:{x:170,y:400},
+
+    pieces:[
+        {type:"rug",x:130,y:178,w:450,h:222,solid:false},
+        {type:"teacherdesk",x:330,y:104,w:150,h:46},
+        {type:"lockers",x:566,y:88,w:96,h:40},
+        {type:"bookshelf",x:690,y:96,w:58,h:112},
+        {type:"plant",x:118,y:96,w:36,h:40},
+        {type:"computertable",x:672,y:262,w:76,h:40},
+        {type:"bin",x:24,y:430,w:30,h:36},
+
+        /* two rows of three student desks, each with its chair */
+        ...DESK_ROWS.flatMap(y=>DESK_COLUMNS.flatMap(x=>[
+            {type:"desk",x,y,w:104,h:44},
+            {type:"chair",x:x+35,y:y+48,w:34,h:24}
+        ]))
+    ],
+
+    /* where the characters and items stand - each is a DOM
+       element already in the page */
+    spots:{
+        teacher:{x:500,y:100},
+        alex:{x:84,y:318},
+        robo:{x:640,y:396},
+        computer:{x:688,y:226},
+        key:{x:600,y:200},
+        battery:{x:410,y:420},
+        book:{x:640,y:150}
+    }
+
+};
+
+/* Hacko collides by the feet, not the whole sprite, so the
+   player can walk up close behind a desk the way people do. */
+const FEET={x:10,y:48,w:32,h:22};
+
+/* characters block too, by their feet */
+const PEOPLE=["teacher","alex","robo"];
+
+const SOLIDS=[
+    ...ROOM.pieces.filter(piece=>piece.solid!==false),
+    ...PEOPLE.map(name=>({
+        x:ROOM.spots[name].x,
+        y:ROOM.spots[name].y+40,
+        w:48,
+        h:18
+    }))
+];
+
+function renderRoom(){
+
+    const box=$("furniture");
+
+    ROOM.pieces.forEach(piece=>{
+        const el=document.createElement("div");
+        el.className="furn "+piece.type;
+        el.style.left=piece.x+"px";
+        el.style.top=piece.y+"px";
+        el.style.width=piece.w+"px";
+        el.style.height=piece.h+"px";
+        box.appendChild(el);
+    });
+
+    Object.keys(ROOM.spots).forEach(name=>{
+        $(name).style.left=ROOM.spots[name].x+"px";
+        $(name).style.top=ROOM.spots[name].y+"px";
+    });
+
+}
+
+function blockedAt(x,y){
+
+    const fx=x+FEET.x;
+    const fy=y+FEET.y;
+
+    return SOLIDS.some(r=>
+        fx<r.x+r.w &&
+        fx+FEET.w>r.x &&
+        fy<r.y+r.h &&
+        fy+FEET.h>r.y
+    );
+
+}
+
+function placePlayerAtStart(){
+
+    const player=$("player");
+
+    player.style.transition="none";
+    player.style.left=ROOM.start.x+"px";
+    player.style.top=ROOM.start.y+"px";
+    player.offsetWidth;
+    player.style.transition="";
+
+}
 
 
 /* =========================
@@ -1255,7 +1770,9 @@ HUD
 function updateHUD(){
 
     $("xp").textContent=game.xp;
-    $("lives").textContent=game.lives;
+    $("lives").textContent=
+        "❤️".repeat(Math.max(0,game.lives))+
+        "🖤".repeat(Math.max(0,3-game.lives));
     $("combo").textContent=game.combo;
     $("level").textContent=game.level;
 
@@ -1270,6 +1787,9 @@ function loadLevel(){
 
     const level=
         levels[game.level-1];
+
+    /* Client rule: three lives per level, not per mission */
+    game.lives=3;
 
     $("levelTitle").textContent=
         level.title;
@@ -1345,6 +1865,19 @@ MOVEMENT
 ========================= */
 
 let lastFootstep=0;
+let lastBump=0;
+
+/* a soft knock when walking into furniture, not every frame */
+function bump(){
+
+    const now=performance.now();
+
+    if(now-lastBump>350){
+        lastBump=now;
+        HackoAudio.play("bump");
+    }
+
+}
 
 function movePlayer(){
 
@@ -1356,12 +1889,12 @@ function movePlayer(){
     let x=
         parseFloat(
             player.style.left
-        )||170;
+        )||ROOM.start.x;
 
     let y=
         parseFloat(
             player.style.top
-        )||390;
+        )||ROOM.start.y;
 
     const speed=4;
 
@@ -1403,9 +1936,25 @@ function movePlayer(){
         Math.min(maxY,y)
     );
 
+    /* desks, chairs and furniture are solid - each axis is
+       tried on its own so Hacko slides along an edge instead
+       of sticking to it */
+    const fromX=parseFloat(player.style.left)||ROOM.start.x;
+    const fromY=parseFloat(player.style.top)||ROOM.start.y;
+
+    if(blockedAt(x,fromY)) x=fromX;
+    if(blockedAt(x,y)) y=fromY;
+
+    if(
+        (x===fromX && (keys.a||keys.arrowleft||keys.d||keys.arrowright)) ||
+        (y===fromY && (keys.w||keys.arrowup||keys.s||keys.arrowdown))
+    ){
+        bump();
+    }
+
     const moved=
-        x!==(parseFloat(player.style.left)||170) ||
-        y!==(parseFloat(player.style.top)||390);
+        x!==fromX ||
+        y!==fromY;
 
     player.style.left=x+"px";
     player.style.top=y+"px";
@@ -1586,53 +2135,20 @@ function interact(){
 
     switch(nearby.type){
 
+        /* what each character says depends on the level, so
+           the three of them tell one story - see talk: in the
+           level data */
         case"teacher":
-
-            showDialogue(
-                "PROFESSOR BYTE",
-                [
-                    "The classroom is locked down!",
-
-                    "Everything here is controlled by objects.",
-
-                    "Talk to the characters and solve the coding missions.",
-
-                    "Your OOP skills are the only way out."
-                ]
-            );
-
-        break;
-
-
         case"alex":
-
-            showDialogue(
-                "ALEX",
-                [
-                    "Objects contain data and behavior.",
-
-                    "Properties store information.",
-
-                    "Methods perform actions.",
-
-                    "Use the terminal to control us."
-                ]
-            );
-
-        break;
-
-
         case"robo":
 
             showDialogue(
-                "ROBO",
-                [
-                    "SYSTEM FAILURE.",
-
-                    "My energy is unstable.",
-
-                    "I need your code to repair me."
-                ]
+                {
+                    teacher:"PROFESSOR BYTE",
+                    alex:"ALEX",
+                    robo:"ROBO"
+                }[nearby.type],
+                levels[game.level-1].talk[nearby.type]
             );
 
         break;
@@ -1752,6 +2268,9 @@ function validateCode(code){
         .replace(/\s+/g," ")
         .trim();
 
+    if(missingSemicolon(code))
+        return false;
+
 
     /* LEVEL 8 */
 
@@ -1776,34 +2295,13 @@ function validateCode(code){
     }
 
 
-    /* FINAL LEVEL */
+    /* FINAL LEVEL - every piece, and in the right order */
 
-    if(game.level===10){
+    if(level.ordered){
 
         return(
-
-            /Student\s+alex\s*=\s*new\s+Student\s*\(\s*"Alex"\s*\)/.test(clean)
-
-            &&
-
-            /Robot\s+robo\s*=\s*new\s+Robot\s*\(\s*"Robo"\s*,\s*100\s*\)/.test(clean)
-
-            &&
-
-            /alex\s*\.\s*repair\s*\(\s*robo\s*\)/i.test(clean)
-
-            &&
-
-            /robo\s*\.\s*activate\s*\(\s*\)/i.test(clean)
-
-            &&
-
-            /robo\s*\.\s*unlock\s*\(\s*door\s*\)/i.test(clean)
-
-            &&
-
-            /door\s*\.\s*open\s*\(\s*\)/i.test(clean)
-
+            level.checks.every(regex=>regex.test(clean)) &&
+            inOrder(clean,level.checks,level.ordered)
         );
 
     }
@@ -1858,26 +2356,71 @@ function explainMistake(code){
         .replace(/\s+/g," ")
         .trim();
 
+    /* every problem at once - with several mistakes in the
+       starter code, finding them one wrong answer (and one
+       life) at a time would be unfair */
+    const problems=[];
+
+    const semicolon=missingSemicolon(code);
+
+    if(semicolon){
+        problems.push(
+            "Line "+semicolon.number+" needs a semicolon ; at the end:\n"+
+            "   "+semicolon.text
+        );
+    }
+
     if(level.order){
 
         const charge=/robo\s*\.\s*charge\s*\(\s*\)/i.test(clean);
         const activate=/robo\s*\.\s*activate\s*\(\s*\)/i.test(clean);
 
-        if(!charge) return "Missing: robo.charge();";
-        if(!activate) return "Missing: robo.activate();";
+        if(!charge) problems.push("Missing: robo.charge();");
+        if(!activate) problems.push("Missing: robo.activate();");
 
-        return "Both calls are there, but in the wrong order.\n"+
-            "Robo needs charging BEFORE it can be activated.";
+        if(charge && activate &&
+            clean.search(/robo\s*\.\s*charge/i)>clean.search(/robo\s*\.\s*activate/i)){
+            problems.push(
+                "Both calls are there, but in the wrong order.\n"+
+                "Robo needs charging BEFORE it can be activated."
+            );
+        }
+
+        return problems.join("\n\n")||"Check your spelling.";
 
     }
 
-    const missing=
-        (level.checks||[]).find(
+    const missingAll=
+        (level.checks||[]).filter(
             regex=>!regex.test(clean)
         );
 
-    if(!missing)
-        return "Check your spelling and semicolons.";
+    if(!missingAll.length){
+
+        if(level.ordered && !inOrder(clean,level.checks,level.ordered)){
+            problems.push(
+                "Every line is there, but not in the right order.\n"+
+                "Create the objects first, then repair, activate,\n"+
+                "unlock and open - one after the other."
+            );
+        }
+
+        return problems.join("\n\n")||"Check your spelling and semicolons.";
+
+    }
+
+    missingAll.slice(1).forEach(regex=>{
+        problems.push("Missing: "+readableCheck(regex));
+    });
+
+    return [explainFirst(missingAll[0],clean)]
+        .concat(problems)
+        .join("\n\n");
+
+}
+
+/* the most helpful explanation for one missing piece */
+function explainFirst(missing,clean){
 
     /* a class, but under the wrong name? Easy to mix up with
        the object's name - Robot (the class) vs robo (the object) */
@@ -1925,6 +2468,113 @@ function explainMistake(code){
 
     return "Missing: "+readableCheck(missing)+
         "\nNames and capital letters must match the objective exactly.";
+
+}
+
+
+/* =========================
+LIFE LOST
+========================= */
+
+function showLifeLost(){
+
+    const world=$("world");
+    const player=$("player");
+    const text=$("hitText");
+
+    world.classList.remove("hit");
+    text.classList.remove("show");
+    $("livesStat").classList.remove("pulse");
+    world.offsetWidth;
+
+    text.textContent="-1 ❤️";
+    text.style.left=(player.offsetLeft+player.offsetWidth/2)+"px";
+    text.style.top=(player.offsetTop-24)+"px";
+
+    world.classList.add("hit");
+    text.classList.add("show");
+    $("livesStat").classList.add("pulse");
+
+}
+
+
+/* =========================
+RESTART LEVEL
+========================= */
+
+/* Client: there was no way to start a level over. This puts
+   the code, the items, the door, the lives and Hacko back the
+   way the level began - the level itself is kept. */
+function restartLevel(){
+
+    HackoAudio.play("select");
+
+    $("dialogue").style.display="none";
+    $("complete").style.display="none";
+
+    paused=false;
+
+    loadLevel();
+    placePlayerAtStart();
+
+    terminalOutput(
+        "info",
+        "↻ LEVEL "+game.level+" RESTARTED\n\n"+
+        "Starter code, items and lives are back to the start."
+    );
+
+}
+
+
+/* =========================
+SEMICOLONS
+========================= */
+
+/* The checks below look for the right statements, but a line
+   missing its semicolon still matched them - and fixing those
+   is now part of every mission. Returns the first statement
+   line that does not end properly, or null. */
+function missingSemicolon(code){
+
+    const lines=code.split("\n");
+
+    for(let i=0;i<lines.length;i++){
+
+        const line=lines[i].replace(/\/\/.*$/,"").trim();
+
+        if(!line) continue;
+        if(/[;{},]$/.test(line)) continue;
+        if(/^(class|public|private|@)\b/.test(line)) continue;
+
+        /* a header with its brace on the next line */
+        const next=(lines.slice(i+1).find(l=>l.replace(/\/\/.*$/,"").trim())||"").trim();
+        if(next.startsWith("{")) continue;
+
+        return {number:i+1,text:line};
+
+    }
+
+    return null;
+
+}
+
+/* Final mission: the escape only works in order. ordered
+   lists the checks in groups - everything in one group has to
+   come before everything in the next. */
+function inOrder(clean,checks,groups){
+
+    const at=checks.map(regex=>clean.search(regex));
+
+    for(let g=0;g+1<groups.length;g++){
+
+        const last=Math.max(...groups[g].map(i=>at[i]));
+        const next=Math.min(...groups[g+1].map(i=>at[i]));
+
+        if(last>=next) return false;
+
+    }
+
+    return true;
 
 }
 
@@ -2070,6 +2720,8 @@ function runCode(){
 
                 game.lives--;
 
+                showLifeLost();
+
     /* Client rule: out of lives drops back one level, rather
        than silently topping the lives back up. */
     if(game.lives<=0){
@@ -2088,6 +2740,7 @@ function runCode(){
         HackoAudio.play("gameover");
         updateHUD();
         loadLevel();
+        placePlayerAtStart();
 
         /* loadLevel() leaves "Terminal ready." in the terminal,
            which on its own read as if the third answer had
@@ -2111,41 +2764,17 @@ function runCode(){
     }
                 game.combo=0;
 
+                terminalOutput(
+                    "error",
 
-                if(game.lives<=0){
-
-                    game.lives=3;
-
-                    game.xp=
-                        Math.max(
-                            0,
-                            game.xp-50
-                        );
-
-                    terminalOutput(
-                        "error",
-
-                        "💥 SYSTEM FAILURE!\n\n"+
-                        "❤️ Lives restored to 3.\n"+
-                        "⭐ -50 XP"
-                    );
-
-                }else{
-
-                    terminalOutput(
-                        "error",
-
-                        "❌ NOT QUITE!\n\n"+
-                        explainMistake(code)+
-                        "\n\n"+
-                        "❤️ Lives remaining: "+
-                        game.lives+
-                        "\n\n"+
-                        "💡 Try the HINT button."
-                    );
-
-                }
-
+                    "❌ NOT QUITE!\n\n"+
+                    explainMistake(code)+
+                    "\n\n"+
+                    "❤️ Lives remaining: "+
+                    game.lives+
+                    "\n\n"+
+                    "💡 Try the HINT button."
+                );
 
                 updateHUD();
                 saveGame();
@@ -2325,9 +2954,8 @@ function startGame(){
         "info",
 
         "🚨 CLASSROOM LOCKDOWN ACTIVE\n\n"+
-        "Explore the classroom.\n"+
-        "Talk to Professor Byte.\n"+
-        "Then solve Mission 1."
+        "Talk to Professor Byte, Alex and Robo.\n"+
+        "Then fix the code for Mission 1."
     );
 
 }
@@ -2497,6 +3125,11 @@ $("startBtn").addEventListener(
     startGame
 );
 
+$("restartLevel").addEventListener(
+    "click",
+    restartLevel
+);
+
 /* the shared briefing already has a START button - pressing it
    starts the game too, so the player is not asked twice */
 if(window.HackoBriefing){
@@ -2552,13 +3185,7 @@ function exitLevel(){
 
     /* each level starts Hacko back at the start spot, not in
        the doorway - jump there rather than slide across the room */
-    const player=$("player");
-
-    player.style.transition="none";
-    player.style.left="170px";
-    player.style.top="390px";
-    player.offsetWidth;
-    player.style.transition="";
+    placePlayerAtStart();
 
     terminalOutput(
         "success",
@@ -2588,6 +3215,8 @@ function gameLoop(){
 /* =========================
 INITIALIZE
 ========================= */
+
+renderRoom();
 
 loadGame();
 
