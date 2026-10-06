@@ -45,7 +45,9 @@ function render(){
     button.innerHTML=`<span>${String.fromCharCode(65+i)}</span><code></code>`;
     button.querySelector('code').textContent=choice;
     if(selected===i) button.classList.add('selected');
-    if(result && i===m.answer) button.classList.add('correct');
+    /* Client request: a wrong patch must not give the answer away, so
+       only the player's own winning pick ever turns green. */
+    if(result==='win' && i===m.answer) button.classList.add('correct');
     if(result==='lose' && selected===i) button.classList.add('wrong');
     button.onclick=()=>{if(result==='win')return;HackoAudio.play('select');selected=i;result=null;render()};
     $('choices').appendChild(button);

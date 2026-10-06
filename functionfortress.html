@@ -118,17 +118,22 @@ button:disabled {
 main {
     display: grid;
     grid-template-columns: minmax(560px, 1fr) 390px;
+    align-items: start;
     gap: 13px;
     padding: 13px;
     min-height: 0;
 }
 
+/* The stage used to stretch to the height of the coding panel
+   with the level centred inside it, so the floor - where most of
+   the action is - sat below the fold. It now stays pinned at the
+   top and is sized to fit the screen. */
 .stage {
-    position: relative;
+    position: sticky;
+    top: 13px;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 575px;
     overflow: hidden;
     border: 3px solid #3bd9e8;
     border-radius: 20px;
@@ -139,7 +144,7 @@ main {
 }
 
 .stage canvas {
-    width: min(100%, 960px);
+    width: min(100%, 960px, calc((100vh - 120px) * 16 / 9));
     height: auto;
     display: block;
 }
@@ -390,7 +395,12 @@ footer {
     }
 
     .stage {
-        min-height: auto;
+        position: relative;
+        top: 0;
+    }
+
+    .stage canvas {
+        width: 100%;
     }
 
     .stats {
@@ -1458,20 +1468,1155 @@ shutdownDefense(result);`
 
 let level = 0;
 
-/* The CODE button sits on the platform nearest the door, clear
-   of the ground sentry's patrol and the level-10 laser at 675. */
-const CODE_BUTTON = {
-    x: 606,
-    w: 46,
-    top: 410
+/* =====================================================
+   STAGES
+
+   Client request: every level gets its own challenge and
+   its own mechanic, so the fortress never plays the same
+   way twice. The function Hacko writes is what changes
+   the world, and the new world is how Hacko gets out:
+
+     1  Sleeping Door  - wake a snoring door
+     2  Three Torches  - a dark hall; each call lights a
+                         torch and a stepping stone over the pit
+     3  Color Bridge   - setColor("blue") builds a hard-light
+                         bridge across the chasm
+     4  Moving Platform- the CODE button rides the platform the
+                         call sends across the gap
+     5  Power Meter    - the returned 50 charges a jump pad up
+                         to the high door
+     6  Chain Reaction - one call sets off a chain that shuts
+                         three laser gates in turn
+     7  Smart Door     - climb for the key first; the door only
+                         listens once hasKey is really true
+     8  Elevator       - three calls in order: bridge, power,
+                         elevator - then ride it to the top
+     9  Crystals       - the two returned totals grow two
+                         crystal pillars into a staircase
+     10 The Core       - turrets fire while you code; the core's
+                         "success" token shuts the defences down
+
+   Every platform route is checked against Hacko's jump by
+   tools/check-fortress.js. Ground walkers stand at y 455.
+===================================================== */
+
+const GROUND = 485;
+
+function floor(x, w) {
+    return { x, y: GROUND, w, h: 55, kind: "ground" };
+}
+
+function ledge(x, y, w, h = 18) {
+    return { x, y, w, h, kind: "ledge" };
+}
+
+const STAGES = [
+    {
+        mechanic: "sleep",
+        intro: "The door is fast asleep! Stand on the CODE button and wake it with openDoor().",
+        label: "DOOR",
+        theme: { sky: ["#151636", "#102c45", "#07111e"], plat: "#24536b", edge: "#45f3ff" },
+        spawn: { x: 55, y: 380 },
+        platforms: [
+            floor(0, 960),
+            { x: 330, y: 430, w: 80, h: 55, kind: "crate" },
+            ledge(600, 410, 130, 22)
+        ],
+        route: [0, 1, 0, 2],
+        button: { x: 642, w: 46, top: 410 },
+        door: { x: 790, y: 330 },
+        stones: [[190, 440], [360, 385], [680, 375]],
+        enemies: [{ x: 470, y: 455, min: 430, max: 560, speed: 1.1 }],
+        lasers: []
+    },
+    {
+        mechanic: "torches",
+        intro: "It's pitch dark and there's a pit ahead. Light the way with lightTorch().",
+        label: "TORCHES",
+        theme: { sky: ["#120a06", "#1d1208", "#07060a"], plat: "#4a3420", edge: "#ffb347" },
+        spawn: { x: 30, y: 380 },
+        platforms: [
+            floor(0, 430),
+            floor(700, 260),
+            ledge(200, 410, 100),
+            { x: 450, y: 440, w: 64, h: 16, kind: "ghost", solid: false },
+            { x: 545, y: 415, w: 64, h: 16, kind: "ghost", solid: false },
+            { x: 625, y: 440, w: 60, h: 16, kind: "ghost", solid: false }
+        ],
+        route: [0, 3, 4, 5, 1],
+        button: { x: 362, w: 46, top: GROUND },
+        door: { x: 860, y: 330 },
+        stones: [[60, 440], [240, 370], [565, 330]],
+        enemies: [{ x: 160, y: 455, min: 130, max: 300, speed: 1.3 }],
+        lasers: []
+    },
+    {
+        mechanic: "bridge",
+        intro: "A chasm cuts you off from the door. Climb to the CODE button and build a bridge.",
+        label: "BRIDGE",
+        theme: { sky: ["#071a3a", "#0b2a55", "#050c1c"], plat: "#1f4f7a", edge: "#4da6ff" },
+        spawn: { x: 40, y: 380 },
+        platforms: [
+            floor(0, 380),
+            ledge(170, 420, 90),
+            ledge(270, 355, 110),
+            { x: 760, y: 355, w: 200, h: 185, kind: "ledge" },
+            { x: 380, y: 355, w: 380, h: 14, kind: "bridge", solid: false }
+        ],
+        route: [0, 1, 2, 4, 3],
+        button: { x: 315, w: 46, top: 355 },
+        door: { x: 880, y: 200 },
+        stones: [[40, 440], [300, 300], [560, 250]],
+        enemies: [
+            { x: 200, y: 455, min: 140, max: 330, speed: 1.4 },
+            { x: 560, y: 315, min: 400, max: 720, speed: 1.7, fly: true }
+        ],
+        lasers: []
+    },
+    {
+        mechanic: "mover",
+        intro: "The door is on a far ledge. The CODE button rides the platform - stand on it and send it across.",
+        label: "PLATFORM",
+        theme: { sky: ["#0b2a22", "#0f3a33", "#04110e"], plat: "#1f6355", edge: "#3dffd0" },
+        spawn: { x: 40, y: 380 },
+        platforms: [
+            floor(0, 300),
+            {
+                x: 330, y: 400, w: 110, h: 18, kind: "mover",
+                path: { to: { x: 690, y: 400 }, speed: 140, pause: 1.2 }
+            },
+            { x: 800, y: 330, w: 160, h: 210, kind: "ledge" }
+        ],
+        /* the mover is checked at both ends of its run */
+        route: [0, "1@from", "1@to", 2],
+        button: { x: 362, w: 46, top: 400, ride: 1, dx: 32 },
+        door: { x: 880, y: 175 },
+        stones: [[150, 400], [380, 340], [600, 345]],
+        enemies: [
+            { x: 180, y: 455, min: 140, max: 260, speed: 1.4 },
+            { x: 450, y: 250, min: 440, max: 660, speed: 1.3, fly: true }
+        ],
+        lasers: []
+    },
+    {
+        mechanic: "meter",
+        intro: "The door is too high to jump to. Power up the jump pad with getPower().",
+        label: "METER",
+        theme: { sky: ["#2a1606", "#3a2208", "#100804"], plat: "#6b4416", edge: "#ffd34d" },
+        spawn: { x: 40, y: 380 },
+        platforms: [
+            floor(0, 960),
+            ledge(470, 400, 120),
+            { x: 760, y: 250, w: 200, h: 235, kind: "ledge" },
+            { x: 650, y: 473, w: 80, h: 12, kind: "pad" }
+        ],
+        route: [0, 1, 0, 3, "launch", 2],
+        button: { x: 507, w: 46, top: 400 },
+        door: { x: 870, y: 95 },
+        stones: [[120, 440], [505, 350], [700, 250]],
+        enemies: [{ x: 160, y: 455, min: 140, max: 420, speed: 1.3 }],
+        lasers: [
+            { x: 240, y: 320 },
+            { x: 380, y: 320, phase: 0.5 }
+        ]
+    },
+    {
+        mechanic: "chain",
+        intro: "Three laser gates guard the door. One function call can shut them all.",
+        label: "CHAIN",
+        theme: { sky: ["#2a0814", "#3a0c1e", "#0e0408"], plat: "#5e1a33", edge: "#ff496f" },
+        spawn: { x: 40, y: 380 },
+        platforms: [
+            floor(0, 960),
+            ledge(150, 410, 100),
+            ledge(290, 350, 100),
+            ledge(430, 410, 100)
+        ],
+        route: [0, 1, 2, 3, 0],
+        button: { x: 580, w: 46, top: GROUND },
+        door: { x: 805, y: 330 },
+        stones: [[180, 370], [320, 300], [460, 370]],
+        enemies: [
+            { x: 160, y: 455, min: 140, max: 520, speed: 1.9 },
+            { x: 300, y: 250, min: 200, max: 420, speed: 1.2, fly: true }
+        ],
+        lasers: [
+            { x: 655, y: 320, steady: true, chain: 0 },
+            { x: 705, y: 320, steady: true, chain: 1 },
+            { x: 755, y: 320, steady: true, chain: 2 }
+        ]
+    },
+    {
+        mechanic: "key",
+        intro: "The Smart Door only opens for a key holder. Climb up, grab the key, then code.",
+        label: "SMART",
+        theme: { sky: ["#0d2414", "#123620", "#040e08"], plat: "#235c34", edge: "#91ff70" },
+        spawn: { x: 40, y: 380 },
+        platforms: [
+            floor(0, 960),
+            ledge(140, 415, 90),
+            ledge(260, 350, 90),
+            ledge(380, 285, 90),
+            ledge(500, 220, 90)
+        ],
+        route: [0, 1, 2, 3, 4, 0],
+        key: { x: 535, y: 170 },
+        button: { x: 690, w: 46, top: GROUND },
+        door: { x: 800, y: 330 },
+        stones: [[175, 370], [295, 305], [415, 240]],
+        enemies: [
+            { x: 200, y: 455, min: 140, max: 600, speed: 1.7 },
+            { x: 300, y: 270, min: 270, max: 470, speed: 1.0, fly: true }
+        ],
+        lasers: [{ x: 640, y: 320, phase: 0.3 }]
+    },
+    {
+        mechanic: "elevator",
+        intro: "The exit is on the top floor. Bridge, power, elevator - in that order.",
+        label: "ELEVATOR",
+        theme: { sky: ["#10142e", "#1a2048", "#05060f"], plat: "#2e3a7a", edge: "#9c7bff" },
+        spawn: { x: 40, y: 380 },
+        platforms: [
+            floor(0, 960),
+            { x: 250, y: 440, w: 80, h: 45, kind: "crate" },
+            ledge(370, 400, 130),
+            { x: 500, y: 400, w: 100, h: 14, kind: "drawbridge", solid: false },
+            {
+                x: 600, y: 200, w: 80, h: 16, kind: "car",
+                path: { to: { x: 600, y: 400 }, speed: 120, pause: 1.4 }
+            },
+            ledge(680, 200, 280)
+        ],
+        route: [0, 1, 2, 3, "4@to", "4@from", 5],
+        button: { x: 412, w: 46, top: 400 },
+        door: { x: 900, y: 45 },
+        stones: [[270, 400], [430, 350], [640, 280]],
+        enemies: [
+            { x: 150, y: 455, min: 130, max: 215, speed: 1.3 },
+            { x: 720, y: 170, min: 700, max: 840, speed: 1.0 }
+        ],
+        lasers: []
+    },
+    {
+        mechanic: "crystals",
+        intro: "The door is high above. Your two crystal totals will build the stairs.",
+        label: "CRYSTALS",
+        theme: { sky: ["#1c0b33", "#2a1150", "#0a0414"], plat: "#4a2a7a", edge: "#c08bff" },
+        spawn: { x: 40, y: 380 },
+        platforms: [
+            floor(0, 960),
+            { x: 780, y: 250, w: 180, h: 235, kind: "ledge" },
+            {
+                x: 560, y: GROUND, w: 70, h: 0, kind: "pillar",
+                path: { to: { x: 560, y: 400 }, speed: 110, once: true }
+            },
+            {
+                x: 670, y: GROUND, w: 70, h: 0, kind: "pillar",
+                path: { to: { x: 670, y: 320 }, speed: 130, once: true }
+            }
+        ],
+        route: [0, "2@to", "3@to", 1],
+        button: { x: 430, w: 46, top: GROUND },
+        door: { x: 870, y: 95 },
+        stones: [[100, 440], [300, 390], [700, 260]],
+        enemies: [
+            { x: 200, y: 300, min: 120, max: 400, speed: 1.5, fly: true },
+            { x: 640, y: 225, min: 560, max: 750, speed: 1.1, fly: true }
+        ],
+        lasers: [
+            { x: 150, y: 320 },
+            { x: 250, y: 320, phase: 0.4 },
+            { x: 350, y: 320, phase: 0.8 }
+        ]
+    },
+    {
+        mechanic: "core",
+        intro: "The Core's turrets are firing! Reach the shielded CODE button.",
+        label: "CORE",
+        theme: { sky: ["#2a0606", "#3a0a14", "#0c0204"], plat: "#5a1424", edge: "#ff7a3d" },
+        spawn: { x: 40, y: 380 },
+        platforms: [
+            floor(0, 960),
+            ledge(120, 420, 110),
+            ledge(270, 360, 110),
+            ledge(420, 300, 120)
+        ],
+        route: [0, 1, 2, 3, 0],
+        button: { x: 457, w: 46, top: 300 },
+        door: { x: 860, y: 330 },
+        stones: [[160, 380], [310, 320], [470, 250], [620, 440]],
+        enemies: [
+            { x: 180, y: 455, min: 140, max: 380, speed: 1.6 },
+            { x: 560, y: 455, min: 540, max: 760, speed: 1.8 }
+        ],
+        lasers: [{ x: 812, y: 320, steady: true, shield: true }],
+        turrets: [200, 480, 700]
+    }
+];
+
+/* The CODE button and the door move with the stage. */
+let CODE_BUTTON = { x: 642, w: 46, top: 410 };
+
+let DOOR = { x: 790, y: 330, w: 44, h: 155 };
+
+function stage() {
+    return STAGES[level] || STAGES[0];
+}
+
+/* end of stage data - tools/check-fortress.js reads up to here */
+
+function buildStage(index) {
+    const source = STAGES[index] || STAGES[0];
+
+    CODE_BUTTON = { ...source.button };
+    DOOR = { x: source.door.x, y: source.door.y, w: 44, h: 155 };
+
+    return {
+        platforms: source.platforms.map(platform => ({
+            solid: true,
+            ...platform,
+            show: platform.solid === false ? 0 : 1,
+            from: { x: platform.x, y: platform.y },
+            leg: "to",
+            wait: 0,
+            moving: false
+        })),
+        stones: source.stones.map(([x, y]) => ({ x, y, taken: false })),
+        enemies: source.enemies.map((enemy, index) => ({
+            w: 34,
+            h: 30,
+            dir: index % 2 ? 1 : -1,
+            ...enemy
+        })),
+        lasers: source.lasers.map(laser => ({
+            h: 165,
+            phase: 0,
+            on: true,
+            ...laser
+        }))
+    };
+}
+
+/* ---------- timeline: mechanics play out step by step ---------- */
+
+function after(seconds, action) {
+    state.timeline.push({
+        at: state.clock + seconds,
+        action
+    });
+}
+
+function runTimeline(deltaTime) {
+    state.clock += deltaTime;
+
+    const due =
+        state.timeline.filter(entry => state.clock >= entry.at);
+
+    state.timeline =
+        state.timeline.filter(entry => state.clock < entry.at);
+
+    due.forEach(entry => entry.action());
+}
+
+function ease(from, to, seconds, apply) {
+    const start = state.clock;
+
+    state.tweens.push(now => {
+        const t = Math.min(1, (now - start) / seconds);
+        apply(from + (to - from) * t, t);
+        return t < 1;
+    });
+}
+
+function runTweens() {
+    state.tweens =
+        state.tweens.filter(tween => tween(state.clock));
+}
+
+function platformsOf(kind) {
+    return state.platforms.filter(platform => platform.kind === kind);
+}
+
+function isRiding(player, platform) {
+    return (
+        platform.solid &&
+        player.onGround &&
+        Math.abs(player.y + player.h - platform.y) < 3 &&
+        player.x + player.w > platform.x &&
+        player.x < platform.x + platform.w
+    );
+}
+
+/* Moving platforms carry Hacko. A jump off one keeps its speed,
+   so leaping from the moving platform still lands where it looks
+   like it should. */
+function movePlatforms(deltaTime) {
+    const player = state.player;
+    let riding = false;
+
+    state.platforms.forEach(platform => {
+        if (!platform.path || !platform.moving) {
+            return;
+        }
+
+        if (platform.wait > 0) {
+            platform.wait -= deltaTime;
+
+            if (isRiding(player, platform)) {
+                riding = true;
+                player.carry = 0;
+            }
+
+            return;
+        }
+
+        const goal =
+            platform.leg === "to"
+                ? platform.path.to
+                : platform.from;
+
+        const dx = goal.x - platform.x;
+        const dy = goal.y - platform.y;
+        const distance = Math.hypot(dx, dy);
+        const step = Math.min(distance, platform.path.speed * deltaTime);
+        const moveX = distance ? (dx / distance) * step : 0;
+        const moveY = distance ? (dy / distance) * step : 0;
+        const carrying = isRiding(player, platform);
+
+        platform.x += moveX;
+        platform.y += moveY;
+
+        if (platform.kind === "pillar") {
+            platform.h = GROUND - platform.y;
+        }
+
+        if (carrying) {
+            riding = true;
+            player.x += moveX;
+            player.y = platform.y - player.h;
+            player.carry = moveX / deltaTime;
+        }
+
+        if (distance <= step + 0.01) {
+            if (platform.path.once) {
+                platform.moving = false;
+            } else {
+                platform.leg = platform.leg === "to" ? "from" : "to";
+                platform.wait = platform.path.pause || 1;
+            }
+        }
+    });
+
+    if (!riding && player.onGround) {
+        player.carry = 0;
+    }
+
+    /* the CODE button rides its platform */
+    if (CODE_BUTTON.ride !== undefined) {
+        const base = state.platforms[CODE_BUTTON.ride];
+        CODE_BUTTON.x = base.x + CODE_BUTTON.dx;
+        CODE_BUTTON.top = base.y;
+    }
+}
+
+/* ---------- what running the program does on each stage ---------- */
+
+function openDoorNow() {
+    state.doorReady = true;
+}
+
+function blinkLasersOff() {
+    state.lasers.forEach(laser => {
+        if (!laser.steady) {
+            laser.on = false;
+        }
+    });
+}
+
+const MECHANICS = {
+    sleep() {
+        blinkLasersOff();
+        state.mech.awake = state.clock;
+        setMessage("The door wakes up with a yawn... it's opening!");
+        after(0.7, openDoorNow);
+    },
+
+    torches() {
+        openDoorNow();
+        platformsOf("ghost").forEach((stone, index) => {
+            after(0.55 * index, () => {
+                state.mech.lit = index + 1;
+                stone.solid = true;
+                ease(0, 1, 0.35, value => { stone.show = value; });
+                HackoAudio.play("pickup");
+            });
+        });
+        setMessage("lightTorch() x3 - every torch lights a stepping stone over the pit!");
+    },
+
+    bridge() {
+        const bridge = platformsOf("bridge")[0];
+
+        openDoorNow();
+        HackoAudio.play("unlock");
+        ease(0, 1, 1.1, value => { bridge.show = value; });
+        after(1.1, () => { bridge.solid = true; });
+        setMessage('setColor("blue") - a blue light bridge is building across the chasm!');
+    },
+
+    mover() {
+        const mover = platformsOf("mover")[0];
+
+        openDoorNow();
+        mover.moving = true;
+        setMessage('movePlatform("right", 120) - hold on, the platform is moving! Jump to the door ledge.');
+    },
+
+    meter() {
+        const pad = platformsOf("pad")[0];
+
+        openDoorNow();
+        state.mech.meter = 0;
+        ease(0, 50, 1.2, value => { state.mech.meter = value; });
+        after(1.2, () => {
+            pad.charged = true;
+            HackoAudio.play("unlock");
+            setMessage("getPower() returned 50 - the jump pad is charged! Run onto it.");
+        });
+        setMessage("Charging the machine...");
+    },
+
+    chain() {
+        const gates =
+            state.lasers
+                .filter(laser => laser.chain !== undefined)
+                .sort((a, b) => a.chain - b.chain);
+
+        state.mech.spark = 0;
+        ease(0, 1, 0.45 * gates.length, value => { state.mech.spark = value; });
+
+        gates.forEach((laser, index) => {
+            after(0.45 * (index + 1), () => {
+                laser.on = false;
+                HackoAudio.play("hit");
+            });
+        });
+
+        after(0.45 * gates.length + 0.2, openDoorNow);
+        setMessage("unlockGate() calls disableLaser() - watch the chain reaction!");
+    },
+
+    key() {
+        blinkLasersOff();
+        openDoorNow();
+        setMessage("openIfReady(true) - the scanner sees the key. Door opening!");
+    },
+
+    elevator() {
+        const bridge = platformsOf("drawbridge")[0];
+        const car = platformsOf("car")[0];
+
+        setMessage("lowerBridge()...");
+        ease(0, 1, 0.8, value => { bridge.show = value; });
+        after(0.8, () => {
+            bridge.solid = true;
+            HackoAudio.play("land");
+            setMessage("lowerBridge()  powerElevator()...");
+            state.mech.power = true;
+        });
+        after(1.6, () => {
+            HackoAudio.play("unlock");
+            setMessage("lowerBridge()  powerElevator()  callElevator() - here it comes. Ride it up!");
+            car.moving = true;
+            openDoorNow();
+        });
+    },
+
+    crystals() {
+        const pillars = platformsOf("pillar");
+        const totals = (state.calls || [])
+            .filter(call => call.name === "combineCrystals")
+            .map(call => Number(call.a || 0) + Number(call.b || 0));
+
+        state.mech.values = [
+            totals[0] || 0,
+            totals.slice(1).reduce((sum, value) => sum + value, 0)
+        ];
+
+        blinkLasersOff();
+
+        pillars.forEach((pillar, index) => {
+            after(0.9 * index, () => {
+                pillar.moving = true;
+                HackoAudio.play("pickup");
+            });
+        });
+
+        after(1.8, () => {
+            openDoorNow();
+            setMessage(`${state.mech.values[0]} + ${state.mech.values[1]} = 42 - the crystal staircase is ready!`);
+        });
+
+        setMessage("Each returned total grows a crystal pillar...");
+    },
+
+    core() {
+        state.mech.core = state.clock;
+        setMessage('activateCore(100, "fortress")...');
+
+        after(1.1, () => {
+            state.mech.token = state.clock;
+            HackoAudio.play("correct");
+            setMessage('activateCore returned "success" - shutdownDefense("success")...');
+        });
+
+        after(2.0, () => {
+            state.lasers.forEach(laser => { laser.on = false; });
+            state.mech.turretsDown = state.clock;
+            state.bolts = [];
+            HackoAudio.play("hit");
+            openDoorNow();
+            setMessage("Defences offline. The Core is yours - walk out!");
+        });
+    }
 };
 
-const DOOR = {
-    x: 790,
-    y: 330,
-    w: 44,
-    h: 155
-};
+function solveStage() {
+    const mechanic = MECHANICS[stage().mechanic];
+
+    if (mechanic) {
+        mechanic();
+    } else {
+        blinkLasersOff();
+        openDoorNow();
+    }
+}
+
+/* ---------- things each stage does every frame ---------- */
+
+function stageTick(deltaTime) {
+    const player = state.player;
+    const source = stage();
+
+    if (source.key && !state.mech.hasKey) {
+        const key = { x: source.key.x, y: source.key.y, w: 24, h: 30 };
+
+        if (overlap(player, key)) {
+            state.mech.hasKey = true;
+            HackoAudio.play("pickup");
+            setMessage("Key collected - hasKey is now true. Go to the CODE button by the door!");
+        }
+    }
+
+    /* jump pad */
+    platformsOf("pad").forEach(pad => {
+        const feet = player.y + player.h;
+        const onPad =
+            player.onGround &&
+            feet >= pad.y - 3 &&
+            feet <= pad.y + pad.h + 1 &&
+            player.x + player.w > pad.x &&
+            player.x < pad.x + pad.w;
+
+        if (pad.charged && onPad) {
+            player.vy = -900;
+            player.onGround = false;
+            state.mech.padFlash = state.clock;
+            HackoAudio.play("jump");
+        }
+    });
+
+    /* core turrets fire at Hacko until the defences go down */
+    if (source.turrets && !state.mech.turretsDown) {
+        state.mech.nextShot = state.mech.nextShot || 1.5;
+
+        if (state.clock >= state.mech.nextShot) {
+            const index = state.mech.shots = (state.mech.shots || 0) + 1;
+            const turretX = source.turrets[index % source.turrets.length];
+            const targetX = player.x + player.w / 2;
+            const targetY = player.y + player.h / 2;
+            const angle = Math.atan2(targetY - 40, targetX - turretX);
+
+            state.bolts.push({
+                x: turretX,
+                y: 40,
+                vx: Math.cos(angle) * 230,
+                vy: Math.sin(angle) * 230
+            });
+
+            state.mech.nextShot = state.clock + (state.solved ? 0.9 : 1.25);
+        }
+    }
+
+    state.bolts = state.bolts.filter(bolt => {
+        bolt.x += bolt.vx * deltaTime;
+        bolt.y += bolt.vy * deltaTime;
+
+        /* the CODE button has a shield dome, so Hacko is safe
+           while writing the program - reaching it is the test */
+        if (Math.hypot(bolt.x - domeX(), bolt.y - CODE_BUTTON.top) < DOME_RADIUS) {
+            state.mech.domeHit = state.clock;
+            return false;
+        }
+
+        if (overlap(player, { x: bolt.x - 6, y: bolt.y - 6, w: 12, h: 12 })) {
+            respawn("core turret");
+            return false;
+        }
+
+        return bolt.y < 560 && bolt.x > -20 && bolt.x < 980;
+    });
+}
+
+const DOME_RADIUS = 72;
+
+function domeX() {
+    return CODE_BUTTON.x + CODE_BUTTON.w / 2;
+}
+
+/* ---------- drawing ---------- */
+
+function drawPlatform(platform, index, theme) {
+    if (platform.kind === "pillar") {
+        if (platform.h <= 0) {
+            return;
+        }
+
+        const values = state.mech.values || [];
+        const which = platformsOf("pillar").indexOf(platform);
+
+        ctx.save();
+        ctx.fillStyle = "#b67aff55";
+        ctx.strokeStyle = "#e0c4ff";
+        ctx.shadowColor = "#c08bff";
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.moveTo(platform.x, platform.y + platform.h);
+        ctx.lineTo(platform.x + 6, platform.y);
+        ctx.lineTo(platform.x + platform.w - 6, platform.y);
+        ctx.lineTo(platform.x + platform.w, platform.y + platform.h);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 16px Orbitron";
+        ctx.textAlign = "center";
+        ctx.fillText(
+            String(values[which] ?? ""),
+            platform.x + platform.w / 2,
+            platform.y + 26
+        );
+        ctx.restore();
+        return;
+    }
+
+    if (platform.solid === false || platform.show < 1) {
+        drawGhostPlatform(platform);
+
+        if (platform.show <= 0) {
+            return;
+        }
+    }
+
+    ctx.save();
+    ctx.globalAlpha = platform.show;
+
+    if (platform.kind === "bridge") {
+        const width = platform.w * platform.show;
+
+        ctx.fillStyle = "#4da6ff";
+        ctx.shadowColor = "#4da6ff";
+        ctx.shadowBlur = 22;
+        ctx.fillRect(platform.x, platform.y, width, 6);
+        ctx.fillStyle = "#4da6ff44";
+        ctx.fillRect(platform.x, platform.y + 6, width, platform.h - 6);
+        ctx.restore();
+        return;
+    }
+
+    if (platform.kind === "ghost") {
+        ctx.fillStyle = "#ffb347";
+        ctx.shadowColor = "#ffb347";
+        ctx.shadowBlur = 18;
+        ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
+        ctx.restore();
+        return;
+    }
+
+    if (platform.kind === "drawbridge") {
+        /* swings down from upright beside the shaft */
+        const angle = (1 - platform.show) * (Math.PI / 2);
+
+        ctx.translate(platform.x + platform.w, platform.y);
+        ctx.rotate(angle);
+        ctx.fillStyle = "#7a64d8";
+        ctx.shadowColor = "#9c7bff";
+        ctx.shadowBlur = 12;
+        ctx.fillRect(-platform.w, 0, platform.w, platform.h);
+        ctx.restore();
+        return;
+    }
+
+    if (platform.kind === "pad") {
+        const charged = platform.charged;
+        const flash = state.mech.padFlash && state.clock - state.mech.padFlash < 0.25;
+
+        ctx.fillStyle = charged ? "#ffd34d" : "#4a4030";
+        ctx.shadowColor = "#ffd34d";
+        ctx.shadowBlur = charged ? (flash ? 40 : 20) : 0;
+        ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
+        ctx.fillStyle = "#1a1206";
+        ctx.font = "bold 9px Orbitron";
+        ctx.textAlign = "center";
+        ctx.fillText(
+            charged ? "▲ JUMP" : "NO POWER",
+            platform.x + platform.w / 2,
+            platform.y + 10
+        );
+        ctx.restore();
+        return;
+    }
+
+    if (platform.kind === "car") {
+        ctx.fillStyle = "#2b2f6b";
+        ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
+        ctx.strokeStyle = state.mech.power ? "#9c7bff" : "#3c4070";
+        ctx.shadowColor = "#9c7bff";
+        ctx.shadowBlur = state.mech.power ? 16 : 0;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(platform.x + 1, platform.y + 1, platform.w - 2, platform.h - 2);
+        ctx.restore();
+        return;
+    }
+
+    const kindColor =
+        platform.kind === "mover"
+            ? "#2a8a76"
+            : platform.kind === "crate"
+                ? "#5a4026"
+                : index === 0
+                    ? "#00000055"
+                    : theme.plat;
+
+    ctx.fillStyle = theme.plat;
+    ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
+    ctx.fillStyle = kindColor;
+    ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
+
+    ctx.fillStyle = theme.edge + "55";
+    ctx.fillRect(platform.x, platform.y, platform.w, 5);
+
+    ctx.strokeStyle = theme.edge + "88";
+    ctx.strokeRect(platform.x + 2, platform.y + 2, platform.w - 4, platform.h - 4);
+
+    if (platform.kind === "crate") {
+        ctx.beginPath();
+        ctx.moveTo(platform.x + 4, platform.y + 4);
+        ctx.lineTo(platform.x + platform.w - 4, platform.y + platform.h - 4);
+        ctx.moveTo(platform.x + platform.w - 4, platform.y + 4);
+        ctx.lineTo(platform.x + 4, platform.y + platform.h - 4);
+        ctx.stroke();
+    }
+
+    if (platform.kind === "mover") {
+        ctx.fillStyle = "#3dffd0";
+        ctx.font = "bold 10px Orbitron";
+        ctx.textAlign = "center";
+        ctx.fillText(
+            platform.moving ? "◀ ▶" : "▶ 120",
+            platform.x + platform.w / 2,
+            platform.y + 14
+        );
+    }
+
+    ctx.restore();
+}
+
+/* A platform that is not there yet: a faint dashed outline. */
+function drawGhostPlatform(platform) {
+    if (stage().mechanic === "torches") {
+        return; /* hidden in the dark until a torch lights it */
+    }
+
+    ctx.save();
+    ctx.setLineDash([6, 6]);
+    ctx.strokeStyle = stage().theme.edge + "55";
+    ctx.lineWidth = 2;
+
+    if (platform.kind === "drawbridge") {
+        ctx.strokeRect(platform.x + platform.w - platform.h, platform.y - platform.w, platform.h, platform.w);
+    } else {
+        ctx.strokeRect(platform.x, platform.y, platform.w, platform.h);
+    }
+
+    ctx.restore();
+}
+
+/* Behind the platforms: torches, meter, shaft, core, wiring. */
+function drawStageBack() {
+    const source = stage();
+    const now = performance.now();
+
+    if (source.mechanic === "torches") {
+        platformsOf("ghost").forEach((stone, index) => {
+            const lit = (state.mech.lit || 0) > index;
+            const x = stone.x + stone.w / 2;
+
+            ctx.save();
+            ctx.fillStyle = "#3a2a1a";
+            ctx.fillRect(x - 4, 300, 8, 34);
+
+            if (lit) {
+                const flicker = Math.sin(now / 90 + index) * 3;
+                ctx.fillStyle = "#ffb347";
+                ctx.shadowColor = "#ff8a1f";
+                ctx.shadowBlur = 30;
+                ctx.beginPath();
+                ctx.ellipse(x, 290 + flicker / 2, 9, 15 + flicker, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.fillStyle = "#2a2018";
+                ctx.fillRect(x - 8, 292, 16, 10);
+            }
+
+            ctx.restore();
+        });
+    }
+
+    if (source.mechanic === "meter") {
+        const fill = (state.mech.meter || 0) / 100;
+
+        ctx.save();
+        ctx.fillStyle = "#1a1206";
+        ctx.fillRect(600, 140, 44, 200);
+        ctx.strokeStyle = "#ffd34d";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(600, 140, 44, 200);
+        ctx.fillStyle = "#ffd34d";
+        ctx.shadowColor = "#ffd34d";
+        ctx.shadowBlur = fill ? 16 : 0;
+        ctx.fillRect(604, 336 - 192 * fill, 36, 192 * fill);
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "#ffffff66";
+        ctx.beginPath();
+        ctx.moveTo(596, 240);
+        ctx.lineTo(648, 240);
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 12px Orbitron";
+        ctx.textAlign = "center";
+        ctx.fillText(`${Math.round(state.mech.meter || 0)}`, 622, 130);
+        ctx.font = "bold 9px Orbitron";
+        ctx.fillText("POWER", 622, 356);
+        ctx.restore();
+    }
+
+    if (source.mechanic === "elevator") {
+        ctx.save();
+        ctx.fillStyle = state.mech.power ? "#9c7bff18" : "#ffffff06";
+        ctx.fillRect(600, 190, 80, 295);
+        ctx.strokeStyle = state.mech.power ? "#9c7bff" : "#3c4070";
+        ctx.shadowColor = "#9c7bff";
+        ctx.shadowBlur = state.mech.power ? 14 : 0;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(600, 190, 80, 295);
+        ctx.restore();
+    }
+
+    if (source.mechanic === "chain") {
+        /* the wire from the CODE button to the laser gates */
+        const startX = CODE_BUTTON.x + CODE_BUTTON.w;
+        const endX = 760;
+        const y = 470;
+
+        ctx.save();
+        ctx.strokeStyle = "#ff496f55";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(endX, y);
+        ctx.stroke();
+
+        if (state.mech.spark !== undefined && state.mech.spark < 1) {
+            const x = startX + (endX - startX) * state.mech.spark;
+            ctx.fillStyle = "#fff6a0";
+            ctx.shadowColor = "#ffd34d";
+            ctx.shadowBlur = 24;
+            ctx.beginPath();
+            ctx.arc(x, y, 7, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    if (source.mechanic === "core") {
+        const charged = state.mech.core !== undefined;
+        const success = state.mech.token !== undefined;
+        const pulse = 40 + Math.sin(now / (charged ? 90 : 300)) * 5;
+
+        ctx.save();
+        ctx.fillStyle = success ? "#91ff70" : charged ? "#ffd34d" : "#ff7a3d";
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 40;
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.arc(640, 150, pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#0c0204";
+        ctx.font = "bold 12px Orbitron";
+        ctx.textAlign = "center";
+        ctx.fillText(success ? '"success"' : charged ? "100" : "CORE", 640, 155);
+
+        if (success && !state.mech.turretsDown) {
+            /* the token travels from the core to the shield */
+            const t = Math.min(1, (state.clock - state.mech.token) / 0.9);
+            ctx.strokeStyle = "#91ff70";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(640, 150);
+            ctx.lineTo(640 + (816 - 640) * t, 150 + (400 - 150) * t);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+}
+
+/* In front of everything: the key, turrets and bolts, darkness. */
+function drawStageFront() {
+    const source = stage();
+    const now = performance.now();
+
+    if (source.key && !state.mech.hasKey) {
+        const bob = Math.sin(now / 250) * 4;
+
+        ctx.save();
+        ctx.translate(source.key.x + 12, source.key.y + 15 + bob);
+        ctx.strokeStyle = "#ffd34d";
+        ctx.fillStyle = "#ffd34d";
+        ctx.shadowColor = "#ffd34d";
+        ctx.shadowBlur = 18;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, -6, 7, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillRect(-2, 0, 4, 16);
+        ctx.fillRect(2, 10, 6, 3);
+        ctx.restore();
+    }
+
+    if (source.key) {
+        /* the Smart Door's scanner shows the parameter */
+        ctx.save();
+        ctx.font = "bold 11px Orbitron";
+        ctx.textAlign = "center";
+        ctx.fillStyle = state.mech.hasKey ? "#91ff70" : "#ff496f";
+        ctx.fillText(
+            `hasKey = ${state.mech.hasKey ? "true" : "false"}`,
+            DOOR.x + DOOR.w / 2,
+            DOOR.y - 50
+        );
+        ctx.restore();
+    }
+
+    if (source.turrets) {
+        source.turrets.forEach(x => {
+            ctx.save();
+
+            if (state.mech.turretsDown) {
+                const age = state.clock - state.mech.turretsDown;
+
+                if (age < 0.6) {
+                    ctx.fillStyle = "#ffd34d";
+                    ctx.globalAlpha = 1 - age / 0.6;
+                    ctx.beginPath();
+                    ctx.arc(x, 30, 10 + age * 60, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = "#3a2a2a";
+                ctx.fillRect(x - 16, 14, 32, 10);
+            } else {
+                ctx.fillStyle = "#5a1424";
+                ctx.fillRect(x - 18, 0, 36, 22);
+                ctx.fillStyle = "#ff7a3d";
+                ctx.shadowColor = "#ff7a3d";
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                ctx.arc(x, 28, 9, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        });
+    }
+
+    if (source.turrets && !state.mech.turretsDown) {
+        const flash =
+            state.mech.domeHit !== undefined &&
+            state.clock - state.mech.domeHit < 0.2;
+
+        ctx.save();
+        ctx.strokeStyle = flash ? "#ffffff" : "#45f3ff88";
+        ctx.fillStyle = flash ? "#45f3ff33" : "#45f3ff12";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(domeX(), CODE_BUTTON.top, DOME_RADIUS, Math.PI, 0);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    state.bolts.forEach(bolt => {
+        ctx.save();
+        ctx.fillStyle = "#ffb347";
+        ctx.shadowColor = "#ff7a3d";
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.arc(bolt.x, bolt.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
+
+    if (source.mechanic === "sleep" && state.mech.awake === undefined) {
+        ctx.save();
+        ctx.fillStyle = "#c9d6ff";
+        ctx.font = "bold 16px Orbitron";
+        ctx.textAlign = "left";
+
+        for (let z = 0; z < 3; z++) {
+            const t = ((now / 1000 + z * 0.6) % 1.8) / 1.8;
+            ctx.globalAlpha = 1 - t;
+            ctx.fillText("z", DOOR.x + 34 + t * 30 + z * 4, DOOR.y - 20 - t * 50);
+        }
+
+        ctx.restore();
+    }
+
+    if (source.mechanic === "torches") {
+        /* the hall is dark until the torches are lit */
+        const lit = state.mech.lit || 0;
+        const darkness = 0.9 * (1 - lit / 3);
+
+        if (darkness > 0) {
+            const player = state.player;
+            const cx = player.x + player.w / 2;
+            const cy = player.y + player.h / 2;
+            const light = ctx.createRadialGradient(cx, cy, 50, cx, cy, 190);
+
+            light.addColorStop(0, "rgba(0,0,0,0)");
+            light.addColorStop(1, `rgba(0,0,0,${darkness})`);
+
+            ctx.save();
+            ctx.fillStyle = light;
+            ctx.fillRect(0, 0, 960, 540);
+            ctx.restore();
+        }
+    }
+}
 
 /* three lives per mission - see loseLifeAndMaybeDemote() */
 let missionLives = 3;
@@ -1546,30 +2691,42 @@ function loadLevel(index) {
     /* Client rule: three lives per level, not per mission. */
     missionLives = 3;
 
-    const platforms =
-        makePlatforms(index);
+    const built =
+        buildStage(index);
+
+    const spawn =
+        STAGES[index].spawn;
 
     state = {
         player: {
-            x: 55,
-            y: 390,
+            x: spawn.x,
+            y: spawn.y,
             w: 38,
             h: 50,
             vx: 0,
             vy: 0,
+            carry: 0,
             onGround: false
         },
-        platforms,
+        platforms: built.platforms,
         functions: [],
         calls: [],
         consoleActive: false,
         doorOpen: 0,
+        doorReady: false,
         solved: false,
         won: false,
-        stones: makeStones(index),
-        enemies: makeEnemies(index),
-        lasers: makeLasers(index),
-        mechanism: 0
+        stones: built.stones,
+        enemies: built.enemies,
+        lasers: built.lasers,
+        mechanism: 0,
+        /* stage mechanics */
+        clock: 0,
+        timeline: [],
+        tweens: [],
+        bolts: [],
+        mech: {},
+        keyNagged: false
     };
 
     keys = {};
@@ -1607,161 +2764,11 @@ function loadLevel(index) {
     );
 
     setMessage(
-        "Find the glowing CODE button by the door. " +
-        "Collect the Function Stones on the way."
+        STAGES[index].intro
     );
 
     renderLevels();
     updateUI();
-}
-
-function makePlatforms(index) {
-    const platforms = [
-        {
-            x: 0,
-            y: 485,
-            w: 960,
-            h: 55
-        },
-        {
-            x: 150,
-            y: 400,
-            w: 150,
-            h: 22
-        },
-        {
-            x: 370,
-            y: 345,
-            w: 150,
-            h: 22
-        },
-        {
-            x: 600,
-            y: 410,
-            w: 130,
-            h: 22
-        }
-    ];
-
-    if (index > 2) {
-        platforms.push({
-            x: 260,
-            y: 270,
-            w: 120,
-            h: 18
-        });
-    }
-
-    if (index > 5) {
-        platforms.push({
-            x: 540,
-            y: 245,
-            w: 125,
-            h: 18
-        });
-    }
-
-    return platforms;
-}
-
-function makeStones(index) {
-    const spots = [
-        [190, 360],
-        [420, 305],
-        [645, 370],
-        [300, 230],
-        [580, 205]
-    ];
-
-    return spots
-        .slice(
-            0,
-            Math.min(
-                3 + Math.floor(index / 4),
-                5
-            )
-        )
-        .map(position => {
-            return {
-                x: position[0],
-                y: position[1],
-                taken: false
-            };
-        });
-}
-
-function makeEnemies(index) {
-    const spots = [
-        [690, 455],
-        [420, 315],
-        [250, 455],
-        [570, 215]
-    ];
-
-    return spots
-        .slice(
-            0,
-            Math.min(
-                1 + Math.floor(index / 3),
-                4
-            )
-        )
-        .map(
-            (position, enemyIndex) => {
-                return {
-                    x: position[0],
-                    y: position[1],
-                    w: 34,
-                    h: 30,
-                    dir:
-                        enemyIndex % 2
-                            ? 1
-                            : -1,
-                    min:
-                        position[0] - 65,
-                    max:
-                        position[0] + 65,
-                    speed:
-                        1.1 + index * 0.12
-                };
-            }
-        );
-}
-
-function makeLasers(index) {
-    const spots = [
-        530,
-        340,
-        755,
-        225,
-        675
-    ];
-
-    return spots
-        .slice(
-            0,
-            Math.min(
-                Math.floor(
-                    (index + 1) / 2
-                ),
-                5
-            )
-        )
-        .map(
-            (x, laserIndex) => {
-                return {
-                    x,
-                    y:
-                        320 -
-                        (
-                            laserIndex % 2
-                        ) * 95,
-                    on: true,
-                    phase:
-                        laserIndex * 37
-                };
-            }
-        );
 }
 
 function populateBuilder() {
@@ -2063,20 +3070,18 @@ function executeProgram() {
 
     HackoAudio.play("unlock");
 
-    state.lasers.forEach(
-        laser => {
-            laser.on = false;
-        }
-    );
+    solveStage();
 
     setFeedback(
         "PROGRAM SUCCESS! Fortress mechanism activated.",
         true
     );
 
-    setMessage(
-        "Mechanism online! The door is opening - walk through it."
-    );
+    if (state.doorReady && stage().mechanic === "sleep") {
+        setMessage(
+            "Mechanism online! The door is opening - walk through it."
+        );
+    }
 }
 
 function update(deltaTime) {
@@ -2086,6 +3091,10 @@ function update(deltaTime) {
 
     const player =
         state.player;
+
+    runTimeline(deltaTime);
+    runTweens();
+    movePlatforms(deltaTime);
 
     const speed = 260;
 
@@ -2117,6 +3126,12 @@ function update(deltaTime) {
     player.x +=
         player.vx * deltaTime;
 
+    /* still moving with the platform Hacko jumped off */
+    if (!player.onGround) {
+        player.x +=
+            player.carry * deltaTime;
+    }
+
     collideX(player);
 
     player.y +=
@@ -2140,6 +3155,8 @@ function update(deltaTime) {
     ) {
         HackoAudio.play("land");
     }
+
+    stageTick(deltaTime);
 
     /* footsteps while running on the ground, same as the Escape Room */
     if (
@@ -2194,13 +3211,35 @@ function update(deltaTime) {
     const centerX =
         player.x + player.w / 2;
 
-    const onButton =
+    const standing =
         player.onGround &&
         centerX >= CODE_BUTTON.x &&
         centerX <= CODE_BUTTON.x + CODE_BUTTON.w &&
         Math.abs(
             player.y + player.h - CODE_BUTTON.top
-        ) < 2;
+        ) < 3;
+
+    /* Smart Door: the button only answers once Hacko holds
+       the key, so hasKey is true in the world, not just in code */
+    const needsKey =
+        !!stage().key &&
+        !state.mech.hasKey;
+
+    if (standing && needsKey && !state.keyNagged) {
+        state.keyNagged = true;
+        HackoAudio.play("wrong");
+        setMessage(
+            "The Smart Door scanner reads hasKey = false. Climb up and grab the key first!"
+        );
+    }
+
+    if (!standing) {
+        state.keyNagged = false;
+    }
+
+    const onButton =
+        standing &&
+        !needsKey;
 
     if (
         !state.solved &&
@@ -2288,6 +3327,7 @@ function update(deltaTime) {
     state.lasers.forEach(
         laser => {
             const active =
+                laser.steady ||
                 Math.floor(
                     performance.now() /
                     650 +
@@ -2303,7 +3343,7 @@ function update(deltaTime) {
                         x: laser.x,
                         y: laser.y,
                         w: 8,
-                        h: 165
+                        h: laser.h
                     }
                 )
             ) {
@@ -2314,15 +3354,16 @@ function update(deltaTime) {
         }
     );
 
-    /* the door is solid until the program runs */
+    /* the door is solid until it has fully opened - some
+       stages open it at the end of a sequence, not at once */
     if (
-        !state.solved &&
+        state.doorOpen < 1 &&
         player.x + player.w > DOOR.x
     ) {
         player.x = DOOR.x - player.w;
     }
 
-    if (state.solved) {
+    if (state.solved && state.doorReady) {
         state.doorOpen =
             Math.min(
                 1,
@@ -2330,11 +3371,13 @@ function update(deltaTime) {
             );
     }
 
-    /* walking through the open doorway ends the level */
+    /* walking through the open doorway ends the level - the
+       doorway has to be at Hacko's height (some doors are high) */
     if (
-        state.solved &&
         state.doorOpen >= 1 &&
-        player.x + player.w / 2 > DOOR.x + DOOR.w / 2
+        player.x + player.w / 2 > DOOR.x + DOOR.w / 2 &&
+        player.y + player.h > DOOR.y &&
+        player.y < DOOR.y + DOOR.h
     ) {
         completeLevel();
     }
@@ -2345,7 +3388,11 @@ function update(deltaTime) {
 function collideX(player) {
     state.platforms.forEach(
         platform => {
+            /* the jump pad is a floor plate Hacko walks onto,
+               not a step that blocks the way */
             if (
+                platform.solid &&
+                platform.kind !== "pad" &&
                 overlap(
                     player,
                     platform
@@ -2371,6 +3418,7 @@ function collideY(player) {
     state.platforms.forEach(
         platform => {
             if (
+                platform.solid &&
                 overlap(
                     player,
                     platform
@@ -2424,10 +3472,12 @@ function respawn(source) {
 
     HackoAudio.play("hit");
 
-    state.player.x = 55;
-    state.player.y = 390;
+    state.player.x = stage().spawn.x;
+    state.player.y = stage().spawn.y;
     state.player.vx = 0;
     state.player.vy = 0;
+    state.player.carry = 0;
+    state.bolts = [];
 
     const lastLife = missionLives <= 1;
 
@@ -2706,19 +3756,22 @@ function draw() {
             540
         );
 
+    const theme =
+        stage().theme;
+
     background.addColorStop(
         0,
-        "#151636"
+        theme.sky[0]
     );
 
     background.addColorStop(
         0.55,
-        "#102c45"
+        theme.sky[1]
     );
 
     background.addColorStop(
         1,
-        "#07111e"
+        theme.sky[2]
     );
 
     ctx.fillStyle =
@@ -2753,38 +3806,14 @@ function draw() {
         }
     }
 
+    drawStageBack();
+
     state.platforms.forEach(
         (platform, index) => {
-            ctx.fillStyle =
-                index === 0
-                    ? "#183a52"
-                    : "#24536b";
-
-            ctx.fillRect(
-                platform.x,
-                platform.y,
-                platform.w,
-                platform.h
-            );
-
-            ctx.fillStyle =
-                "#45f3ff33";
-
-            ctx.fillRect(
-                platform.x,
-                platform.y,
-                platform.w,
-                5
-            );
-
-            ctx.strokeStyle =
-                "#397e9e";
-
-            ctx.strokeRect(
-                platform.x + 2,
-                platform.y + 2,
-                platform.w - 4,
-                platform.h - 4
+            drawPlatform(
+                platform,
+                index,
+                theme
             );
         }
     );
@@ -2795,6 +3824,7 @@ function draw() {
     drawEnemies();
     drawMechanism();
     drawHacko();
+    drawStageFront();
 }
 
 /* A floor button: it sinks and turns green while pressed. */
@@ -2904,13 +3934,17 @@ function drawLasers() {
                     laser.phase
                 ) % 2 === 0;
 
+            const lit =
+                active ||
+                laser.steady;
+
             ctx.fillStyle =
-                active
-                    ? "#ff496f"
+                lit
+                    ? (laser.shield ? "#ff7a3d" : "#ff496f")
                     : "#ff496f33";
 
             ctx.shadowBlur =
-                active
+                lit
                     ? 18
                     : 0;
 
@@ -2920,8 +3954,8 @@ function drawLasers() {
             ctx.fillRect(
                 laser.x,
                 laser.y,
-                8,
-                165
+                laser.shield ? 10 : 8,
+                laser.h
             );
 
             ctx.shadowBlur = 0;
@@ -3100,123 +4134,11 @@ function drawMechanism() {
     ctx.font = "bold 10px Orbitron";
     ctx.textAlign = "center";
 
-    const labels = [
-        "DOOR",
-        "TORCHES",
-        "BRIDGE",
-        "PLATFORM",
-        "METER",
-        "CHAIN",
-        "SMART",
-        "ELEVATOR",
-        "CRYSTALS",
-        "CORE"
-    ];
-
     ctx.fillText(
-        labels[level],
+        stage().label,
         DOOR.x + DOOR.w / 2,
         DOOR.y - 30
     );
-
-    if (level === 1) {
-        for (
-            let torch = 0;
-            torch < 3;
-            torch++
-        ) {
-            ctx.fillStyle =
-                solved
-                    ? "#ffd34e"
-                    : "#39475a";
-
-            ctx.beginPath();
-
-            ctx.arc(
-                650 +
-                torch * 40,
-                470,
-                10,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-        }
-    }
-
-    if (level === 2) {
-        ctx.fillStyle =
-            solved
-                ? "#4da6ff"
-                : "#24384e";
-
-        ctx.fillRect(
-            710,
-            455,
-            80,
-            12
-        );
-    }
-
-    if (level === 4) {
-        ctx.fillStyle =
-            "#102944";
-
-        ctx.fillRect(
-            690,
-            365,
-            70,
-            80
-        );
-
-        ctx.fillStyle =
-            solved
-                ? "#91ff70"
-                : "#ff496f";
-
-        ctx.fillRect(
-            703,
-            410,
-            solved
-                ? 44
-                : 5,
-            15
-        );
-    }
-
-    if (level === 7) {
-        ctx.fillStyle =
-            solved
-                ? "#91ff70"
-                : "#39475a";
-
-        ctx.fillRect(
-            700,
-            330,
-            65,
-            120
-        );
-    }
-
-    if (level === 9) {
-        ctx.fillStyle =
-            solved
-                ? "#91ff70"
-                : "#b67aff";
-
-        ctx.beginPath();
-
-        ctx.arc(
-            720,
-            370,
-            48,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-    }
 
     ctx.restore();
 }

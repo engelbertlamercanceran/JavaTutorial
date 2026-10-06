@@ -120,29 +120,82 @@ header {
 main {
     display: grid;
     grid-template-columns: minmax(500px, 1fr) 350px;
+    align-items: start;
     gap: 14px;
     padding: 14px;
     min-height: 0;
 }
 
+/* Client request: a better map presentation. The board used to
+   stretch to the height of the side panel with the map centred
+   in it, so on a laptop half the map sat below the fold. It now
+   stays pinned at the top, sized to fit the screen, framed in
+   the current map's colour with its name and a legend above. */
 .game-wrap {
-    position: relative;
+    --map-accent: #3cd9e9;
+    position: sticky;
+    top: 14px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: 560px;
-    border: 3px solid #3cd9e9;
+    border: 3px solid var(--map-accent);
     border-radius: 20px;
     background: #071321;
     box-shadow:
-        0 0 35px #42efff2f,
+        0 0 35px color-mix(in srgb, var(--map-accent) 25%, transparent),
         inset 0 0 45px #000b;
     overflow: hidden;
+    transition: border-color 0.5s, box-shadow 0.5s;
+}
+
+.map-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 9px 16px;
+    border-bottom: 1px solid #ffffff14;
+    background: #050c18;
+    font: 700 0.7rem Orbitron;
+    letter-spacing: 0.08em;
+}
+
+.map-bar .map-name {
+    color: var(--map-accent);
+    font-size: 0.85rem;
+    text-shadow: 0 0 10px var(--map-accent);
+    white-space: nowrap;
+}
+
+.map-bar .map-name small {
+    margin-right: 8px;
+    color: #9fb8cc;
+    font-size: 0.65rem;
+    text-shadow: none;
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px 14px;
+    color: #b8cde0;
+    font-size: 0.62rem;
+}
+
+.legend i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 5px;
+    border-radius: 50%;
+    vertical-align: -1px;
 }
 
 canvas {
     display: block;
-    width: min(100%, 900px);
+    width: min(100%, 900px, calc((100vh - 175px) * 1.5));
     height: auto;
 }
 
@@ -387,7 +440,16 @@ footer {
     }
 
     .game-wrap {
-        min-height: auto;
+        position: relative;
+        top: 0;
+    }
+
+    canvas {
+        width: 100%;
+    }
+
+    .legend {
+        display: none;
     }
 
     .stats {
@@ -447,6 +509,20 @@ footer {
 
 <main>
     <section class="game-wrap">
+        <div class="map-bar">
+            <div class="map-name">
+                <small id="mapNum">MAP 1</small><span id="mapName"></span>
+            </div>
+
+            <div class="legend" aria-hidden="true">
+                <span><i style="background:#ffd34d"></i>ITEM</span>
+                <span><i style="background:#ff4f6d"></i>GLITCH</span>
+                <span><i style="background:#b47aff"></i>SPIKES</span>
+                <span><i style="background:#91ff6f"></i>PORTAL</span>
+                <span><i style="border:2px dashed #9fb8cc;border-radius:2px"></i>START</span>
+            </div>
+        </div>
+
         <canvas
             id="game"
             width="900"
@@ -883,7 +959,7 @@ const missions = [
         steps: [
             "Walk over any 3 items. Each one drops into the next empty slot.",
             "When your array has 3 items, press CHECK ARRAY.",
-            "Walk into the portal at the bottom-right."
+            "Walk into the glowing portal to escape."
         ],
         check: state => state.items.length === 3
     },
@@ -1182,16 +1258,250 @@ const missions = [
     }
 ];
 
-const positions = [
-    [2, 2],
-    [12, 2],
-    [4, 7],
-    [10, 7],
-    [7, 2],
-    [7, 7],
-    [3, 4],
-    [11, 5]
+/* Client request: every mission is its own map - not the same
+   room with another wall line added. Each one has its own walls,
+   start, portal, item spots, traps, glitch posts and colours.
+
+       #  wall            S  Hacko's start
+       .  floor           X  the portal
+       a-f  item spots, in the order the mission lists its items
+       ^  data spikes     1-5  glitches (1 sweeps, 2 climbs, 3 roams,
+                          4 sweeps, 5 climbs - see ENEMY_BEHAVIOURS)
+
+   tools/check-arrays.js proves every item and the portal can be
+   reached without stepping on spikes, and that no glitch starts
+   within three steps of Hacko. */
+const MAPS = [
+    {
+        name: "SUNNY CAMP",
+        theme: {
+            sky: ["#0f3a3a", "#163d2a"], floor: ["#1d4a3a", "#1a4434"],
+            wall: "#2d5a2a", edge: "#7fd36b", accent: "#b9ff8a"
+        },
+        rows: [
+            "###############",
+            "#......#......#",
+            "#..a...#...b..#",
+            "#......#......#",
+            "#S.....1......#",
+            "#.............#",
+            "#...##...^....#",
+            "#...##..c....X#",
+            "#.............#",
+            "###############"
+        ]
+    },
+    {
+        name: "CRYSTAL CAVES",
+        theme: {
+            sky: ["#0d1c3d", "#241446"], floor: ["#1c2b52", "#19264a"],
+            wall: "#2c2463", edge: "#9c7bff", accent: "#62e6ff"
+        },
+        rows: [
+            "###############",
+            "#.....#....S..#",
+            "#.##..#..##...#",
+            "#.#a.....#..#.#",
+            "#.#..##..#.b#.#",
+            "#....##1.....^#",
+            "#.##.......##.#",
+            "#X#..c.##.....#",
+            "#.....###.....#",
+            "###############"
+        ]
+    },
+    {
+        name: "GOLDEN VAULT",
+        theme: {
+            sky: ["#2b1d08", "#3a2a0c"], floor: ["#3d2f12", "#372a10"],
+            wall: "#6b4f16", edge: "#ffd34d", accent: "#ffe79a"
+        },
+        rows: [
+            "###############",
+            "#S....#.#....^#",
+            "#.###.#.#.###.#",
+            "#.#.........#2#",
+            "#.#.##.b.##.#.#",
+            "#...#..1..#...#",
+            "#a#.##...##.#c#",
+            "#.#....^....#.#",
+            "#...........#X#",
+            "###############"
+        ]
+    },
+    {
+        name: "SUN TEMPLE",
+        theme: {
+            sky: ["#3a1a0a", "#2a1430"], floor: ["#4a2a18", "#432615"],
+            wall: "#7a3f1c", edge: "#ff9a3d", accent: "#ffcf6b"
+        },
+        rows: [
+            "###############",
+            "#a.#...S...#.b#",
+            "#..#.......#..#",
+            "#.##.#...#.##.#",
+            "#..2.#.^.#....#",
+            "#1.^.......^..#",
+            "#.##.##.##.##.#",
+            "#c...........d#",
+            "#......X......#",
+            "###############"
+        ]
+    },
+    {
+        name: "SCRAP YARD",
+        theme: {
+            sky: ["#26180f", "#1d1d22"], floor: ["#3a2a1e", "#33251a"],
+            wall: "#5a3a22", edge: "#d9773a", accent: "#ffb066"
+        },
+        rows: [
+            "###############",
+            "#..a..##....c.#",
+            "#.##......#...#",
+            "#.#..##.1.#.#.#",
+            "#X#.b#....^.#d#",
+            "#.#..#.##...#.#",
+            "#...^...#.2...#",
+            "#e##.##...##.^#",
+            "#.....3...f..S#",
+            "###############"
+        ]
+    },
+    {
+        name: "TWIN TOWERS",
+        theme: {
+            sky: ["#2a0d2e", "#140d36"], floor: ["#3a1940", "#33163a"],
+            wall: "#5c1f63", edge: "#ff6ad5", accent: "#ffb3ec"
+        },
+        rows: [
+            "###############",
+            "#a....#.#....b#",
+            "#.###.#.#.###.#",
+            "#.#.^.....^.#.#",
+            "#...#.#S#.#...#",
+            "#.#.#.#.#.#.#2#",
+            "#.#...^.^...#.#",
+            "#.###.#.#.###.#",
+            "#c..1..X..3..d#",
+            "###############"
+        ]
+    },
+    {
+        name: "ARCHIVE LIBRARY",
+        theme: {
+            sky: ["#1e140c", "#14100c"], floor: ["#33251a", "#2d2016"],
+            wall: "#5a3218", edge: "#c98a4b", accent: "#f2d29b"
+        },
+        rows: [
+            "###############",
+            "#S..........a.#",
+            "#.#####.#####.#",
+            "#..b..^..1....#",
+            "###.#####.###2#",
+            "#.....c...^...#",
+            "#.###.#####.#.#",
+            "#..^.d..3..^.e#",
+            "#X.....^...4..#",
+            "###############"
+        ]
+    },
+    {
+        name: "COLOR LAB",
+        theme: {
+            sky: ["#08202a", "#1a0a2a"], floor: ["#14303a", "#122b34"],
+            wall: "#1c4a5a", edge: "#3dffd0", accent: "#ff5ea8"
+        },
+        rows: [
+            "###############",
+            "#a....#.#....b#",
+            "#..1..#.#.....#",
+            "#..##.....##..#",
+            "#^.#...S...#.^#",
+            "##.#.......#2##",
+            "#..##.^.^.##..#",
+            "#.3...#.#...4.#",
+            "#c....#X#..^.d#",
+            "###############"
+        ]
+    },
+    {
+        name: "ICE LOCK",
+        theme: {
+            sky: ["#0a2238", "#0d1630"], floor: ["#1a3a56", "#17354f"],
+            wall: "#2a5f86", edge: "#a8ecff", accent: "#e6fbff"
+        },
+        rows: [
+            "###############",
+            "#a..#b...#..c.#",
+            "#...#.^5.#2...#",
+            "#..^#....#.^..#",
+            "##.###.###.####",
+            "#.1..........^#",
+            "#.##.^.##.##.##",
+            "#d.3.#.S.#.4.e#",
+            "#..^.#...#..fX#",
+            "###############"
+        ]
+    },
+    {
+        name: "LIVING CORE",
+        theme: {
+            sky: ["#2a0612", "#12061f"], floor: ["#3a0e1f", "#330c1b"],
+            wall: "#5e0f2c", edge: "#ff3d6e", accent: "#ff9ab3"
+        },
+        rows: [
+            "###############",
+            "#S....^.....a.#",
+            "#.#########.#.#",
+            "#.#b..1....#..#",
+            "#.#.#####.^#.##",
+            "#c..#.X.#.....#",
+            "#.#.##.##.#.#5#",
+            "#.#^.^2.^.#d#.#",
+            "#^..e...3..4f^#",
+            "###############"
+        ]
+    }
 ];
+
+/* Reads one MAPS entry into the positions loadMission uses. */
+function parseMap(index) {
+    const source = MAPS[index] || MAPS[0];
+
+    const map = {
+        name: source.name,
+        theme: source.theme,
+        walls: new Set(),
+        start: null,
+        portal: null,
+        items: [],
+        hazards: [],
+        enemies: []
+    };
+
+    source.rows.forEach((row, y) => {
+        row.split("").forEach((cell, x) => {
+            const at = { x, y };
+
+            if (cell === "#") map.walls.add(`${x},${y}`);
+            if (cell === "S") map.start = at;
+            if (cell === "X") map.portal = at;
+            if (cell === "^") map.hazards.push(at);
+
+            if (/[a-f]/.test(cell)) {
+                map.items[cell.charCodeAt(0) - 97] = at;
+            }
+
+            if (/[1-5]/.test(cell)) {
+                map.enemies[Number(cell) - 1] = at;
+            }
+        });
+    });
+
+    return map;
+}
+
+/* end of map data - tools/check-arrays.js reads up to here */
 
 let level = 0;
 
@@ -1297,20 +1607,21 @@ function loadMission(index) {
     missionLives = 3;
 
     const mission = missions[level];
-    const walls = makeWalls(level);
+    const map = parseMap(level);
+    const walls = map.walls;
 
     state = {
         player: {
-            x: 1,
-            y: 1
+            ...map.start
         },
+        map,
         items: [],
         world: mission.items.map(
             (item, itemIndex) => {
                 return {
                     ...normalizeItem(item),
-                    x: positions[itemIndex][0],
-                    y: positions[itemIndex][1],
+                    x: map.items[itemIndex].x,
+                    y: map.items[itemIndex].y,
                     taken: false
                 };
             }
@@ -1322,14 +1633,16 @@ function loadMission(index) {
         moves: 0,
         gateOpen: false,
         won: false,
-        hazards: makeHazards(level, walls),
-        enemies: makeEnemies(level, walls)
+        hazards: map.hazards.map(spot => ({ ...spot })),
+        enemies: makeEnemies(level, map)
     };
 
     selected = [];
 
     document.getElementById("missionTitle").textContent =
         `Mission ${level + 1}: ${mission.title}`;
+
+    showMapBanner(map);
 
     document.getElementById("missionGoal").textContent =
         mission.goal;
@@ -1372,117 +1685,9 @@ function loadMission(index) {
     );
 }
 
-function makeWalls(missionIndex) {
-    const walls = new Set();
-
-    for (let x = 0; x < COLS; x++) {
-        walls.add(`${x},0`);
-        walls.add(`${x},${ROWS - 1}`);
-    }
-
-    for (let y = 0; y < ROWS; y++) {
-        walls.add(`0,${y}`);
-        walls.add(`${COLS - 1},${y}`);
-    }
-
-    if (missionIndex > 1) {
-        for (let y = 2; y < 8; y++) {
-            if (y !== 4) {
-                walls.add(`5,${y}`);
-            }
-        }
-    }
-
-    if (missionIndex > 4) {
-        for (let x = 7; x < 13; x++) {
-            if (x !== 10) {
-                walls.add(`${x},5`);
-            }
-        }
-    }
-
-    if (missionIndex > 7) {
-        for (let y = 1; y < 6; y++) {
-            if (y !== 3) {
-                walls.add(`9,${y}`);
-            }
-        }
-    }
-
-    positions.forEach(position => {
-        walls.delete(
-            `${position[0]},${position[1]}`
-        );
-    });
-
-    walls.delete("1,1");
-
-    return walls;
-}
-
-function makeHazards(missionIndex, walls) {
-    const spots = [
-        [3, 3],
-        [7, 4],
-        [11, 6],
-        [4, 5],
-        [8, 3],
-        [12, 7],
-        [2, 6],
-        [10, 2]
-    ];
-
-    return spots
-        .filter(position => {
-            return (
-                !walls.has(
-                    `${position[0]},${position[1]}`
-                ) &&
-                !positions.some(itemPosition => {
-                    return (
-                        itemPosition[0] === position[0] &&
-                        itemPosition[1] === position[1]
-                    );
-                })
-            );
-        })
-        .slice(
-            0,
-            Math.min(
-                1 + Math.floor(missionIndex * 0.7),
-                7
-            )
-        )
-        .map(position => {
-            return {
-                x: position[0],
-                y: position[1]
-            };
-        });
-}
-
-function makeEnemies(missionIndex, walls) {
-    const spots = [
-        [13, 7],
-        [8, 8],
-        [12, 4],
-        [6, 6],
-        [3, 8]
-    ];
-
-    return spots
-        .filter(position => {
-            return !walls.has(
-                `${position[0]},${position[1]}`
-            );
-        })
-        .slice(
-            0,
-            Math.min(
-                1 + Math.floor(missionIndex / 2),
-                5
-            )
-        )
+function makeEnemies(missionIndex, map) {
+    return map.enemies
+        .map(spot => [spot.x, spot.y])
         .map((position, index) => {
             /* each glitch runs on its own clock and has its own
                way of moving - see enemyTick() */
@@ -1536,8 +1741,8 @@ function enemyCanEnter(enemy, x, y) {
     return (
         !state.walls.has(`${x},${y}`) &&
         /* keep the portal and Hacko's start tile clear */
-        !(x === 13 && y === 8) &&
-        !(x === 1 && y === 1) &&
+        !(x === state.map.portal.x && y === state.map.portal.y) &&
+        !(x === state.map.start.x && y === state.map.start.y) &&
         !state.enemies.some(other => {
             return (
                 other !== enemy &&
@@ -1765,16 +1970,18 @@ function move(dx, dy) {
         return;
     }
 
+    const atPortal =
+        newX === state.map.portal.x &&
+        newY === state.map.portal.y;
+
     if (
         state.gateOpen &&
-        newX === 13 &&
-        newY === 8
+        atPortal
     ) {
         finishMission();
     } else if (
         !state.gateOpen &&
-        newX === 13 &&
-        newY === 8
+        atPortal
     ) {
         setStatus(
             "Portal locked. Build the correct array and press CHECK ARRAY.",
@@ -1843,8 +2050,7 @@ function damage(source) {
     }
 
     state.player = {
-        x: 1,
-        y: 1
+        ...state.map.start
     };
 
     log(
@@ -2133,7 +2339,7 @@ function checkMission() {
     state.gateOpen = true;
 
     setStatus(
-        "ARRAY ACCEPTED! The portal at the lower-right is open.",
+        "ARRAY ACCEPTED! The portal is open - head for it.",
         true
     );
 
@@ -2399,14 +2605,16 @@ function draw() {
             600
         );
 
+    const theme = state.map.theme;
+
     background.addColorStop(
         0,
-        "#0c2942"
+        theme.sky[0]
     );
 
     background.addColorStop(
         1,
-        "#191b40"
+        theme.sky[1]
     );
 
     ctx.fillStyle = background;
@@ -2435,10 +2643,8 @@ function draw() {
 
             ctx.fillStyle =
                 wall
-                    ? "#193650"
-                    : (x + y) % 2
-                        ? "#173e58"
-                        : "#14364f";
+                    ? theme.wall
+                    : theme.floor[(x + y) % 2];
 
             ctx.fillRect(
                 x * TILE,
@@ -2447,19 +2653,22 @@ function draw() {
                 TILE
             );
 
-            ctx.strokeStyle =
-                wall
-                    ? "#3d7894"
-                    : "#27617a44";
+            if (wall) {
+                drawWallBlock(x, y, theme);
+            } else {
+                ctx.strokeStyle = "#ffffff10";
 
-            ctx.strokeRect(
-                x * TILE + 2,
-                y * TILE + 2,
-                TILE - 4,
-                TILE - 4
-            );
+                ctx.strokeRect(
+                    x * TILE + 2,
+                    y * TILE + 2,
+                    TILE - 4,
+                    TILE - 4
+                );
+            }
         }
     }
+
+    drawStartPad(theme);
 
     state.hazards.forEach(
         hazard => {
@@ -2516,8 +2725,8 @@ function draw() {
     ctx.beginPath();
 
     ctx.arc(
-        13 * TILE + 30,
-        8 * TILE + 30,
+        state.map.portal.x * TILE + 30,
+        state.map.portal.y * TILE + 30,
         portalPulse,
         0,
         Math.PI * 2
@@ -2665,7 +2874,104 @@ function draw() {
 
     ctx.restore();
 
+    drawMapBanner(theme);
+
     requestAnimationFrame(draw);
+}
+
+/* Walls are raised blocks lit along the edges that face the
+   floor, so each map's outline reads clearly in its colours. */
+function drawWallBlock(x, y, theme) {
+    const px = x * TILE;
+    const py = y * TILE;
+    const open = (dx, dy) => !state.walls.has(`${x + dx},${y + dy}`);
+
+    /* a lit top face over a darker base, so walls stand up off
+       the floor instead of reading as another floor colour */
+    ctx.fillStyle = "#00000059";
+    ctx.fillRect(px, py + TILE - 10, TILE, 10);
+    ctx.fillStyle = theme.edge + "22";
+    ctx.fillRect(px + 5, py + 5, TILE - 10, TILE - 18);
+
+    ctx.save();
+    ctx.strokeStyle = theme.edge;
+    ctx.shadowColor = theme.edge;
+    ctx.shadowBlur = 8;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+
+    if (open(0, -1)) { ctx.moveTo(px, py + 1.5); ctx.lineTo(px + TILE, py + 1.5); }
+    if (open(0, 1)) { ctx.moveTo(px, py + TILE - 1.5); ctx.lineTo(px + TILE, py + TILE - 1.5); }
+    if (open(-1, 0)) { ctx.moveTo(px + 1.5, py); ctx.lineTo(px + 1.5, py + TILE); }
+    if (open(1, 0)) { ctx.moveTo(px + TILE - 1.5, py); ctx.lineTo(px + TILE - 1.5, py + TILE); }
+
+    ctx.stroke();
+    ctx.restore();
+}
+
+/* Hacko's drop-in pad, so the start reads as a place on the map. */
+function drawStartPad(theme) {
+    const cx = state.map.start.x * TILE + 30;
+    const cy = state.map.start.y * TILE + 30;
+    const pulse = (performance.now() % 1800) / 1800;
+
+    ctx.save();
+    ctx.strokeStyle = theme.accent;
+    ctx.shadowColor = theme.accent;
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(cx - 24, cy - 24, 48, 48);
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1 - pulse;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 12 + pulse * 14, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+}
+
+/* The map's name slides in for a moment at the start of a mission. */
+let mapBannerUntil = 0;
+
+function showMapBanner(map) {
+    mapBannerUntil = performance.now() + 2600;
+
+    document.getElementById("mapNum").textContent =
+        `MAP ${level + 1}`;
+
+    document.getElementById("mapName").textContent =
+        map.name;
+
+    document.querySelector(".game-wrap").style
+        .setProperty("--map-accent", map.theme.edge);
+}
+
+function drawMapBanner(theme) {
+    const left = mapBannerUntil - performance.now();
+
+    if (left <= 0) {
+        return;
+    }
+
+    const fade = Math.min(1, left / 500, (2600 - left) / 300);
+
+    ctx.save();
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = "#050a14cc";
+    ctx.fillRect(0, 252, 900, 96);
+    ctx.fillStyle = theme.accent;
+    ctx.fillRect(0, 252, 900, 3);
+    ctx.fillRect(0, 345, 900, 3);
+    ctx.textAlign = "center";
+    ctx.font = "bold 13px Orbitron";
+    ctx.fillStyle = "#ffffffaa";
+    ctx.fillText(`MISSION ${level + 1} / 10`, 450, 282);
+    ctx.font = "bold 34px Orbitron";
+    ctx.fillStyle = theme.accent;
+    ctx.shadowColor = theme.accent;
+    ctx.shadowBlur = 18;
+    ctx.fillText(state.map.name, 450, 326);
+    ctx.restore();
 }
 
 window.addEventListener(

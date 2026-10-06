@@ -114,13 +114,19 @@ node tools/test-all.js
 | `check-escape.js` | plays every Escape Room level with the game's physics - solid furniture, live floor and all - and proves every pickup and the vault door can be reached |
 | `check-classroom.js` | walks Classroom Rescue's room around the solid desks and proves every character, item and the exit can be reached |
 | `check-labyrinth.js` | every Conditional Labyrinth maze: all gates reachable, nothing sealed off, hearts and sentries placed fairly, no two levels alike |
+| `check-secret.js` | The Secret Message's per-level spawn: on a floor, off clues and patrol lines, room to move before the first guard, every clue, the door and the exit reachable |
+| `check-challenge.js` | every Conditional Challenge maze: right size, walled in, nothing sealed off, clues and bomb reachable, birds nest away from the start, no two levels alike |
+| `check-arrays.js` | every Array Adventure map: items and portal reachable without stepping on spikes, each mission keeps its item/trap/glitch counts, glitches start away from Hacko |
+| `check-fortress.js` | every Function Fortress stage: each hop inside Hacko's jump (moving platforms and the jump pad included), sentries clear of the start, and the door ledge out of reach until the program runs |
 | `test-javaloop.js` | the Java interpreter: same output from different code must always pass |
 | `check-shields.js` | every Loop Master phase is beatable, a hardcoded count fails the while phases, and a while loop loses the do-while phase |
 | `check-wiring.js` | games load the shared modules, report to the map, resume after boot, carry music, and every badge exists |
 
 Run `check-mazes.js` after editing any maze, `check-escape.js` after editing
 an Escape Room level, `check-classroom.js` after moving classroom furniture,
-and `check-java.js` after editing any lesson. Both catch classes of bug that shipped unnoticed before.
+`check-secret.js`, `check-challenge.js`, `check-arrays.js` or
+`check-fortress.js` after editing those games' levels, and `check-java.js`
+after editing any lesson. Both catch classes of bug that shipped unnoticed before.
 
 ## Conventions worth keeping
 

@@ -76,6 +76,7 @@
                 "the data clues in the maze, then write the Java program that " +
                 "opens the door.",
             steps: [
+                "Every level drops Hacko at a different spawn pad - read the console to see where.",
                 "Walk the maze and collect every data clue - press E to read each one.",
                 "Avoid the security bots. Touching one costs a life.",
                 "When every clue is found, go to the door and press E to open the terminal.",
@@ -106,14 +107,14 @@
                 "while dodging the security birds, then defuse the bomb by " +
                 "writing the right condition - before the timer runs out.",
             steps: [
-                "Move through the maze and collect the clues shown in the objective.",
-                "Avoid the security birds. Grab a power core and, for a short time, you can catch them.",
-                "With enough clues, reach the bomb chamber and press E.",
+                "Every level is a brand-new maze - the start, bomb, clues and birds all move.",
+                "Collect the clues shown in the objective. Avoid the security birds - a power core lets you catch them for a short time.",
+                "Reach the bomb with enough clues and the defusal puzzle opens by itself (or press E beside it).",
                 "Opening the bomb starts a 30-second defuse countdown - pick the right wire before it hits zero!"
             ],
             controls: [
                 ["W A S D  /  ARROWS", "Move"],
-                ["E", "Open the bomb"]
+                ["E", "Open the bomb again"]
             ],
             levels: [
                 "SIMPLE IF - the code inside runs only when the condition is true.",
@@ -165,6 +166,7 @@
             goal: "Hacko's backpack is an array. Collect items, arrange them " +
                 "into the exact array the mission asks for, and unlock the portal.",
             steps: [
+                "Every mission is a new map with its own start, portal, items and threats.",
                 "Walk over an item to add it to the end of the array.",
                 "Click slots to select them, then SWAP, DISCARD or USE ON PEDESTAL.",
                 "When the array matches the mission goal, press CHECK ARRAY.",
@@ -198,23 +200,23 @@
                 "Stand on the CODE button beside the door - the question only unlocks while you are on it.",
                 "Build a function from blocks, then press SAVE FUNCTION.",
                 "Pick a function in the Call Console, fill in its arguments, press ADD CALL, then RUN PROGRAM.",
-                "When the program works the lasers switch off and the door opens - walk through it."
+                "Every level has its own machine: your program changes the room, and that is your way out."
             ],
             controls: [
                 ["← →  /  A D", "Move"],
                 ["SPACE  /  ↑  /  W", "Jump"]
             ],
             levels: [
-                "The Sleeping Door - create openDoor(), then call it once. Saving is not calling!",
-                "Three Torches - one function, called exactly three times.",
-                "Color Bridge - setColor(color) takes a parameter. Call it with \"blue\".",
-                "Moving Platform - two parameters: direction and distance.",
-                "Power Meter - getPower() returns a value (50) to whoever called it.",
-                "Chain Reaction - one function can call another inside it.",
-                "Smart Door - an if inside a function, driven by its parameter.",
-                "The Elevator Sequence - three functions, called in exactly this order.",
-                "Crystal Calculator - combineCrystals(a, b) returns a + b. Two calls must total 42.",
-                "The Core Function - several functions, parameters and a return, all together."
+                "The Sleeping Door - create openDoor(), then call it once to wake the door. Saving is not calling!",
+                "Three Torches - a dark hall. Each lightTorch() call lights a stepping stone over the pit.",
+                "Color Bridge - setColor(\"blue\") builds a blue light bridge across the chasm.",
+                "Moving Platform - the CODE button rides the platform your call sends across. Hold on!",
+                "Power Meter - the 50 that getPower() returns charges a jump pad up to the high door.",
+                "Chain Reaction - one call sets off disableLaser() and the laser gates shut one by one.",
+                "Smart Door - grab the key first: the door only listens once hasKey is really true.",
+                "The Elevator Sequence - bridge, power, elevator in that order, then ride it to the top.",
+                "Crystal Calculator - each returned total grows a crystal pillar. Two calls must total 42.",
+                "The Core Function - turrets fire until the Core's \"success\" token shuts the defences down."
             ]
         },
 

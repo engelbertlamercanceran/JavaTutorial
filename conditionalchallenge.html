@@ -1303,22 +1303,6 @@
             PATH: 1
         }
 
-        const BASE_MAZE = [
-            [0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-            [0,1,1,1,1,1,1,0,1,1,1,1,1,0],
-            [0,1,0,0,1,0,1,0,1,0,1,0,1,0],
-            [0,1,1,1,1,0,1,1,1,0,1,1,1,0],
-            [0,0,1,0,1,0,0,1,0,0,1,0,0,0],
-            [0,1,1,0,1,1,1,1,1,1,1,1,1,0],
-            [0,1,0,0,1,0,1,1,1,0,1,0,1,0],
-            [0,1,1,1,1,0,1,1,1,0,1,1,1,0],
-            [0,0,1,0,1,0,0,1,0,0,1,0,0,0],
-            [0,1,1,0,1,1,1,1,1,1,1,1,1,0],
-            [0,1,0,0,1,0,1,0,1,0,1,0,1,0],
-            [0,1,1,1,1,1,1,0,1,1,1,1,1,0],
-            [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        ]
-
         const DIRECTIONS = {
             left: {
                 x: -1,
@@ -1341,70 +1325,290 @@
             }
         }
 
-        const PLAYER_START = {
-            x: 1,
-            y: 1
-        }
-
         /* seconds on the bomb once its terminal is opened */
         const DEFUSE_SECONDS = 30
 
-        const BOMB_POSITION = {
-            x: 12,
-            y: 11
-        }
+        /* Client request: every level is its own maze. Walls, the
+           start, the bomb, the clues, the power cores and the birds
+           all move, and each map gets harder than the last - fewer
+           escape loops, fewer power cores, the bomb tucked deeper.
 
-        const CLUE_POSITIONS = [
-            { x: 4, y: 1 },
-            { x: 12, y: 3 },
-            { x: 1, y: 7 },
-            { x: 8, y: 9 },
-            { x: 4, y: 11 }
-        ]
+               #  wall          S  Hacko's start
+               .  corridor      B  the bomb
+               a-e  clues (in the order the level lists them)
+               P  power core    1-5  bird nests (in level order)
 
-        const POWER_POSITIONS = [
-            { x: 1, y: 11 },
-            { x: 12, y: 1 },
-            { x: 1, y: 5 },
-            { x: 12, y: 9 }
-        ]
-
-        const BIRD_STARTS = [
+           tools/check-challenge.js proves every clue and the bomb
+           can be reached, no corridor is sealed off and no bird
+           nests within six steps of the start. */
+        const MAZES = [
             {
-                x: 6,
-                y: 5,
-                color: '#ff3158',
-                name: 'RED BIRD'
+                name: 'TWIN RINGS',
+                note: 'Two open loops and one lazy bird. Learn the controls.',
+                rows: [
+                    '##############',
+                    '#P....##....P#',
+                    '#.##.#..#.##.#',
+                    '#.##.#a.#.##.#',
+                    '#............#',
+                    '#.##.##.###.##',
+                    '#S#...1.....B#',
+                    '#.#.####.##.##',
+                    '#............#',
+                    '#.##.#.b#.##.#',
+                    '#.##.#..#.##.#',
+                    '#P....##....P#',
+                    '##############'
+                ]
             },
-
             {
-                x: 7,
-                y: 5,
-                color: '#ff8b2b',
-                name: 'ORANGE BIRD'
+                name: 'THE LADDER',
+                note: 'Climb down the rungs - the bomb waits bottom-left.',
+                rows: [
+                    '##############',
+                    '#......#....S#',
+                    '#.####.#.##..#',
+                    '#.#P...a..#.##',
+                    '#.#.####.##.##',
+                    '#...#..1....##',
+                    '###.#.##.##.##',
+                    '#P..#...b...P#',
+                    '#.####.#.##.##',
+                    '#.#.....#...##',
+                    '#.#.###...#.##',
+                    '#B....P.#....#',
+                    '##############'
+                ]
             },
-
             {
-                x: 6,
-                y: 7,
-                color: '#00e5ff',
-                name: 'CYAN BIRD'
+                name: 'THE SPIRAL',
+                note: 'You start in the eye of the spiral. Work your way out.',
+                rows: [
+                    '##############',
+                    '#P..........B#',
+                    '#.#########.##',
+                    '#.#a.......P##',
+                    '#.#.#####.#.##',
+                    '#.#.#S..#.#..#',
+                    '#.#.#.#.#.##.#',
+                    '#...#.#...#..#',
+                    '###.#.####.#.#',
+                    '#1..#....b..2#',
+                    '#.####.####.##',
+                    '#P..........P#',
+                    '##############'
+                ]
             },
-
             {
-                x: 7,
-                y: 7,
-                color: '#ff4db8',
-                name: 'PINK BIRD'
+                name: 'CROSSROADS',
+                note: 'Four roads meet in the middle. The bomb is due north.',
+                rows: [
+                    '##############',
+                    '#P....#B#...P#',
+                    '#.###.#.#.####',
+                    '#.#.........##',
+                    '#.#.##.#.##..#',
+                    '#...a..1.....#',
+                    '###.##.#.##.##',
+                    '#2....b......#',
+                    '#.#.##.#.##.##',
+                    '#.#.........##',
+                    '#.###.#.#.####',
+                    '#P....#S#...P#',
+                    '##############'
+                ]
             },
-
             {
-                x: 8,
-                y: 7,
-                color: '#9b5cff',
-                name: 'PURPLE BIRD'
+                name: 'ZIGZAG',
+                note: 'Corridors step diagonally across the vault. Three birds now.',
+                rows: [
+                    '##############',
+                    '#S...#.....P.#',
+                    '#.##.#.###.#.#',
+                    '#.#..a.#...#.#',
+                    '#.#.####.#.#.#',
+                    '#...#1...#...#',
+                    '#P#.#.####.#P#',
+                    '#.#...b..#.#.#',
+                    '#.####.#.#.#.#',
+                    '#...2..#...#.#',
+                    '#.#.##.###c#.#',
+                    '#.#P....3...B#',
+                    '##############'
+                ]
+            },
+            {
+                name: 'PILLAR HALL',
+                note: 'A hall of pillars - lots of ways round, lots of birds.',
+                rows: [
+                    '##############',
+                    '#P.....S....P#',
+                    '#.#.#.#.#.#.##',
+                    '#..a.........#',
+                    '#.#.#.#.#.#.##',
+                    '#...1.....2..#',
+                    '#.#.#.#.#.#.##',
+                    '#.....b......#',
+                    '#.#.#.#.#.#.##',
+                    '#..........c.#',
+                    '#.#.#.#.#.#.##',
+                    '#P....3...P.B#',
+                    '##############'
+                ]
+            },
+            {
+                name: 'THE FORTRESS',
+                note: 'The bomb sits in a walled vault with only two gates.',
+                rows: [
+                    '##############',
+                    '#S.....P.....#',
+                    '#.####.#.###.#',
+                    '#.#a.........#',
+                    '#.#.###.####.#',
+                    '#.#.#.....#..#',
+                    '#...#.#B#.#.##',
+                    '###.#.#.#.#.2#',
+                    '#...###.###b.#',
+                    '#.#1.......#.#',
+                    '#.#.####.##..#',
+                    '#P...c..3..4P#',
+                    '##############'
+                ]
+            },
+            {
+                name: 'THE SERPENT',
+                note: 'One long winding tunnel with only a few shortcuts.',
+                rows: [
+                    '##############',
+                    '#S..........P#',
+                    '##########.#.#',
+                    '#..a.........#',
+                    '#.####.#######',
+                    '#.....1....b.#',
+                    '##.########.##',
+                    '#P.....2.....#',
+                    '#######.####.#',
+                    '#.c.......3..#',
+                    '#.###.######.#',
+                    '#P...4......B#',
+                    '##############'
+                ]
+            },
+            {
+                name: 'SPLIT CIRCUIT',
+                note: 'Two halves joined by two bridges. Only two power cores.',
+                rows: [
+                    '##############',
+                    '#S.....##..1a#',
+                    '#.##.#.##.#.##',
+                    '#.#.........##',
+                    '#.#.##.##.#..#',
+                    '#...b#.##.2..#',
+                    '#.##.#.##.##.#',
+                    '#P...........#',
+                    '#.##.#.##.#.##',
+                    '#..c#..##3.d.#',
+                    '#.#.#.###.#.##',
+                    '#P...4.##5..B#',
+                    '##############'
+                ]
+            },
+            {
+                name: 'THE CORE',
+                note: 'The bomb is locked in the core. One gate in. Five birds.',
+                rows: [
+                    '##############',
+                    '#P....a.....S#',
+                    '#.####.####.##',
+                    '#.#...1....#.#',
+                    '#.#.######.#.#',
+                    '#...#..B.#...#',
+                    '#b#.#.##.#.#c#',
+                    '#.#.#....#.#.#',
+                    '#.#.####.#2#.#',
+                    '#.#3.....d.#.#',
+                    '#.########.#.#',
+                    '#P...4..e...5#',
+                    '##############'
+                ]
             }
         ]
+
+        const BIRD_LOOKS = [
+            { color: '#ff3158', name: 'RED BIRD' },
+            { color: '#ff8b2b', name: 'ORANGE BIRD' },
+            { color: '#00e5ff', name: 'CYAN BIRD' },
+            { color: '#ff4db8', name: 'PINK BIRD' },
+            { color: '#9b5cff', name: 'PURPLE BIRD' }
+        ]
+
+        /* Turns one MAZES entry into the grid and the positions the
+           game reads. */
+        function parseMaze(index) {
+            const source =
+                MAZES[index] || MAZES[0]
+
+            const found = {
+                name: source.name,
+                note: source.note,
+                grid: [],
+                start: null,
+                bomb: null,
+                clues: [],
+                powers: [],
+                birds: []
+            }
+
+            source.rows.forEach((row, y) => {
+                found.grid.push(
+                    row.split('').map((cell, x) => {
+                        const at = { x, y }
+
+                        if (cell === 'S') found.start = at
+                        if (cell === 'B') found.bomb = at
+                        if (cell === 'P') found.powers.push(at)
+
+                        if (/[a-e]/.test(cell)) {
+                            found.clues[cell.charCodeAt(0) - 97] = at
+                        }
+
+                        if (/[1-5]/.test(cell)) {
+                            found.birds[Number(cell) - 1] = {
+                                ...at,
+                                ...BIRD_LOOKS[Number(cell) - 1]
+                            }
+                        }
+
+                        return cell === '#'
+                            ? TILE.WALL
+                            : TILE.PATH
+                    })
+                )
+            })
+
+            return found
+        }
+
+        /* The level's layout. These were fixed constants when every
+           level shared one maze; loadLevel now swaps them per level. */
+        let layout = parseMaze(0)
+        let PLAYER_START = layout.start
+        let BOMB_POSITION = layout.bomb
+        let CLUE_POSITIONS = layout.clues
+        let POWER_POSITIONS = layout.powers
+        let BIRD_STARTS = layout.birds
+
+        function applyLayout(index) {
+            layout = parseMaze(index)
+            PLAYER_START = layout.start
+            BOMB_POSITION = layout.bomb
+            CLUE_POSITIONS = layout.clues
+            POWER_POSITIONS = layout.powers
+            BIRD_STARTS = layout.birds
+            maze = layout.grid.map(row => [...row])
+        }
+
+        /* end of maze data - tools/check-challenge.js reads up to here */
 
         const LEVELS = [
             {
@@ -1874,9 +2078,7 @@
             currentLevelIndex = index
             selectedWire = null
 
-            maze = BASE_MAZE.map(row => [
-                ...row
-            ])
+            applyLayout(index)
 
             resetPlayerPosition()
 
@@ -1891,6 +2093,7 @@
             state.powerUntil = 0
             state.cluesCollected = 0
             state.collisionLockedUntil = 0
+            state.bombPrompted = false
 
             createClues()
             createPowerPellets()
@@ -1904,6 +2107,11 @@
             addConsole(
                 'system',
                 `LEVEL ${currentLevel().id}: ${currentLevel().name}`
+            )
+
+            addConsole(
+                'system',
+                `MAZE: ${layout.name} - ${layout.note}`
             )
 
             addConsole(
@@ -1931,8 +2139,25 @@
                 TILE_SIZE +
                 TILE_SIZE / 2
 
-            state.player.direction = 'right'
-            state.player.nextDirection = 'right'
+            const facing =
+                startFacing()
+
+            state.player.direction = facing
+            state.player.nextDirection = facing
+        }
+
+        function startFacing() {
+            return (
+                ['right', 'left', 'down', 'up']
+                    .find(name =>
+                        isPathTile(
+                            PLAYER_START.x +
+                            DIRECTIONS[name].x,
+                            PLAYER_START.y +
+                            DIRECTIONS[name].y
+                        )
+                    ) || 'right'
+            )
         }
 
         function createClues() {
@@ -2077,6 +2302,7 @@
                 checkClueCollision()
                 checkPowerCollision()
                 checkGhostCollisions()
+                checkBombReached()
             }
 
             draw()
@@ -2842,6 +3068,51 @@
                 'error',
                 `Hacko lost a life. ${state.lives} remaining.`
             )
+        }
+
+        /* Client request: reaching the bomb does not finish the
+           level - it starts the defusal puzzle. Walking up to it
+           with the clues opens the terminal by itself; without them
+           Hacko is told how many are still missing. It fires once
+           per visit, so closing the terminal does not reopen it
+           until Hacko steps away and comes back. */
+        function checkBombReached() {
+            if (state.bombDefused) {
+                return
+            }
+
+            if (!nearBomb()) {
+                state.bombPrompted = false
+                return
+            }
+
+            if (state.bombPrompted) {
+                return
+            }
+
+            state.bombPrompted = true
+
+            if (!canOpenBomb()) {
+                const missing =
+                    currentLevel().requiredClues -
+                    state.cluesCollected
+
+                HackoAudio.play('wrong')
+
+                addConsole(
+                    'error',
+                    `The bomb is armed. Find ${missing} more clue${missing === 1 ? '' : 's'} before you can defuse it.`
+                )
+
+                return
+            }
+
+            addConsole(
+                'system',
+                'Bomb reached! Solve the conditional to defuse it.'
+            )
+
+            openBombModal()
         }
 
         function canOpenBomb() {
@@ -3950,44 +4221,28 @@ ${selected}`
                     state.player.y
                 )
 
-            let name =
-                'Logic Tunnel'
+            const distance =
+                Math.hypot(
+                    tile.x - BOMB_POSITION.x,
+                    tile.y - BOMB_POSITION.y
+                )
 
-            if (
-                tile.y <= 3 &&
-                tile.x <= 6
-            ) {
-                name =
-                    'Entry Tunnel'
-            } else if (
-                tile.y <= 3
-            ) {
-                name =
-                    'Condition Arcade'
-            } else if (
-                tile.y <= 7 &&
-                tile.x <= 6
-            ) {
-                name =
-                    'Logic Circuit'
-            } else if (
-                tile.y <= 7
-            ) {
-                name =
-                    'Bird Core'
-            } else if (
-                tile.x < 8
-            ) {
-                name =
-                    'Else Passage'
-            } else {
-                name =
-                    'Bomb Sector'
-            }
+            const vertical =
+                tile.y < ROWS / 2
+                    ? 'North'
+                    : 'South'
+
+            const horizontal =
+                tile.x < COLS / 2
+                    ? 'West'
+                    : 'East'
 
             document.getElementById(
                 'zoneName'
-            ).textContent = name
+            ).textContent =
+                distance <= 2
+                    ? `${layout.name} - Bomb Sector`
+                    : `${layout.name} - ${vertical} ${horizontal}`
         }
 
         function formatTime(seconds) {
