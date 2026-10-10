@@ -63,9 +63,9 @@
                 "VAULT 05 - Same five types, more hazards. Take it slowly - a hit sends you back to the vault entrance.",
                 "VAULT 06 - The switch clue changes from vault to vault. Read it - do not guess true or false.",
                 "VAULT 07 - A sixth chip appears: a second String, for the backup word.",
-                "VAULT 08 - The floor is electrified! Stay on the platforms, and time your jumps past the flying drones.",
-                "VAULT 09 - Live floor and three drones. Two Strings: match each one to the right variable name.",
-                "VAULT 10 - Live floor, four drones, every type. Collect every chip, read every clue, then fill the terminal."
+                "VAULT 08 - The floor is electrified! Stay on the platforms and time your jumps past the drones. Watch for corrupted chips: an invalid variable name (like 2ndCode) costs a life - leave it alone.",
+                "VAULT 09 - Live floor, three drones, three corrupted chips. Two Strings: match each one to the right variable name.",
+                "VAULT 10 - Live floor, four drones, every type - and five corrupted chips. Read each chip's name before you grab it."
             ]
         },
 
@@ -260,12 +260,14 @@
                 "Walk around the desks and press E near Professor Byte, Alex and Robo - each explains their part of the mission.",
                 "The code in the terminal is almost right. Find and fix the mistakes: missing semicolons, typos, wrong order.",
                 "Press RUN (or CTRL + ENTER) to test it. A wrong answer costs a life, and the terminal lists everything still wrong.",
-                "Solve all ten tasks to open the classroom door."
+                "Every level is a different room. From level 2, lockdown bugs patrol it - touching one costs a life. From level 6 a hunting bug chases Hacko even while you type: press ESC to leave the code box and dodge.",
+                "Solve all ten tasks to open the classroom door. Fixing the code shuts the bugs down."
             ],
             controls: [
                 ["W A S D  /  ARROWS", "Move"],
                 ["E", "Interact"],
-                ["CTRL + ENTER", "Run your code"]
+                ["CTRL + ENTER", "Run your code"],
+                ["ESC", "Leave the code box (to move Hacko)"]
             ],
             levels: [
                 "A class is a blueprint. Fix the code that builds robo from the Robot class.",
@@ -291,11 +293,14 @@
                 "Read the code on the right and trace it line by line.",
                 "Decide exactly what it prints.",
                 "Walk into the gate holding that output. A wrong gate is a trap and costs a life.",
-                "Levels 1-4 are EASY. Levels 5-7 add sentries (and spare hearts in dead ends). Levels 8-10 are a galaxy attack: step off the red markers and catch the falling hearts.",
+                "Bricks block some corridors. Pick up bombs and press SPACE to drop one: it blasts two tiles each way, smashes the first brick and wrecks any sentry or drone in it. Get clear before it goes off!",
+                "Sentries patrol every maze, and from level 6 drones hunt Hacko. Bombs you pick up come back after a while, so you never run out.",
+                "Levels 8-10 are a galaxy attack too: step off the red markers and catch the falling hearts.",
                 "Clear all ten rooms."
             ],
             controls: [
-                ["W A S D  /  ARROWS", "Move"]
+                ["W A S D  /  ARROWS", "Move"],
+                ["SPACE", "Drop a bomb"]
             ],
             levels: [
                 "An if inside an if - both must be true for the inner line to run.",
@@ -314,15 +319,16 @@
         10: {
             title: "The Loop Master",
             topic: "for, while and do-while",
-            goal: "The Loop Master fires slow missiles at Hacko's dome. Write a " +
-                "loop that prints one counter-move per missile - every printed " +
-                "line launches an interceptor.",
+            goal: "The Loop Master is a giant robot. In phases 1-9 it fires slow " +
+                "missiles at Hacko's dome - write a loop that prints one counter-move " +
+                "per missile. In phase 10 it walks in to fight Hacko itself.",
             steps: [
                 "Press START. Missiles launch, each tagged with the move that stops it (BLOCK, DODGE...).",
                 "They fly slowly - the clock shows how long you have. Write your loop in the editor.",
                 "Press FIRE. Line 1 of your output hits missile #1, line 2 hits #2, and so on.",
                 "Stop every missile to clear the phase. One that gets through costs a life.",
-                "Phases 1-3 are MEDIUM, 4-7 HARD (missiles 10% faster), 8-10 EXTREME (20% faster)."
+                "Phases 1-3 are MEDIUM, 4-7 HARD (missiles 10% faster), 8-10 EXTREME (20% faster).",
+                "Phase 10 is the boss fight: the robot walks toward the dome while you solve five loop challenges in a row. Each right answer blasts it (watch its life bar) and knocks it back; a wrong one makes it charge. If it reaches the dome you lose a life."
             ],
             controls: [
                 ["FIRE  /  CTRL + ENTER", "Run your loop and launch"],
@@ -338,7 +344,7 @@
                 "Two Stances - odd missiles need BLOCK, even ones DODGE. Use i % 2.",
                 "The Waves - a loop inside a loop. HOLD after every wave.",
                 "The Last Stand - a while loop, then one final BLOCK after it.",
-                "The Loop Master - waves that grow: the inner loop runs up to the wave number."
+                "The Loop Master - the robot itself. Five rounds back to back: a for loop, a while loop, a do-while, a countdown, and growing waves. Keep coding until its life bar is empty."
             ]
         }
     };

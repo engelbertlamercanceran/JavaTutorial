@@ -268,8 +268,6 @@ ok("login uses the shared store", login.indexOf("HackoStore.login") !== -1);
 ok("login can export progress", login.indexOf("exportToFile") !== -1);
 ok("login can import progress", login.indexOf("importFile") !== -1);
 ok("login sends players to the map", login.indexOf("map.html") !== -1);
-ok("login is honest about not being secure",
-    /not a security feature/i.test(login));
 ok("login has music and a sound toggle",
     login.indexOf("SOUND LAYER") !== -1);
 

@@ -1325,7 +1325,7 @@ const MAPS = [
             "#...#..1..#...#",
             "#a#.##...##.#c#",
             "#.#....^....#.#",
-            "#...........#X#",
+            "#............X#",
             "###############"
         ]
     },
@@ -1437,7 +1437,7 @@ const MAPS = [
             "#..^#....#.^..#",
             "##.###.###.####",
             "#.1..........^#",
-            "#.##.^.##.##.##",
+            "#.##.^.##..#.##",
             "#d.3.#.S.#.4.e#",
             "#..^.#...#..fX#",
             "###############"
@@ -1449,16 +1449,24 @@ const MAPS = [
             sky: ["#2a0612", "#12061f"], floor: ["#3a0e1f", "#330c1b"],
             wall: "#5e0f2c", edge: "#ff3d6e", accent: "#ff9ab3"
         },
+        /* Client report: level 10 had a choke nobody could get
+           across. The only way out of the start area was a
+           one-tile corridor that glitch 1 swept end to end, and
+           the portal sat at the end of a one-tile tunnel that
+           glitch 2 climbed up and down. The corridor now has
+           side pockets to duck into and the portal chamber is
+           open on three sides - see "no choke" in
+           tools/check-arrays.js. */
         rows: [
             "###############",
-            "#S....^.....a.#",
-            "#.#########.#.#",
-            "#.#b..1....#..#",
-            "#.#.#####.^#.##",
-            "#c..#.X.#.....#",
-            "#.#.##.##.#.#5#",
-            "#.#^.^2.^.#d#.#",
-            "#^..e...3..4f^#",
+            "#S.....^....a.#",
+            "#.###.###.##..#",
+            "#.#b....1...###",
+            "#...##.#.##.^.#",
+            "#c#..#.X.#^...#",
+            "#.#^.#...#.#5.#",
+            "#...^..2...#d.#",
+            "#^.e....3..4f^#",
             "###############"
         ]
     }

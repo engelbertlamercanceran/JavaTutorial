@@ -9,6 +9,14 @@
    has room to move the way it is meant to, and none starts
    within four steps of Hacko. No two missions share a map.
 
+   No chokes: a sweeper or climber's lane never runs more
+   than MAX_NO_EXIT tiles without a side pocket to duck into,
+   and no glitch patrols the only tunnel into the portal. Level 10
+   shipped with both - a corridor swept end to end and a
+   one-tile tunnel to the portal - and could not be crossed.
+   Missions 3 and 9 had the same portal tunnel and were
+   opened up too.
+
    It runs the map code straight out of arrayadventure.html.
 
        node tools/check-arrays.js
@@ -52,6 +60,7 @@ function trapCount(i) { return Math.min(1 + Math.floor(i * 0.7), 7); }
 function glitchCount(i) { return Math.min(1 + Math.floor(i / 2), 5); }
 var BEHAVIOURS = ["sweeper", "climber", "roamer"];
 var MIN_GLITCH_DISTANCE = 4;
+var MAX_NO_EXIT = 3;
 
 function key(p) { return p.x + "," + p.y; }
 
@@ -153,6 +162,49 @@ game.missions.forEach(function (mission, i) {
             : kind === "climber" ? free(0, 1) || free(0, -1)
             : free(1, 0) || free(-1, 0) || free(0, 1) || free(0, -1);
         ok(name + " glitch " + (n + 1) + " (" + kind + ") has room to move", room, key(enemy));
+
+        if (kind === "roamer") { return; }
+
+        /* the tiles it walks back and forth over */
+        var axis = kind === "sweeper" ? [1, 0] : [0, 1];
+        var side = kind === "sweeper" ? [0, 1] : [1, 0];
+        var x = enemy.x;
+        var y = enemy.y;
+        while (free(x - axis[0] - enemy.x, y - axis[1] - enemy.y)) { x -= axis[0]; y -= axis[1]; }
+        var lane = [];
+        while (free(x - enemy.x, y - enemy.y)) { lane.push({ x: x, y: y }); x += axis[0]; y += axis[1]; }
+
+        var spikes = {};
+        map.hazards.forEach(function (h) { spikes[key(h)] = true; });
+        var pocket = function (px, py) {
+            var k = px + "," + py;
+            return !map.walls.has(k) && !spikes[k];
+        };
+
+        var run = 0;
+        var worst = 0;
+        lane.forEach(function (t) {
+            var exit = pocket(t.x + side[0], t.y + side[1]) || pocket(t.x - side[0], t.y - side[1]);
+            run = exit ? 0 : run + 1;
+            worst = Math.max(worst, run);
+        });
+        ok(name + " glitch " + (n + 1) + " lane has places to dodge", worst <= MAX_NO_EXIT,
+            worst + " tiles in a row with no side pocket");
+
+        /* block the part of its lane next to the portal: the
+           portal must still be reachable some other way, or the
+           glitch walks the only tunnel in */
+        var blocked = { walls: new Set(map.walls), hazards: [] };
+        lane.forEach(function (t) {
+            if (Math.abs(t.x - map.portal.x) + Math.abs(t.y - map.portal.y) <= 2) {
+                blocked.walls.add(key(t));
+            }
+        });
+        var around = walk(blocked, map.start, false);
+        var guarded = around[key(map.portal)] === undefined;
+
+        ok(name + " glitch " + (n + 1) + " does not guard the only tunnel into the portal",
+            !guarded, "lane " + lane.map(key).join(" ") + " blocks portal " + key(map.portal));
     });
 
     var shape = raw.rows.join("/").replace(/[^#\n\/]/g, ".");

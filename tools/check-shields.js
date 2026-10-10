@@ -14,6 +14,10 @@
       while loop must plan NOTHING and lose. That is the only
       honest demonstration of why do-while exists.
 
+   Phase 10 is the finale: the Loop Master robot walks in while
+   the player solves a run of rounds back to back. Every round
+   gets the same treatment as a phase.
+
        node tools/check-shields.js
 ========================================================= */
 
@@ -103,6 +107,20 @@ var SOLUTIONS = [
     'while (guard > 0) { System.out.println("STRIKE"); guard--; }' +
     ' System.out.println("BLOCK");',
 
+    null    /* phase 10 is the finale - see FINALE_SOLUTIONS */
+];
+
+/* a real Java answer for each round of the finale */
+var FINALE_SOLUTIONS = [
+    'for (int i = 1; i <= 5; i++) { System.out.println("CHARGE"); }',
+
+    'while (armor > 0) { System.out.println("HIT"); armor--; }',
+
+    'do { System.out.println("SMASH"); core--; } while (core > 0);',
+
+    'for (int i = countdown; i >= 1; i--) { System.out.println(i); }' +
+    ' System.out.println("FIRE");',
+
     'for (int w = 1; w <= 4; w++) {' +
     '  for (int b = 1; b <= w; b++) { System.out.println("BLOCK"); }' +
     '  System.out.println("HOLD"); }' +
@@ -149,16 +167,37 @@ function play(phase, source, vars) {
 
 console.log(PHASES.length + " phases\n");
 
-PHASES.forEach(function (phase, index) {
+/* the finale's rounds are checked like phases, numbered 10.1, 10.2... */
+var FIGHTS = [];
 
-    var n = index + 1;
+PHASES.forEach(function (phase, index) {
+    if (phase.finale) {
+        phase.rounds.forEach(function (round, r) {
+            FIGHTS.push({ n: (index + 1) + "." + (r + 1), phase: round, solution: FINALE_SOLUTIONS[r] });
+        });
+    } else {
+        FIGHTS.push({ n: String(index + 1), phase: phase, solution: SOLUTIONS[index] });
+    }
+});
+
+var finale = PHASES.filter(function (phase) { return phase.finale; })[0];
+
+ok("phase 10 is the Loop Master finale", PHASES.indexOf(finale) === 9);
+ok("the finale has a round for every point of the boss's life",
+    finale && finale.rounds.length === FINALE_SOLUTIONS.length && finale.rounds.length >= 5,
+    finale && finale.rounds.length + " rounds");
+
+FIGHTS.forEach(function (fight) {
+
+    var phase = fight.phase;
+    var n = fight.n;
     var wins = 0;
     var problem = null;
 
     for (var attempt = 0; attempt < 8; attempt++) {
 
         var vars = phase.setup();
-        var result = play(phase, SOLUTIONS[index], vars);
+        var result = play(phase, fight.solution, vars);
 
         if (result.error) {
             problem = result.error;
@@ -182,9 +221,47 @@ PHASES.forEach(function (phase, index) {
         Array.isArray(phase.hints) && phase.hints.length >= 3);
 
     if (problem === null && wins === 8) {
-        console.log("  ok  " + String(n).padStart(2) + "  " + phase.title);
+        console.log("  ok  " + n.padStart(4) + "  " + phase.title);
     }
 });
+
+
+console.log("\nthe finale's while rounds must punish a hardcoded count");
+
+[
+    [1, 'for (int i = 1; i <= 5; i++) { System.out.println("HIT"); }'],
+    [3, 'for (int i = 5; i >= 1; i--) { System.out.println(i); } System.out.println("FIRE");']
+].forEach(function (pair) {
+
+    var round = finale.rounds[pair[0]];
+    var survived = 0;
+
+    /* 40 tries keeps a one-in-five lucky guess from flaking */
+    for (var attempt = 0; attempt < 40; attempt++) {
+        if (play(round, pair[1], round.setup()).survived) {
+            survived += 1;
+        }
+    }
+
+    ok(round.title + ": a fixed count of 5 usually fails",
+        survived <= 16, "survived " + survived + "/40");
+
+    console.log("  " + round.title.padEnd(18) +
+        "hardcoded guess survived " + survived + "/40");
+});
+
+(function () {
+
+    var round = finale.rounds[2];
+    var withWhile = play(round,
+        'while (core > 0) { System.out.println("SMASH"); core--; }', { core: 0 });
+
+    ok(round.title + ": a while loop loses when core is 0",
+        withWhile.moves === 0 && !withWhile.survived, "planned " + withWhile.moves);
+
+    console.log("  " + round.title + ": with core 0 a while loop planned " +
+        withWhile.moves + " moves");
+}());
 
 
 console.log("\nthe while phases must punish a hardcoded count");

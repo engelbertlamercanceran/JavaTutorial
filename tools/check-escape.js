@@ -22,6 +22,12 @@
    find. Drones and lasers move, so they are not part of the
    check; they make the level harder, not impossible.
 
+   Levels 8-10 also carry corrupted chips (invalid variable
+   names) that cost a life. Every real chip and the door must
+   be reachable WITHOUT touching one - a flight or a standing
+   spot that brushes a corrupted chip does not count - and each
+   corrupted chip must itself be reachable, or it is no threat.
+
        node tools/check-escape.js
 ========================================================= */
 
@@ -65,6 +71,13 @@ function loadGame() {
         "\n;({ LEVELS, settleFurniture, furnitureSolids })";
 
     return vm.runInNewContext(code, { Math: Math });
+}
+
+
+function touches(x, y, item) {
+    var dx = x + W / 2 - (item.x + 22);
+    var dy = y + H / 2 - (item.y + 22);
+    return dx * dx + dy * dy < PICKUP_R2;
 }
 
 
@@ -173,6 +186,12 @@ function fly(world, x, y, dir, secondAt, walkOff) {
             return null;
         }
 
+        for (i = 0; i < world.decoys.length; i++) {
+            if (touches(x, y, world.decoys[i])) {
+                return null;
+            }
+        }
+
         world.pickups.forEach(function (item, index) {
             var dx = x + W / 2 - (item.x + 22);
             var dy = y + H / 2 - (item.y + 22);
@@ -207,7 +226,8 @@ function standingSegments(world) {
             var y = top.y - H;
             var ok = x <= world.maxX &&
                 !world.solids.some(function (s) { return overlaps(x, y, W, H, s); }) &&
-                !world.electric.some(function (e) { return overlaps(x, y, W, H + 1, e); });
+                !world.electric.some(function (e) { return overlaps(x, y, W, H + 1, e); }) &&
+                !world.decoys.some(function (d) { return touches(x, y, d); });
 
             if (ok) {
                 if (!run) {
@@ -252,11 +272,12 @@ function segmentAt(segments, x, y) {
 }
 
 
-function checkLevel(game, level) {
+function checkLevel(game, level, decoys) {
 
     var interactives = game.settleFurniture(level.interactives, level.platforms);
 
     var world = {
+        decoys: decoys,
         platforms: level.platforms,
         solids: [].concat.apply([], interactives.map(game.furnitureSolids)),
         electric: (level.hazards || []).filter(function (h) {
@@ -400,9 +421,26 @@ var game = loadGame();
 
 game.LEVELS.forEach(function (level) {
 
-    var result = checkLevel(game, level);
+    var decoys = level.decoys || [];
+    var result = checkLevel(game, level, decoys);
+
+    /* each corrupted chip must be somewhere Hacko can actually
+       go, or it is decoration rather than a hazard */
+    if (decoys.length) {
+        var lure = checkLevel(game, Object.assign({}, level, {
+            collectibles: decoys
+        }), []);
+
+        lure.forEach(function (line) {
+            if (/unreachable|timing/.test(line) && !/vault door/.test(line)) {
+                result.push("corrupted " + line.replace("unreachable", "out of reach (no threat)"));
+            }
+        });
+
+        result.push(decoys.length + " corrupted chips avoidable");
+    }
     var bad = result.some(function (line) {
-        return /unreachable|timing|nothing/.test(line);
+        return /unreachable|timing|nothing|no threat/.test(line);
     });
 
     if (bad) {

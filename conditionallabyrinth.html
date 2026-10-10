@@ -154,6 +154,7 @@ footer {
         <span class="hk-chip hk-chip--lives">LIVES <b id="hudLives">3</b></span>
         <span class="hk-chip">ROUND <b id="hudTier" class="tier tier-easy">EASY</b></span>
         <span class="hk-chip">XP <b id="hudXP">0</b></span>
+        <span class="hk-chip" title="Bombs carried - SPACE drops one">💣 <b id="hudBombs">1</b></span>
     </div>
 </header>
 
@@ -183,9 +184,10 @@ footer {
 </main>
 
 <footer>
-    Move with <span class="kbd">WASD</span> or <span class="kbd">ARROWS</span>.
+    Move with <span class="kbd">WASD</span> or <span class="kbd">ARROWS</span>,
+    drop a bomb with <span class="kbd">SPACE</span>.
     Trace the code, then walk into the gate holding what it prints.
-    From level 5, dodge the sentries; from level 8, step off the red meteor markers and catch the hearts.
+    Bomb the bricks out of your way and the enemies off your tail - just not yourself.
 </footer>
 
 <script>
@@ -461,6 +463,15 @@ footer {
                               maze (a red marker shows where each
                               one lands) and hearts fall that
                               Hacko can catch
+
+       Client request (Bomb It style): more enemies, bombs to
+       pick up, and bricks that can be bombed open. Every level
+       now has sentries, from level 6 drones that chase Hacko
+       through the maze, breakable bricks blocking corridors,
+       and bombs lying around. SPACE drops a bomb; it blasts
+       two tiles in each direction, breaks the first brick it
+       meets and wrecks any sentry or drone caught in it - and
+       Hacko too, if he does not get clear.
     --------------------------------------------------- */
 
     var TIERS = [
@@ -474,9 +485,24 @@ footer {
     }
 
     /* per level, 0-9 */
-    var SENTRIES = [0, 0, 0, 0, 1, 2, 2, 0, 0, 0];
-    var SENTRY_STEP = [0, 0, 0, 0, 520, 460, 400, 0, 0, 0];
-    var HEARTS = [0, 0, 0, 0, 1, 1, 2, 0, 0, 0];
+    var SENTRIES = [1, 1, 2, 2, 3, 3, 3, 2, 2, 3];
+    var SENTRY_STEP = [620, 600, 580, 560, 520, 460, 420, 480, 460, 440];
+    var HEARTS = [0, 0, 1, 1, 1, 1, 2, 0, 0, 0];
+
+    /* drones that hunt Hacko through the maze, a step at a time */
+    var CHASERS = [0, 0, 0, 0, 0, 1, 1, 1, 1, 2];
+    var CHASER_STEP = [0, 0, 0, 0, 0, 700, 660, 640, 600, 580];
+    var CHASER_WAKE = 3000;
+    var CHASER_RESPAWN = 9000;
+
+    /* bricks and bombs */
+    var BRICKS = [6, 8, 10, 12, 14, 14, 16, 16, 18, 18];
+    var BOMB_SPOTS = [2, 2, 3, 3, 3, 3, 4, 4, 4, 4];
+    var BOMB_FUSE = 1800;
+    var BLAST_RANGE = 2;
+    var BLAST_LASTS = 450;
+    var BOMB_RESPAWN = 7000;
+    var MAX_BOMBS = 3;
     var METEOR_EVERY = [0, 0, 0, 0, 0, 0, 0, 1500, 1200, 950];
     var METEOR_WARN = 1300;
     var HEART_DROP_EVERY = 8000;
@@ -710,6 +736,131 @@ footer {
         return out;
     }
 
+    function tileKey(t) {
+        return t.x + "," + t.y;
+    }
+
+    /* Every tile reachable from START, walking round walls and,
+       when given, round bricks too. Row 2 is the gate row and is
+       never walked through. */
+    function reachableFrom(walls, bricks) {
+
+        var seen = {};
+        var queue = [START];
+
+        seen[tileKey(START)] = true;
+
+        while (queue.length) {
+
+            var at = queue.shift();
+
+            [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+
+                var next = { x: at.x + d[0], y: at.y + d[1] };
+                var key = tileKey(next);
+
+                if (seen[key] || walls[key] || (bricks && bricks[key]) ||
+                    next.y < 3 || next.x < 0 || next.x >= COLS || next.y >= ROWS) {
+                    return;
+                }
+
+                seen[key] = true;
+                queue.push(next);
+            });
+        }
+
+        return seen;
+    }
+
+    /* Breakable bricks, mostly in corridors so they actually
+       close a way through. Never on the start area, row 3 under
+       the gates, a sentry's patrol or a heart. Being only on
+       floor tiles, every gate can still be reached once they
+       are bombed - and bombs keep coming back (BOMB_RESPAWN). */
+    function buildBricks(index, walls, sentries, hearts) {
+
+        var random = seeded(5150 + index * 271);
+        var keep = {};
+
+        sentries.forEach(function (sentry) {
+            sentry.path.forEach(function (t) { keep[tileKey(t)] = true; });
+        });
+
+        hearts.forEach(function (t) { keep[tileKey(t)] = true; });
+
+        var pool = floorTiles(walls).filter(function (t) {
+            return !keep[tileKey(t)] && t.y > 3 &&
+                Math.abs(t.x - START.x) + Math.abs(t.y - START.y) > 3;
+        });
+
+        var corridors = pool.filter(function (t) { return openSides(walls, t) === 2; });
+        var others = pool.filter(function (t) { return openSides(walls, t) !== 2; });
+
+        var bricks = {};
+        var count = 0;
+
+        [corridors, others].forEach(function (list) {
+            while (count < BRICKS[index] && list.length) {
+                var t = list.splice(Math.floor(random() * list.length), 1)[0];
+                bricks[tileKey(t)] = true;
+                count += 1;
+            }
+        });
+
+        return bricks;
+    }
+
+    /* Bomb pickups, always somewhere Hacko can walk to without
+       breaking a brick first - so a level never starts stuck. */
+    function buildBombs(index, walls, bricks) {
+
+        var random = seeded(3131 + index * 59);
+        var open = reachableFrom(walls, bricks);
+
+        var pool = floorTiles(walls).filter(function (t) {
+            return open[tileKey(t)] && !bricks[tileKey(t)] &&
+                Math.abs(t.x - START.x) + Math.abs(t.y - START.y) >= 3;
+        });
+
+        var out = [];
+
+        while (out.length < BOMB_SPOTS[index] && pool.length) {
+
+            var t = pool.splice(Math.floor(random() * pool.length), 1)[0];
+
+            /* keep them spread out */
+            var crowded = out.some(function (b) {
+                return Math.abs(b.x - t.x) + Math.abs(b.y - t.y) < 4;
+            });
+
+            if (!crowded || pool.length < BOMB_SPOTS[index]) {
+                out.push({ x: t.x, y: t.y, takenAt: 0 });
+            }
+        }
+
+        return out;
+    }
+
+    /* Chasing drones start on the far side of the maze. */
+    function buildChasers(index, walls, bricks) {
+
+        var random = seeded(6060 + index * 97);
+
+        var pool = floorTiles(walls).filter(function (t) {
+            return !bricks[tileKey(t)] &&
+                Math.abs(t.x - START.x) + Math.abs(t.y - START.y) >= 14;
+        });
+
+        var out = [];
+
+        while (out.length < CHASERS[index] && pool.length) {
+            var t = pool.splice(Math.floor(random() * pool.length), 1)[0];
+            out.push({ x: t.x, y: t.y, home: { x: t.x, y: t.y }, deadUntil: 0 });
+        }
+
+        return out;
+    }
+
     /* end of level data - tools/check-labyrinth.js reads up to here */
 
 
@@ -728,6 +879,13 @@ footer {
         hearts: [],
         meteors: [],
         drops: [],
+        bricks: {},
+        bombSpots: [],
+        carried: 1,
+        placed: [],
+        blasts: [],
+        chasers: [],
+        nextChaser: 0,
         done: false,
         flash: 0,
         safeUntil: 0,
@@ -770,7 +928,17 @@ footer {
         state.meteors = [];
         state.drops = [];
 
+        /* the original sentry routes, so bricks never sit on one */
+        state.bricks = buildBricks(state.level, state.walls,
+            buildSentries(state.level, state.walls), state.hearts);
+        state.bombSpots = buildBombs(state.level, state.walls, state.bricks);
+        state.chasers = buildChasers(state.level, state.walls, state.bricks);
+        state.carried = 1;
+        state.placed = [];
+        state.blasts = [];
+
         var now = performance.now();
+        state.nextChaser = now + CHASER_WAKE;
         state.safeUntil = now + 1500;
         state.nextSentry = now + 1200;
         state.nextMeteor = now + 2500;
@@ -816,12 +984,20 @@ footer {
         if (METEOR_EVERY[state.level]) {
             log("GALAXY ATTACK - step off the red markers before the meteors land. Catch the falling hearts!", "bad");
         }
+
+        log("Bricks block some corridors. Pick up 💣 and press SPACE to blast them - then get clear!", "info");
+
+        if (CHASERS[state.level]) {
+            log((CHASERS[state.level] > 1 ? CHASERS[state.level] + " drones are" : "A drone is") +
+                " hunting Hacko. A bomb stops them for a while.", "bad");
+        }
     }
 
     function updateHUD() {
         $("hudLevel").textContent = state.level + 1;
         $("hudLives").textContent = state.lives;
         $("hudXP").textContent = state.xp;
+        $("hudBombs").textContent = state.carried;
         $("hudTier").textContent = tierOf(state.level).name;
         $("hudTier").className = "tier tier-" + tierOf(state.level).name.toLowerCase();
     }
@@ -920,6 +1096,46 @@ footer {
             ctx.fillText(gate.label, x + TILE / 2, y + TILE / 2 + 5);
         });
 
+        /* breakable bricks */
+        Object.keys(state.bricks).forEach(function (key) {
+            var p = key.split(",");
+            drawBrick(Number(p[0]) * TILE, Number(p[1]) * TILE);
+        });
+
+        /* bombs lying in the maze, waiting to be picked up */
+        state.bombSpots.forEach(function (spot) {
+            if (!spot.takenAt) {
+                var c = centre(spot);
+                drawBomb(c.x, c.y + Math.sin(now / 280 + spot.x) * 2, 11, now, false, true);
+            }
+        });
+
+        /* bombs Hacko dropped - they flash faster as the fuse burns */
+        state.placed.forEach(function (bomb) {
+            var c = centre(bomb);
+            var left = 1 - (now - bomb.at) / BOMB_FUSE;
+            var flash = Math.floor(now / (60 + left * 220)) % 2 === 0;
+            drawBomb(c.x, c.y, 13 + (1 - left) * 2, now, flash);
+        });
+
+        /* blasts */
+        state.blasts.forEach(function (blast) {
+            var age = (now - blast.at) / BLAST_LASTS;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, 1 - age);
+            blast.tiles.forEach(function (t) {
+                var x = t.x * TILE;
+                var y = t.y * TILE;
+                ctx.shadowBlur = 22;
+                ctx.shadowColor = "#ff8a00";
+                ctx.fillStyle = "#ff8a00";
+                ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+                ctx.fillStyle = "#ffe066";
+                ctx.fillRect(x + 9, y + 9, TILE - 18, TILE - 18);
+            });
+            ctx.restore();
+        });
+
         /* hearts waiting in dead ends */
         state.hearts.forEach(function (heart) {
             var c = centre(heart);
@@ -955,6 +1171,44 @@ footer {
             ctx.beginPath();
             ctx.arc(c.x + (Math.sin(now / 200) * 4), c.y, 4, 0, Math.PI * 2);
             ctx.fill();
+            ctx.restore();
+        });
+
+        /* chasing drones - violet, so they never read as a sentry */
+        state.chasers.forEach(function (drone) {
+            if (drone.deadUntil > now) {
+                return;
+            }
+            var c = centre(drone);
+            var bob = Math.sin(now / 160 + drone.home.x) * 2;
+            ctx.save();
+            ctx.translate(c.x, c.y + bob);
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = "#b45cff";
+            ctx.fillStyle = "#b45cff";
+            ctx.beginPath();
+            ctx.moveTo(0, -16);
+            ctx.lineTo(16, 0);
+            ctx.lineTo(0, 16);
+            ctx.lineTo(-16, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "#1b0b2e";
+            ctx.beginPath();
+            ctx.arc(0, 0, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#ff4dd2";
+            ctx.beginPath();
+            ctx.arc(Math.sin(now / 150) * 3, 0, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+            /* rotor blur */
+            ctx.strokeStyle = "rgba(220,190,255,.6)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-14 + Math.sin(now / 40) * 4, -18);
+            ctx.lineTo(14 - Math.sin(now / 40) * 4, -18);
+            ctx.stroke();
             ctx.restore();
         });
 
@@ -1055,6 +1309,67 @@ footer {
     }
 
 
+    function drawBrick(x, y) {
+        ctx.fillStyle = "#9a4d22";
+        ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+        ctx.strokeStyle = "#5a2a10";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + 2, y + 2, TILE - 4, TILE - 4);
+        ctx.beginPath();
+        ctx.moveTo(x + 2, y + TILE / 3);
+        ctx.lineTo(x + TILE - 2, y + TILE / 3);
+        ctx.moveTo(x + 2, y + TILE * 2 / 3);
+        ctx.lineTo(x + TILE - 2, y + TILE * 2 / 3);
+        ctx.moveTo(x + TILE / 2, y + 2);
+        ctx.lineTo(x + TILE / 2, y + TILE / 3);
+        ctx.moveTo(x + TILE / 4, y + TILE / 3);
+        ctx.lineTo(x + TILE / 4, y + TILE * 2 / 3);
+        ctx.moveTo(x + TILE * 3 / 4, y + TILE / 3);
+        ctx.lineTo(x + TILE * 3 / 4, y + TILE * 2 / 3);
+        ctx.moveTo(x + TILE / 2, y + TILE * 2 / 3);
+        ctx.lineTo(x + TILE / 2, y + TILE - 2);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(255,200,150,.18)";
+        ctx.fillRect(x + 2, y + 2, TILE - 4, 4);
+    }
+
+    function drawBomb(x, y, r, now, flash, pickup) {
+        ctx.save();
+
+        /* a gold ring so a pickup reads against the dark floor */
+        if (pickup) {
+            ctx.strokeStyle = "rgba(255,211,78," + (0.45 + 0.3 * Math.sin(now / 250)) + ")";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y + 2, r + 6, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        ctx.shadowBlur = flash ? 20 : 14;
+        ctx.shadowColor = flash ? "#ff3b3b" : "#ffb347";
+        ctx.fillStyle = flash ? "#5a0d0d" : "#1d2333";
+        ctx.beginPath();
+        ctx.arc(x, y + 2, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "rgba(255,255,255,.35)";
+        ctx.beginPath();
+        ctx.arc(x - r * 0.35, y - r * 0.25, r * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#c9a26b";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + r * 0.5, y - r * 0.6);
+        ctx.quadraticCurveTo(x + r, y - r * 1.3, x + r * 1.1, y - r * 1.2);
+        ctx.stroke();
+        ctx.fillStyle = Math.floor(now / 90) % 2 ? "#ffe066" : "#ff7b00";
+        ctx.beginPath();
+        ctx.arc(x + r * 1.1, y - r * 1.2, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+
     /* ---------------------------------------------------
        HAZARDS
     --------------------------------------------------- */
@@ -1123,6 +1438,26 @@ footer {
             }
         });
 
+        var now = performance.now();
+
+        state.chasers.forEach(function (drone) {
+            if (drone.deadUntil <= now && same(drone, p)) {
+                droneHit(drone);
+            }
+        });
+
+        state.bombSpots.forEach(function (spot) {
+            if (!spot.takenAt && same(spot, p)) {
+                if (state.carried < MAX_BOMBS) {
+                    spot.takenAt = now;
+                    state.carried += 1;
+                    HackoAudio.play("pickup");
+                    log("💣 Picked up a bomb (" + state.carried + " carried). SPACE drops it.", "ok");
+                    updateHUD();
+                }
+            }
+        });
+
         state.hearts = state.hearts.filter(function (heart) {
             if (same(heart, p)) {
                 gainLife("in the dead end");
@@ -1149,6 +1484,171 @@ footer {
             sentry.x = sentry.path[sentry.at].x;
             sentry.y = sentry.path[sentry.at].y;
         });
+    }
+
+    /* ---- bombs ---- */
+
+    function dropBomb() {
+
+        if (state.done) {
+            return;
+        }
+
+        var p = state.player;
+
+        if (state.carried <= 0) {
+            HackoAudio.play("bump");
+            log("No bombs. Find a 💣 in the maze - they come back after a while.", "info");
+            return;
+        }
+
+        if (state.placed.some(function (b) { return same(b, p); })) {
+            return;
+        }
+
+        state.carried -= 1;
+        state.placed.push({ x: p.x, y: p.y, at: performance.now() });
+        HackoAudio.play("tick");
+        updateHUD();
+    }
+
+    /* the blast: this tile and BLAST_RANGE each way, stopped by
+       walls and the gate row; the first brick it meets breaks
+       and stops it */
+    function explode(bomb, now) {
+
+        state.placed = state.placed.filter(function (b) { return b !== bomb; });
+
+        var tiles = [{ x: bomb.x, y: bomb.y }];
+        var broke = 0;
+
+        [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+            for (var i = 1; i <= BLAST_RANGE; i++) {
+                var t = { x: bomb.x + d[0] * i, y: bomb.y + d[1] * i };
+                var key = tileKey(t);
+                if (t.y < 3 || state.walls[key]) {
+                    break;
+                }
+                tiles.push(t);
+                if (state.bricks[key]) {
+                    delete state.bricks[key];
+                    broke += 1;
+                    break;
+                }
+            }
+        });
+
+        HackoAudio.play("boom");
+
+        if (broke) {
+            log("💥 " + broke + (broke > 1 ? " bricks" : " brick") + " smashed.", "ok");
+        }
+
+        var blast = { tiles: tiles, at: now };
+        state.blasts.push(blast);
+
+        /* other bombs caught in it go off too */
+        state.placed.slice().forEach(function (other) {
+            if (tiles.some(function (t) { return same(t, other); })) {
+                explode(other, now);
+            }
+        });
+
+        applyBlast(blast, now);
+    }
+
+    function inBlast(blast, thing) {
+        return blast.tiles.some(function (t) { return same(t, thing); });
+    }
+
+    function applyBlast(blast, now) {
+
+        var before = state.sentries.length;
+
+        state.sentries = state.sentries.filter(function (sentry) {
+            return !inBlast(blast, sentry);
+        });
+
+        var wrecked = before - state.sentries.length;
+
+        state.chasers.forEach(function (drone) {
+            if (drone.deadUntil <= now && inBlast(blast, drone)) {
+                drone.deadUntil = now + CHASER_RESPAWN;
+                drone.x = drone.home.x;
+                drone.y = drone.home.y;
+                wrecked += 1;
+            }
+        });
+
+        if (wrecked) {
+            state.xp += 20 * wrecked;
+            log("💥 Blasted " + wrecked + (wrecked > 1 ? " enemies" : " enemy") +
+                "! +" + (20 * wrecked) + " XP", "ok");
+            updateHUD();
+        }
+
+        if (inBlast(blast, state.player)) {
+            hurt("Hacko was caught in the blast!", false);
+        }
+    }
+
+    /* ---- drones ---- */
+
+    function droneHit(drone) {
+        hurt("A drone caught Hacko!", false);
+        /* it backs off to its corner rather than sitting on him */
+        drone.x = drone.home.x;
+        drone.y = drone.home.y;
+    }
+
+    /* one step along the shortest way to Hacko, round walls and
+       bricks */
+    function stepChaser(drone) {
+
+        var goal = tileKey(state.player);
+        var start = tileKey(drone);
+        var from = {};
+        var queue = [{ x: drone.x, y: drone.y }];
+
+        from[start] = null;
+
+        while (queue.length) {
+
+            var at = queue.shift();
+            var key = tileKey(at);
+
+            if (key === goal) {
+                break;
+            }
+
+            [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+                var next = { x: at.x + d[0], y: at.y + d[1] };
+                var nk = tileKey(next);
+                if (nk in from || state.walls[nk] || state.bricks[nk] || next.y < 3) {
+                    return;
+                }
+                from[nk] = key;
+                queue.push(next);
+            });
+        }
+
+        if (!(goal in from)) {
+            return;
+        }
+
+        /* walk back from Hacko to the first step */
+        var step = goal;
+        while (from[step] !== start && from[step] !== null) {
+            step = from[step];
+        }
+
+        var p = step.split(",");
+        drone.x = Number(p[0]);
+        drone.y = Number(p[1]);
+
+        if (same(drone, state.player)) {
+            droneHit(drone);
+        }
     }
 
     /* Most meteors aim near Hacko so standing still is not
@@ -1187,6 +1687,38 @@ footer {
             stepSentries();
             checkTile();
         }
+
+        if (CHASERS[state.level] && now >= state.nextChaser) {
+            state.nextChaser = now + CHASER_STEP[state.level];
+            state.chasers.forEach(function (drone) {
+                if (drone.deadUntil <= now) {
+                    stepChaser(drone);
+                }
+            });
+        }
+
+        state.placed.slice().forEach(function (bomb) {
+            if (now - bomb.at >= BOMB_FUSE && state.placed.indexOf(bomb) !== -1) {
+                explode(bomb, now);
+            }
+        });
+
+        /* a blast still burning hurts whatever walks into it */
+        state.blasts.forEach(function (blast) {
+            applyBlast(blast, now);
+        });
+
+        state.blasts = state.blasts.filter(function (blast) {
+            return now - blast.at < BLAST_LASTS;
+        });
+
+        /* picked-up bombs come back, so the maze never runs dry */
+        state.bombSpots.forEach(function (spot) {
+            if (spot.takenAt && now - spot.takenAt >= BOMB_RESPAWN &&
+                !same(spot, state.player) && !state.bricks[tileKey(spot)]) {
+                spot.takenAt = 0;
+            }
+        });
 
         if (METEOR_EVERY[state.level]) {
 
@@ -1241,7 +1773,7 @@ footer {
         var ny = state.player.y + dy;
 
         if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS ||
-            state.walls[nx + "," + ny]) {
+            state.walls[nx + "," + ny] || state.bricks[nx + "," + ny]) {
             HackoAudio.play("bump");
             return;
         }
@@ -1272,6 +1804,8 @@ footer {
             state.done = true;
             state.xp += 100;
             state.meteors = [];
+            state.placed = [];
+            state.blasts = [];
 
             HackoAudio.play("win");
             log("Correct. The program prints " + gate.label + ".", "ok");
@@ -1305,6 +1839,9 @@ footer {
         else if (["ArrowDown", "s", "S"].indexOf(key) !== -1) { move(0, 1); }
         else if (["ArrowLeft", "a", "A"].indexOf(key) !== -1) { move(-1, 0); }
         else if (["ArrowRight", "d", "D"].indexOf(key) !== -1) { move(1, 0); }
+        else if (key === " " || key === "b" || key === "B") {
+            if (!event.repeat) { dropBomb(); }
+        }
         else { return; }
 
         event.preventDefault();

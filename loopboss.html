@@ -192,7 +192,7 @@ footer {
     <div class="duel" id="duel">
 
         <div class="bosshead">
-            <div class="bossface" id="bossFace">&#9760;</div>
+            <div class="bossface" id="bossFace">&#129302;</div>
             <div class="bossinfo">
                 <b id="bossName">THE LOOP MASTER</b>
                 <div class="bossbar"><i id="bossHP"></i></div>
@@ -207,7 +207,7 @@ footer {
              left, your printed lines are the interceptors. -->
         <div class="field">
             <canvas id="field" width="800" height="340"
-                aria-label="The Loop Master's missiles flying toward Hacko's dome"></canvas>
+                aria-label="The Loop Master robot attacking Hacko's dome"></canvas>
             <div class="clock" id="clock"></div>
             <div class="overlay" id="overlay">
                 <h3 id="overlayTitle"></h3>
@@ -462,38 +462,113 @@ footer {
                 "The last move happens no matter what, so it needs no loop at all."
             ]
         },
+        /* Client request: in the final level the Loop Master
+           robot itself comes for Hacko. It walks toward the
+           dome while the player solves one loop after another -
+           every working program blasts it and knocks it back,
+           and its life bar drains until it falls. See FINALE. */
         {
             title: "THE LOOP MASTER",
             name: "THE LOOP MASTER",
-            quote: "Everything I am, in one final pattern. Face it.",
-            brief: "Waves again, but each wave is one blow longer than the " +
-                "last, and it lands one final blow at the end. BLOCK each " +
-                "blow, HOLD after each wave, and finish with ENDURE.",
-            setup: function () { return { waves: 4 }; },
-            expected: function (v) {
+            quote: "Enough missiles. I will crush your dome with my own hands.",
+            brief: "The Loop Master robot is walking toward the dome. Solve " +
+                "each loop challenge to blast it - five hits and it falls.",
+            finale: true,
+            rounds: [
+                {
+                    title: "POWER UP",
+                    brief: "Charge Hacko's cannon: print CHARGE exactly 5 times.",
+                    setup: function () { return {}; },
+                    expected: function () { return times("CHARGE", 5); },
+                    starter: "for (int i = 1; i <= ___; i++) {\n" +
+                        "    System.out.println(\"___\");\n}",
+                    hints: [
+                        "You know the count before you start.",
+                        "A for loop runs its body a set number of times.",
+                        "Check the stop test: the body must run five times, no more."
+                    ]
+                },
+                {
+                    title: "ARMOR PLATES",
+                    brief: "Print HIT once for every armor plate. The armor is " +
+                        "DIFFERENT every time - and it changes after a miss.",
+                    setup: function () { return { armor: between(3, 7) }; },
+                    expected: function (v) { return times("HIT", v.armor); },
+                    starter: "// armor is already declared for you\n\n" +
+                        "while (___) {\n    System.out.println(\"HIT\");\n    ___;\n}",
+                    hints: [
+                        "You cannot know the count in advance - let armor decide.",
+                        "Keep looping while there is armor left.",
+                        "Each pass must take one plate away, or the loop never stops."
+                    ]
+                },
+                {
+                    title: "THE CORE",
+                    brief: "Print SMASH once per point of core - but the core " +
+                        "always takes at least one SMASH, even when it is 0.",
+                    setup: function () { return { core: between(0, 3) }; },
+                    expected: function (v) { return times("SMASH", Math.max(1, v.core)); },
+                    starter: "// core is already declared for you - it can be 0\n\n" +
+                        "do {\n    ___;\n    ___;\n} while (___);",
+                    hints: [
+                        "With core 2 you need two SMASH lines. With core 0 you still need one.",
+                        "One loop shape runs its body before it ever checks the condition.",
+                        "Print, reduce core, then ask whether any is left."
+                    ]
+                },
+                {
+                    title: "COUNTDOWN",
+                    brief: "Count down from countdown to 1, one number per line, " +
+                        "then print FIRE. The countdown is different every time.",
+                    setup: function () { return { countdown: between(3, 7) }; },
+                    expected: function (v) {
+                        var out = [];
+                        for (var i = v.countdown; i >= 1; i--) {
+                            out.push(String(i));
+                        }
+                        out.push("FIRE");
+                        return out.join("\n");
+                    },
+                    starter: "// countdown is already declared for you\n\n" +
+                        "for (int i = ___; i >= ___; i--) {\n" +
+                        "    System.out.println(i);\n}\n\n// then FIRE",
+                    hints: [
+                        "A loop can count down as well as up.",
+                        "Start the counter at the variable and stop after 1.",
+                        "FIRE happens once, after the loop has finished."
+                    ]
+                },
+                {
+                    title: "FINAL PATTERN",
+                    brief: "Waves again, each one blow longer than the last: BLOCK " +
+                        "each blow, HOLD after each wave, and finish with ENDURE.",
+                    setup: function () { return { waves: 4 }; },
+                    expected: function (v) {
 
-                var out = [];
+                        var out = [];
 
-                for (var w = 1; w <= v.waves; w++) {
+                        for (var w = 1; w <= v.waves; w++) {
 
-                    for (var b = 1; b <= w; b++) {
-                        out.push("BLOCK");
-                    }
+                            for (var b = 1; b <= w; b++) {
+                                out.push("BLOCK");
+                            }
 
-                    out.push("HOLD");
+                            out.push("HOLD");
+                        }
+
+                        out.push("ENDURE");
+
+                        return out.join("\n");
+                    },
+                    starter: "for (int wave = 1; wave <= 4; wave++) {\n\n" +
+                        "    // this wave's blocks\n\n    // then HOLD\n}\n\n" +
+                        "// one final move",
+                    hints: [
+                        "Wave one is a single blow, wave four is four - the inner loop grows.",
+                        "Let the inner loop run up to whatever wave it is on.",
+                        "ENDURE happens once, after every wave is done."
+                    ]
                 }
-
-                out.push("ENDURE");
-
-                return out.join("\n");
-            },
-            starter: "for (int wave = 1; wave <= 4; wave++) {\n\n" +
-                "    // this wave's blocks\n\n    // then HOLD\n}\n\n" +
-                "// one final move",
-            hints: [
-                "Wave one is a single blow, wave four is four - the inner loop grows.",
-                "Let the inner loop run up to whatever wave it is on.",
-                "ENDURE happens once, after every wave is done."
             ]
         }
     ];
@@ -583,6 +658,11 @@ footer {
         state.vars = phase.setup();
         state.expected = phase.expected(state.vars);
 
+        renderVars();
+    }
+
+    function renderVars() {
+
         var box = $("vars");
         box.innerHTML = "";
 
@@ -642,7 +722,7 @@ footer {
     var W = 800;
     var H = 340;
     var GROUND = 312;
-    var MUZZLE = { x: 121, y: 194 };
+    var MUZZLE = { x: 128, y: 192 };
     var DOME = { x: 715, r: 78 };
     var PAD = { x: 752, y: 276 };
 
@@ -996,45 +1076,136 @@ footer {
         ctx.fillRect(-20, GROUND, W + 40, 2);
     }
 
-    function drawBoss(t) {
+    /* Client request: the Loop Master was a tower with an eye.
+       It is a Big Boss Robot now - standing at the back firing
+       its shoulder cannon in phases 1-9, and walking in to fight
+       Hacko itself in phase 10. cx is its centre, feet on the
+       ground. */
+    function drawRobot(cx, t, walking) {
 
         var hit = sky.bossHit > 0;
         var beaten = state.won;
+        var edge = beaten ? "#91ff6f" : (hit ? "#ffffff" : "#ff3d68");
+        var step = walking ? Math.sin(t * 7) : 0;
+        var bob = walking ? Math.abs(step) * 3 : Math.sin(t * 2) * 1.5;
 
-        /* tower */
-        ctx.fillStyle = beaten ? "#1e2b22" : "#2a0f1c";
-        ctx.fillRect(28, 150, 82, GROUND - 150);
-        ctx.fillRect(18, 138, 102, 18);
-        ctx.strokeStyle = beaten ? "#91ff6f" : (hit ? "#ffffff" : "#ff3d68");
-        ctx.lineWidth = 2;
-        ctx.strokeRect(28, 150, 82, GROUND - 150);
-        ctx.strokeRect(18, 138, 102, 18);
-
-        /* cannon */
         ctx.save();
-        ctx.translate(92, 212);
-        ctx.rotate(-0.55);
-        ctx.fillStyle = "#3b1528";
-        ctx.fillRect(0, -8, 36, 16);
-        ctx.strokeRect(0, -8, 36, 16);
+        ctx.translate(0, -bob);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = edge;
+
+        /* legs */
+        [-1, 1].forEach(function (side) {
+            var swing = step * 7 * side;
+            ctx.fillStyle = "#2b3242";
+            ctx.fillRect(cx + side * 17 - 9 + swing, 262, 18, GROUND - 262 + bob - 6);
+            ctx.strokeRect(cx + side * 17 - 9 + swing, 262, 18, GROUND - 262 + bob - 6);
+            ctx.fillStyle = "#3d4558";
+            ctx.fillRect(cx + side * 17 - 13 + swing, GROUND + bob - 10, 26, 10);
+            ctx.strokeRect(cx + side * 17 - 13 + swing, GROUND + bob - 10, 26, 10);
+        });
+
+        /* torso */
+        var g = ctx.createLinearGradient(cx - 44, 0, cx + 44, 0);
+        g.addColorStop(0, beaten ? "#1f2f26" : "#3a2233");
+        g.addColorStop(0.5, beaten ? "#2f4a3a" : "#5a3048");
+        g.addColorStop(1, beaten ? "#1f2f26" : "#2a1726");
+        ctx.fillStyle = g;
+        ctx.fillRect(cx - 44, 180, 88, 86);
+        ctx.strokeRect(cx - 44, 180, 88, 86);
+
+        /* shoulders */
+        ctx.fillStyle = "#4a2a3e";
+        ctx.fillRect(cx - 56, 178, 18, 22);
+        ctx.strokeRect(cx - 56, 178, 18, 22);
+        ctx.fillRect(cx + 38, 178, 18, 22);
+        ctx.strokeRect(cx + 38, 178, 18, 22);
+
+        /* left arm swings while walking */
+        ctx.save();
+        ctx.translate(cx - 48, 196);
+        ctx.rotate(walking ? step * 0.35 : 0.08);
+        ctx.fillStyle = "#2b3242";
+        ctx.fillRect(-7, 0, 14, 52);
+        ctx.strokeRect(-7, 0, 14, 52);
+        ctx.fillStyle = "#3d4558";
+        ctx.fillRect(-10, 50, 20, 14);
+        ctx.strokeRect(-10, 50, 20, 14);
         ctx.restore();
 
-        /* eye */
-        var pulse = 0.6 + 0.4 * Math.sin(t * 3);
-        ctx.fillStyle = beaten ? "#91ff6f" : "rgba(255,40,80," + pulse + ")";
-        ctx.beginPath();
-        ctx.arc(62, 186, 10, 0, Math.PI * 2);
-        ctx.fill();
+        /* shoulder cannon - the missiles leave from its tip */
+        ctx.save();
+        ctx.translate(cx + 40, 204);
+        ctx.rotate(walking ? -0.15 : -0.5);
+        ctx.fillStyle = "#3b1528";
+        ctx.fillRect(0, -8, 26, 16);
+        ctx.strokeRect(0, -8, 26, 16);
+        ctx.fillStyle = "#ff9b5c";
+        ctx.fillRect(24, -5, 4, 10);
+        ctx.restore();
 
-        /* the loop it is named for */
-        ctx.font = "900 34px Orbitron, sans-serif";
+        /* chest core, with the loop it is named for */
+        var pulse = 0.55 + 0.45 * Math.sin(t * 4);
+        ctx.fillStyle = beaten ? "#91ff6f" : "rgba(255,40,80," + pulse + ")";
+        ctx.shadowBlur = beaten ? 8 : 18;
+        ctx.shadowColor = beaten ? "#91ff6f" : "#ff2850";
+        ctx.beginPath();
+        ctx.arc(cx, 218, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#1a0710";
+        ctx.font = "900 18px Orbitron, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillStyle = beaten ? "#91ff6f" : "#ff3d68";
-        ctx.fillText(beaten ? "✓" : "∞", 69, 262);
+        ctx.fillText(beaten ? "✓" : "∞", cx, 225);
+
+        /* belt of rivets */
+        ctx.fillStyle = "#ffc2ce";
+        for (var r = -32; r <= 32; r += 16) {
+            ctx.fillRect(cx + r - 2, 252, 4, 4);
+        }
+
+        /* head */
+        ctx.fillStyle = "#3a2233";
+        ctx.fillRect(cx - 26, 140, 52, 38);
+        ctx.strokeRect(cx - 26, 140, 52, 38);
+        ctx.fillStyle = "#12060c";
+        ctx.fillRect(cx - 20, 150, 40, 14);
+
+        /* visor eye scans side to side */
+        var eye = Math.sin(t * 2.4) * 12;
+        ctx.fillStyle = beaten ? "#91ff6f" : "#ff2850";
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.fillRect(cx - 6 + eye, 153, 12, 8);
+        ctx.shadowBlur = 0;
+
+        /* jaw grille */
+        ctx.strokeStyle = "rgba(255,194,206,.55)";
+        ctx.lineWidth = 1;
+        for (var j = -14; j <= 14; j += 7) {
+            ctx.beginPath();
+            ctx.moveTo(cx + j, 168);
+            ctx.lineTo(cx + j, 175);
+            ctx.stroke();
+        }
+
+        /* antenna */
+        ctx.strokeStyle = edge;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, 140);
+        ctx.lineTo(cx, 126);
+        ctx.stroke();
+        ctx.fillStyle = Math.floor(t * 3) % 2 ? "#ff3d68" : "#ffd34e";
+        ctx.beginPath();
+        ctx.arc(cx, 123, 4, 0, Math.PI * 2);
+        ctx.fill();
 
         ctx.font = "700 9px Orbitron, sans-serif";
         ctx.fillStyle = "#ffc2ce";
-        ctx.fillText("LOOP MASTER", 69, 132);
+        ctx.fillText("LOOP MASTER", cx, 114);
+
+        ctx.restore();
     }
 
     function drawBase() {
@@ -1208,6 +1379,13 @@ footer {
 
         var el = $("clock");
 
+        if (finale.active) {
+            var secs = Math.max(0, Math.ceil((ROBOT_CONTACT - finale.x) / robotSpeed()));
+            el.textContent = finale.walking ? "CONTACT IN " + secs + "s" : "";
+            el.className = "clock" + (finale.walking && secs <= 15 ? " urgent" : "");
+            return;
+        }
+
         if (sky.mode !== "incoming" || sky.fired) {
             el.textContent = sky.mode === "incoming" ? "INTERCEPTORS AWAY" : "";
             el.className = "clock";
@@ -1238,6 +1416,7 @@ footer {
         lastFrame = t;
 
         step(t);
+        stepFinale(t, dt);
 
         sky.domeHit = Math.max(0, sky.domeHit - dt);
         sky.bossHit = Math.max(0, sky.bossHit - dt);
@@ -1253,11 +1432,17 @@ footer {
         }
 
         drawBackdrop(t);
-        drawBoss(t);
+        drawRobot(finale.active ? finale.x : 66, t, finale.active && finale.walking);
         drawBase();
         drawSmoke(t);
-        drawMissiles(t);
-        drawShots(t);
+
+        if (finale.active) {
+            drawFinale(t);
+        } else {
+            drawMissiles(t);
+            drawShots(t);
+        }
+
         drawBooms(t);
 
         ctx.restore();
@@ -1277,6 +1462,7 @@ footer {
         sky.mode = "ready";
         sky.missiles = [];
         sky.shots = [];
+        finale.walking = false;
 
         $("runBtn").disabled = true;
         $("overlayTitle").textContent = title;
@@ -1294,7 +1480,13 @@ footer {
 
         HackoAudio.play("select");
         $("overlay").classList.add("hidden");
-        launchVolley();
+
+        if (finale.active) {
+            startWalking();
+        } else {
+            launchVolley();
+        }
+
         $("editor").focus();
     });
 
@@ -1311,18 +1503,24 @@ footer {
 
         var phase = PHASES[state.phase];
 
-        /* each hint tier costs a hint point - see shared/hint.js */
-        hint = HackoHint.paid({
-            id: "m10-l" + (state.phase + 1),
-            tiers: phase.hints
-        });
+        finale.active = !!phase.finale;
+        finale.walking = false;
 
-        $("hintBtn").textContent = hint.label();
+        if (!phase.finale) {
 
-        rollAttack();
+            /* each hint tier costs a hint point - see shared/hint.js */
+            hint = HackoHint.paid({
+                id: "m10-l" + (state.phase + 1),
+                tiers: phase.hints
+            });
+
+            $("hintBtn").textContent = hint.label();
+
+            rollAttack();
+        }
 
         $("duel").classList.remove("won");
-        $("bossFace").innerHTML = "&#9760;";
+        $("bossFace").innerHTML = "&#129302;";
         $("bossName").textContent = phase.name;
         $("bossHP").style.width = "100%";
         $("bossQuote").textContent = "“" + phase.quote + "”";
@@ -1335,12 +1533,17 @@ footer {
         $("hudTier").textContent = tier;
         $("hudTier").className = "tier tier-" + tier.toLowerCase();
         $("duel").className = "duel tier-" + tier.toLowerCase();
-        $("editor").value = phase.starter;
+        $("editor").value = phase.starter || "";
         $("callout").textContent = "";
 
         setVerdict("", true);
         renderPhaseSelect();
         updateHUD();
+
+        if (phase.finale) {
+            startFinale();
+            return;
+        }
 
         showReady(
             "PHASE " + (state.phase + 1) + " - " + phase.title,
@@ -1355,9 +1558,371 @@ footer {
     }
 
 
+    /* =====================================================
+       FINALE
+
+       Phase 10. The Loop Master robot walks from the back of
+       the field toward Hacko's dome - the walk is the clock.
+       The player works through FINALE rounds one after
+       another without stopping:
+
+         right output  Hacko blasts it: -1 life on its bar,
+                       and it is knocked back
+         wrong output  it charges forward, and any numbers
+                       re-roll so a hardcoded guess cannot
+                       simply be fired again
+         compile error costs nothing but the time
+
+       If it reaches the dome Hacko loses a life and it goes
+       back to the start - its damage stays. Five hits and it
+       falls.
+    ===================================================== */
+
+    var ROBOT_HOME = 70;
+    var ROBOT_CONTACT = 585;
+    var WALK_TIME = 120;
+    var KNOCKBACK = 0.45;
+    var LUNGE = 30;
+
+    var finale = {
+        active: false,
+        walking: false,
+        round: 0,
+        hp: 0,
+        x: ROBOT_HOME,
+        busy: false,
+        beam: 0,
+        smashed: 0
+    };
+
+    function robotSpeed() {
+        return (ROBOT_CONTACT - ROBOT_HOME) / WALK_TIME;
+    }
+
+    function finaleRounds() {
+        return PHASES[state.phase].rounds;
+    }
+
+    function updateRobotHP() {
+        var max = finaleRounds().length;
+        $("bossHP").style.width = Math.round(finale.hp / max * 100) + "%";
+        $("bossName").textContent = "THE LOOP MASTER - " + finale.hp + "/" + max + " HP";
+    }
+
+    function loadRound(index, keepCode) {
+
+        var rounds = finaleRounds();
+        var round = rounds[index];
+
+        finale.round = index;
+
+        state.vars = round.setup();
+        state.expected = round.expected(state.vars);
+        renderVars();
+
+        $("brief").textContent = "ROUND " + (index + 1) + "/" + rounds.length +
+            " - " + round.title + ": " + round.brief;
+        $("phaseTitle").textContent = "PHASE 10 - ROUND " + (index + 1) +
+            "/" + rounds.length + ": " + round.title;
+
+        if (!keepCode) {
+            $("editor").value = round.starter;
+        }
+
+        hint = HackoHint.paid({
+            id: "m10-l10-r" + (index + 1),
+            tiers: round.hints
+        });
+
+        $("hintBtn").textContent = hint.label();
+    }
+
+    function startFinale() {
+
+        finale.hp = finaleRounds().length;
+        finale.x = ROBOT_HOME;
+        finale.busy = false;
+        finale.beam = 0;
+
+        loadRound(0, false);
+        updateRobotHP();
+
+        showReady(
+            "PHASE 10 - THE LOOP MASTER",
+            "EXTREME - no more missiles: the Loop Master robot is coming for " +
+            "Hacko itself. It walks toward the dome while you solve " +
+            finaleRounds().length + " loop challenges in a row. Every program " +
+            "that prints the right output blasts it (-1 life) and knocks it back. " +
+            "A wrong output makes it charge. If it reaches the dome, you lose a life.",
+            "FIGHT"
+        );
+    }
+
+    function startWalking() {
+        sky.mode = "finale";
+        finale.walking = true;
+        $("runBtn").disabled = false;
+        $("callout").textContent = "THE LOOP MASTER IS COMING - KEEP CODING";
+    }
+
+    function stepFinale(t, dt) {
+
+        finale.beam = Math.max(0, finale.beam - dt);
+        finale.smashed = Math.max(0, finale.smashed - dt);
+
+        if (!finale.active || !finale.walking) {
+            return;
+        }
+
+        /* the briefing holds frames, so dt can be large once -
+           never let one frame carry it across the field */
+        finale.x += robotSpeed() * Math.min(dt, 0.1);
+
+        if (finale.x >= ROBOT_CONTACT) {
+            robotReachesDome();
+        }
+    }
+
+    function drawFinale(t) {
+
+        /* life bar over its head */
+        var max = finaleRounds().length;
+        var w = 96;
+        var x0 = finale.x - w / 2;
+
+        ctx.fillStyle = "rgba(5,10,20,.85)";
+        ctx.fillRect(x0 - 3, 88, w + 6, 16);
+
+        for (var i = 0; i < max; i++) {
+            var seg = (w - (max - 1) * 3) / max;
+            ctx.fillStyle = i < finale.hp ? "#ff3d68" : "#3a2233";
+            ctx.fillRect(x0 + i * (seg + 3), 91, seg, 10);
+        }
+
+        ctx.strokeStyle = "#ffc2ce";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x0 - 3, 88, w + 6, 16);
+
+        /* Hacko's blast */
+        if (finale.beam > 0) {
+            var a = finale.beam / 0.4;
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, a * 1.5);
+            ctx.shadowBlur = 24;
+            ctx.shadowColor = "#45f3ff";
+            ctx.strokeStyle = "#bffcff";
+            ctx.lineWidth = 3 + a * 9;
+            ctx.beginPath();
+            ctx.moveTo(682, GROUND - 32);
+            ctx.lineTo(finale.x + 10, 218);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /* how close it is - a red tint on the dome as it nears */
+        var near = (finale.x - ROBOT_HOME) / (ROBOT_CONTACT - ROBOT_HOME);
+
+        if (finale.walking && near > 0.7) {
+            ctx.save();
+            ctx.globalAlpha = (near - 0.7) / 0.3 * (0.5 + 0.5 * Math.sin(t * 8));
+            ctx.strokeStyle = "#ff3d68";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(DOME.x, GROUND, DOME.r + 4, Math.PI, 0);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    function sameLines(mine, want) {
+        return mine.length === want.length &&
+            mine.every(function (line, i) { return line === want[i]; });
+    }
+
+    function explainMiss(mine, want) {
+
+        for (var i = 0; i < Math.max(mine.length, want.length); i++) {
+            if (mine[i] !== want[i]) {
+                if (mine[i] === undefined) {
+                    return "Your program stopped after " + mine.length + " line" +
+                        (mine.length === 1 ? "" : "s") + " - line " + (i + 1) +
+                        " should be " + want[i] + ".";
+                }
+                if (want[i] === undefined) {
+                    return "Your program printed " + mine.length + " lines but only " +
+                        want.length + " were needed - line " + (i + 1) + " is extra.";
+                }
+                return "Line " + (i + 1) + " should be " + want[i] +
+                    " but your program printed " + mine[i] + ".";
+            }
+        }
+
+        return "";
+    }
+
+    function finaleFight() {
+
+        if (!finale.walking) {
+            setVerdict("Press FIGHT - the Loop Master is not moving yet.", false);
+            return;
+        }
+
+        if (finale.busy) {
+            return;
+        }
+
+        var preamble = Object.keys(state.vars).map(function (name) {
+            return "int " + name + " = " + state.vars[name] + ";";
+        }).join("\n");
+
+        var result = HackoJava.run(preamble + "\n" + $("editor").value);
+
+        if (result.error) {
+            setVerdict("Your program did not compile - fix it, it is still coming:\n" +
+                result.error, false);
+            HackoAudio.play("wrong");
+            return;
+        }
+
+        var mine = result.output
+            .replace(/\s+$/, "")
+            .split("\n")
+            .map(function (line) { return line.trim(); })
+            .filter(function (line) { return line.length; });
+
+        var want = state.expected.split("\n");
+
+        if (sameLines(mine, want)) {
+            hitRobot();
+            return;
+        }
+
+        /* a miss: it charges, and the numbers move */
+        var why = explainMiss(mine, want);
+        var before = JSON.stringify(state.vars);
+
+        finale.x = Math.min(ROBOT_CONTACT - 1, finale.x + LUNGE);
+        sky.shake = 6;
+        HackoAudio.play("wrong");
+        $("callout").textContent = "MISS - THE LOOP MASTER CHARGES";
+
+        var round = finaleRounds()[finale.round];
+        state.vars = round.setup();
+        state.expected = round.expected(state.vars);
+        renderVars();
+
+        setVerdict(why + (JSON.stringify(state.vars) !== before
+            ? "\nThe numbers above have changed - check them again."
+            : ""), false);
+    }
+
+    function hitRobot() {
+
+        finale.busy = true;
+        finale.beam = 0.4;
+        HackoAudio.play("zap");
+        setVerdict("Direct hit!", true);
+
+        window.setTimeout(function () {
+
+            if (!finale.active) {
+                return;
+            }
+
+            finale.hp -= 1;
+            sky.bossHit = 0.4;
+            sky.shake = 12;
+            boom(finale.x, 210, "#b6ff9e", 40);
+            HackoAudio.play("boom");
+
+            state.xp += 20;
+            updateHUD();
+            updateRobotHP();
+
+            finale.x = Math.max(ROBOT_HOME,
+                finale.x - (ROBOT_CONTACT - ROBOT_HOME) * KNOCKBACK);
+
+            finale.busy = false;
+
+            if (finale.hp <= 0) {
+                finale.walking = false;
+                $("runBtn").disabled = true;
+                victory();
+                return;
+            }
+
+            $("callout").textContent = "HIT! " + finale.hp + " TO GO - NEXT CHALLENGE";
+            setVerdict("Direct hit! It staggers back. Round " + (finale.round + 2) +
+                " is in the editor - keep going.", true);
+            loadRound(finale.round + 1, false);
+            $("editor").focus();
+        }, 380);
+    }
+
+    function robotReachesDome() {
+
+        finale.walking = false;
+        finale.x = ROBOT_CONTACT;
+        finale.smashed = 0.8;
+        sky.shake = 18;
+        sky.domeHit = 0.8;
+        boom(DOME.x - DOME.r + 10, GROUND - 40, "#ffb347", 46);
+        HackoAudio.play("boom");
+
+        state.lives -= 1;
+        updateHUD();
+
+        if (state.lives > 0) {
+
+            HackoAudio.play("hit");
+            $("callout").textContent = "THE DOME IS SMASHED";
+
+            window.setTimeout(function () {
+
+                finale.x = ROBOT_HOME;
+
+                /* same challenge, fresh numbers; the player's code stays */
+                loadRound(finale.round, true);
+
+                showReady(
+                    "THE DOME IS SMASHED - " + state.lives + " " +
+                        (state.lives === 1 ? "LIFE" : "LIVES") + " LEFT",
+                    "The Loop Master reached Hacko. It keeps its damage (" +
+                        finale.hp + "/" + finaleRounds().length + " HP) and walks " +
+                        "in again from the back. Check the numbers above - they may " +
+                        "have changed.",
+                    "KEEP FIGHTING"
+                );
+            }, 900);
+            return;
+        }
+
+        /* Client rule: out of lives drops back one phase. */
+        state.lives = 3;
+        state.xp = Math.max(0, state.xp - 100);
+
+        var back = window.HackoStore
+            ? HackoStore.loseAllLives(MISSION, state.phase)
+            : Math.max(0, state.phase - 1);
+
+        HackoAudio.play("gameover");
+        $("callout").textContent = "HACKO FALLS";
+
+        window.setTimeout(function () {
+            loadPhase(back);
+            $("overlayTitle").textContent = "OUT OF LIVES - BACK TO PHASE " + (back + 1);
+        }, 1200);
+    }
+
+
     function fight() {
 
         if (state.won) {
+            return;
+        }
+
+        if (finale.active) {
+            finaleFight();
             return;
         }
 
@@ -1487,17 +2052,23 @@ footer {
         $("duel").classList.add("won");
         $("bossFace").innerHTML = "&#10003;";
         $("bossHP").style.width = "0%";
-        $("callout").textContent = "EVERY MISSILE INTERCEPTED";
+        $("callout").textContent = finale.active
+            ? "THE LOOP MASTER FALLS"
+            : "EVERY MISSILE INTERCEPTED";
 
-        /* the tower goes up */
-        for (var i = 0; i < 6; i++) {
-            boom(40 + Math.random() * 70, 150 + Math.random() * 140,
+        /* the robot goes up */
+        var at = finale.active ? finale.x : 66;
+
+        for (var i = 0; i < (finale.active ? 10 : 6); i++) {
+            boom(at - 45 + Math.random() * 90, 130 + Math.random() * 160,
                 i % 2 ? "#ffb347" : "#b6ff9e", 30);
         }
 
-        sky.shake = 10;
+        sky.shake = finale.active ? 18 : 10;
 
-        setVerdict("Every missile intercepted. Phase cleared.", true);
+        setVerdict(finale.active
+            ? "Five direct hits - the Loop Master is destroyed!"
+            : "Every missile intercepted. Phase cleared.", true);
         HackoAudio.play("win");
         updateHUD();
 

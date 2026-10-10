@@ -15,6 +15,32 @@ body {
     display: grid;
     place-items: center;
     padding: 24px;
+    background: #040b16;
+}
+
+/* Client: the blurred backdrop is the Hacko key art from the
+   loading screen, so the loader fades straight into it. */
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Client: the art was too blurred to make out - a light blur
+   and a lighter shade keep Hacko visible behind the panels. */
+body::before {
+    inset: -12px;
+    background: url("loading.jpg") center / cover no-repeat;
+    filter: blur(3px) saturate(1.1) brightness(0.85);
+}
+
+body::after {
+    background:
+        radial-gradient(ellipse at center, rgba(4, 11, 22, 0.35), rgba(4, 11, 22, 0.15) 70%),
+        linear-gradient(rgba(4, 11, 22, 0.1), rgba(4, 11, 22, 0.35));
 }
 
 .wrap {
@@ -134,13 +160,6 @@ body {
     padding: 6px 2px;
 }
 
-.privacy {
-    border-left: 3px solid var(--hk-amber);
-    padding: 10px 12px;
-    background: rgba(255, 211, 78, 0.07);
-    border-radius: 0 8px 8px 0;
-}
-
 #fileInput {
     display: none;
 }
@@ -148,6 +167,9 @@ body {
 </head>
 
 <body class="hk-body">
+
+<!-- first in <body> so the loader covers the page before it paints -->
+<script src="shared/loading.js" data-art="loading.jpg"></script>
 
 <div class="wrap">
 
@@ -202,14 +224,6 @@ body {
 
         <p class="hk-ok" id="status"></p>
         <input type="file" id="fileInput" accept="application/json,.json">
-    </div>
-
-    <div class="hk-panel privacy">
-        <p class="hk-note" style="margin:0">
-            <b>Note:</b> this sign-in only keeps players' progress apart on
-            a shared computer. It is not a security feature and there is no
-            password - do not use it to protect anything private.
-        </p>
     </div>
 
 </div>

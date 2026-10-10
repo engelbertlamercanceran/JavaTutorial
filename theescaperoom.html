@@ -587,6 +587,8 @@
 
         let levelPlatforms = []
         let levelCollectibles = []
+        let levelDecoys = []
+        let invalidWarning = null
         let levelInteractives = []
         let levelRequired = []
         let levelEnemies = []
@@ -711,6 +713,48 @@
                 collected: false
             }
         }
+
+        /* Client request (levels 8-10): corrupted data chips. Each
+           one looks like a normal chip but carries an INVALID
+           variable name - not one of the variables the vault
+           needs. Picking it up costs a life. */
+        function createDecoy(x, y, type, name, reason) {
+            return {
+                ...createCollectible(x, y, type),
+                name,
+                reason,
+                invalid: true
+            }
+        }
+
+        /* The live-floor levels label every chip with its variable
+           name, so the player has to read them: the real ones are
+           the vault's variables, in the order of the collectibles. */
+        const CHIP_NAMES = [
+            'doorCode', 'password', 'isUnlocked',
+            'safeHeight', 'keyChar', 'extraPass'
+        ]
+
+        /* [x, y, type, name, why it is invalid]. Each sits near the
+           route - in a jump arc or by a ledge - but never on the
+           only way through; tools/check-escape.js proves every real
+           chip and the door can be reached without touching one.
+           Level 8 gets the first two, level 9 three, level 10 all. */
+        const DECOY_CHIPS = [
+            [665, 70, 'int', '2ndCode',
+                'A variable name cannot start with a digit.'],
+            [1555, 205, 'string', 'pass word',
+                'A variable name cannot contain a space.'],
+            [2040, 70, 'boolean', 'is-open',
+                'A hyphen (-) is not allowed in a variable name.'],
+            [2525, 40, 'double', 'class',
+                '"class" is a Java keyword, so it cannot be a variable name.'],
+            [1120, 330, 'char', 'key#',
+                'The # symbol is not allowed in a variable name.']
+        ]
+
+        /* how many corrupted chips each live-floor level carries */
+        const DECOY_COUNT = { 8: 2, 9: 3, 10: 5 }
 
         function createEnemy(x, minX, maxX, type = 'patrol') {
             return {
@@ -1043,6 +1087,11 @@
                         { x: baseX + 2300, y: 160, w: 160, h: 20 },
                         ...bridge
                     ],
+                    decoys: danger
+                        ? DECOY_CHIPS
+                            .slice(0, DECOY_COUNT[levelNumber])
+                            .map(chip => createDecoy(...chip))
+                        : [],
                     collectibles: [
                         createCollectible(baseX + 80, 250, 'int'),
                         createCollectible(baseX + 520, 145, 'string'),
@@ -1060,7 +1109,9 @@
                                 )
                             ]
                             : [])
-                    ],
+                    ].map((chip, chipIndex) => danger
+                        ? { ...chip, name: CHIP_NAMES[chipIndex] }
+                        : chip),
                     interactives: [
                         {
                             x: baseX + 110,
@@ -1227,6 +1278,11 @@
                 ...item,
                 collected: false
             }))
+            levelDecoys = (level.decoys || []).map(item => ({
+                ...item,
+                collected: false
+            }))
+            invalidWarning = null
             levelInteractives = settleFurniture(
                 level.interactives,
                 level.platforms
@@ -1406,7 +1462,7 @@
         function drawCollectibles() {
             const time = Date.now() / 300
 
-            levelCollectibles.forEach((item, index) => {
+            levelCollectibles.concat(levelDecoys).forEach((item, index) => {
                 if (item.collected) {
                     return
                 }
@@ -1450,13 +1506,91 @@
                     item.y + bob + 29
                 )
 
-                ctx.font = '11px Rajdhani'
-                ctx.fillText(
-                    'DATA',
-                    screenX + 22,
-                    item.y + bob + 48
-                )
+                if (item.name) {
+                    /* the variable name on a tag under the chip -
+                       on levels 8-10 this is what tells a real
+                       chip from a corrupted one */
+                    ctx.font = 'bold 13px Rajdhani'
+                    const tagWidth = ctx.measureText(item.name).width + 12
+
+                    ctx.fillStyle = 'rgba(8, 14, 28, 0.85)'
+                    ctx.fillRect(
+                        screenX + 22 - tagWidth / 2,
+                        item.y + bob + 51,
+                        tagWidth,
+                        17
+                    )
+                    ctx.fillStyle = '#fff'
+                    ctx.fillText(
+                        item.name,
+                        screenX + 22,
+                        item.y + bob + 64
+                    )
+                } else {
+                    ctx.font = '11px Rajdhani'
+                    ctx.fillText(
+                        'DATA',
+                        screenX + 22,
+                        item.y + bob + 48
+                    )
+                }
             })
+        }
+
+        /* The danger indicator for a corrupted chip: a red banner
+           naming the variable and why it is invalid. */
+        function drawInvalidWarning() {
+            if (!invalidWarning) {
+                return
+            }
+
+            const age = performance.now() - invalidWarning.at
+
+            if (age > 3600) {
+                invalidWarning = null
+                return
+            }
+
+            const alpha = age > 3000 ? (3600 - age) / 600 : 1
+            const pulse = 0.75 + 0.25 * Math.sin(age / 90)
+            const w = Math.min(660, WIDTH - 40)
+            const x = (WIDTH - w) / 2
+            const y = 140
+
+            ctx.save()
+            ctx.globalAlpha = alpha
+
+            ctx.fillStyle = '#5a0010'
+            ctx.strokeStyle = '#ff1744'
+            ctx.lineWidth = 3
+            ctx.shadowColor = '#ff1744'
+            ctx.shadowBlur = 12 + 18 * pulse
+            ctx.fillRect(x, y, w, 92)
+            ctx.strokeRect(x, y, w, 92)
+            ctx.shadowBlur = 0
+
+            ctx.textAlign = 'center'
+            ctx.fillStyle = '#ffd34e'
+            ctx.font = 'bold 22px Orbitron'
+            ctx.fillText('⚠ INVALID VARIABLE   -1 LIFE', WIDTH / 2, y + 30)
+
+            ctx.fillStyle = '#fff'
+            ctx.font = 'bold 18px Rajdhani'
+            ctx.fillText(
+                `${invalidWarning.label} ${invalidWarning.name} - not a variable this vault needs.`,
+                WIDTH / 2,
+                y + 56
+            )
+            ctx.fillStyle = '#ffd0d8'
+            ctx.font = '16px Rajdhani'
+            ctx.fillText(invalidWarning.reason, WIDTH / 2, y + 78)
+
+            /* red edge glow while the warning is up */
+            ctx.globalAlpha = alpha * 0.5 * pulse
+            ctx.lineWidth = 14
+            ctx.strokeRect(0, 0, WIDTH, HEIGHT)
+
+            ctx.restore()
         }
 
         function drawInteractives() {
@@ -1937,6 +2071,7 @@
             drawEnemies()
             drawPlayer()
             drawTerminalGate()
+            drawInvalidWarning()
 
             ctx.fillStyle = '#fff'
             ctx.font = '18px Rajdhani'
@@ -1954,6 +2089,17 @@
                     30,
                     99
                 )
+
+                const left = levelDecoys.filter(item => !item.collected).length
+
+                if (left) {
+                    ctx.fillStyle = '#ffd34e'
+                    ctx.fillText(
+                        `⚠ ${left} CORRUPTED CHIP${left > 1 ? 'S' : ''} - SKIP ANY INVALID VARIABLE NAME`,
+                        30,
+                        126
+                    )
+                }
             }
 
             ctx.fillStyle = '#ff6b00'
@@ -1988,7 +2134,7 @@
         /* Client rule: one hit - an enemy, a laser or a fall -
            costs one life straight away. There is no health bar
            to wear down first. */
-        function damagePlayer() {
+        function damagePlayer(stayPut = false) {
             if (performance.now() < invincibleUntil) {
                 return
             }
@@ -2002,10 +2148,10 @@
             void canvas.offsetWidth
             canvas.classList.add('damage-flash')
 
-            loseLife()
+            loseLife(stayPut)
         }
 
-        function loseLife() {
+        function loseLife(stayPut = false) {
             HackoAudio.play("wrong");
             playerLives--
 
@@ -2026,6 +2172,14 @@
             if (playerLives <= 0) {
                 updatePlayerHUD()
                 gameOver()
+                return
+            }
+
+            /* a corrupted chip costs the life where Hacko stands;
+               being thrown back to the entrance as well would be
+               a double penalty for one wrong pick */
+            if (stayPut) {
+                updatePlayerHUD()
                 return
             }
 
@@ -2220,6 +2374,33 @@
             )
         }
 
+        function updateDecoys() {
+            levelDecoys.forEach(decoy => {
+                if (decoy.collected) {
+                    return
+                }
+
+                const dx = player.x + player.width / 2 - (decoy.x + 22)
+                const dy = player.y + player.height / 2 - (decoy.y + 22)
+
+                if (dx * dx + dy * dy < 1300) {
+                    decoy.collected = true
+
+                    invalidWarning = {
+                        at: performance.now(),
+                        label: decoy.type === 'string' ? 'String' : decoy.type,
+                        name: decoy.name,
+                        reason: decoy.reason
+                    }
+
+                    /* the hit lands even mid-invincibility - the
+                       player chose to grab it */
+                    invincibleUntil = 0
+                    damagePlayer(true)
+                }
+            })
+        }
+
         function updatePhysics(deltaTime = 16.67) {
             const level = LEVELS[currentLevelIndex]
 
@@ -2402,6 +2583,7 @@
             updateEnemies(deltaTime)
             updateHazards()
             updateCollectibles()
+            updateDecoys()
 
             const targetCamera = Math.max(
                 0,

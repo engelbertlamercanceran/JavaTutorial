@@ -628,6 +628,67 @@ button{
 #down{grid-column:2}
 #right{grid-column:3}
 
+/* LOCKDOWN BUGS */
+.bug{
+    position:absolute;
+    width:34px;
+    height:34px;
+    font-size:26px;
+    line-height:34px;
+    text-align:center;
+    z-index:24;
+    pointer-events:none;
+    filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 4px rgba(255,45,85,.75)) drop-shadow(0 3px 2px rgba(0,0,0,.5));
+    animation:bugWobble .35s ease-in-out infinite alternate;
+    transition:opacity .6s, filter .6s;
+}
+.bug.hunter{
+    font-size:30px;
+    filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 5px rgba(180,92,255,.85)) drop-shadow(0 3px 2px rgba(0,0,0,.5));
+    animation:bugWobble .25s ease-in-out infinite alternate;
+}
+/* the code was accepted - the lockdown is over */
+.bug.off{
+    opacity:.25;
+    filter:grayscale(1);
+    animation:none;
+}
+@keyframes bugWobble{
+    from{transform:rotate(-8deg) translateY(0)}
+    to{transform:rotate(8deg) translateY(-2px)}
+}
+#player.blink{
+    animation:hackoBlink .2s steps(2) infinite;
+}
+@keyframes hackoBlink{
+    50%{opacity:.35}
+}
+#bugWarning{
+    display:none;
+    position:absolute;
+    top:88px;
+    left:50%;
+    transform:translateX(-50%);
+    background:rgba(120,0,20,.92);
+    color:#ffd34e;
+    border:2px solid #ff2d55;
+    border-radius:6px;
+    padding:8px 14px;
+    font-weight:bold;
+    font-size:13px;
+    letter-spacing:.04em;
+    white-space:nowrap;
+    z-index:130;
+    animation:warnPulse .6s ease-in-out infinite alternate;
+}
+@keyframes warnPulse{
+    from{box-shadow:0 0 6px #ff2d55}
+    to{box-shadow:0 0 22px #ff2d55}
+}
+@media (prefers-reduced-motion: reduce){
+    .bug,.bug.hunter,#bugWarning,#player.blink{animation:none}
+}
+
 /* LIFE LOST
    Client: a wrong answer only printed text in the terminal,
    easy to miss. Now the room flashes red and shakes, a -1
@@ -993,6 +1054,9 @@ button{
 
     <div id="interaction"></div>
 
+    <!-- shown while typing with the hunting bug close -->
+    <div id="bugWarning" aria-live="polite">⚠ A BUG IS COMING! PRESS ESC TO MOVE HACKO</div>
+
     <!-- shown for a moment whenever Hacko loses a life -->
     <div id="hitFlash" aria-hidden="true"></div>
     <div id="hitText" aria-live="assertive"></div>
@@ -1038,6 +1102,9 @@ Talk to Byte, Alex and Robo on every level - each one
 explains their part of the mission.
 The code in the terminal is almost right: find and fix
 the mistakes. Desks are in the way - walk around them.
+Every level is a different room. From level 2, lockdown
+bugs 🐞 patrol it - and from level 6 a hunting bug 👾
+chases Hacko even while you code. ESC leaves the code box.
 
 WASD / ARROW KEYS = MOVE
 E = INTERACT
@@ -1549,50 +1616,298 @@ xp:500
 
 
 /* =========================
-ROOM LAYOUT
+ROOM LAYOUTS
 =========================
 
-Everything in the classroom, in pixels from the top-left of
-the room. Solid pieces block Hacko; tools/check-classroom.js
-flood-fills this layout to prove every character and item can
-still be reached around the desks. */
+Client request: every level is set up differently - its own
+furniture, its own spots for the characters, the computer and
+the items - and from level 2 on there are lockdown bugs to dodge.
+
+Everything is in pixels from the top-left of the room. Solid
+pieces block Hacko; tools/check-classroom.js flood-fills every
+layout to prove each character, item and the door can be
+reached, that each can be reached from somewhere OFF the bugs'
+patrol lines, that no bug walks through furniture and that the
+start spot is clear of them.
+
+    bugs:   patrol lines - each bug walks its path and back
+    hunter: where the hunting bug starts (level 6 on). It
+            creeps after Hacko the whole time, coding included. */
 
 const DESK_COLUMNS=[150,300,450];
 const DESK_ROWS=[196,304];
 
-const ROOM={
+/* a student desk with its chair tucked in */
+const desk=(x,y,w=104)=>[
+    {type:"desk",x,y,w,h:44},
+    {type:"chair",x:x+Math.round(w/2)-17,y:y+48,w:34,h:24}
+];
+const desks=(xs,ys,w)=>ys.flatMap(y=>xs.flatMap(x=>desk(x,y,w)));
 
-    start:{x:170,y:400},
+/* the table the computer stands on */
+const pcTable=(x,y)=>({type:"computertable",x:x-16,y:y+36,w:76,h:40});
 
-    pieces:[
-        {type:"rug",x:130,y:178,w:450,h:222,solid:false},
-        {type:"teacherdesk",x:330,y:104,w:150,h:46},
-        {type:"lockers",x:566,y:88,w:96,h:40},
-        {type:"bookshelf",x:690,y:96,w:58,h:112},
-        {type:"plant",x:118,y:96,w:36,h:40},
-        {type:"computertable",x:672,y:262,w:76,h:40},
-        {type:"bin",x:24,y:430,w:30,h:36},
+const ROOMS=[
 
-        /* two rows of three student desks, each with its chair */
-        ...DESK_ROWS.flatMap(y=>DESK_COLUMNS.flatMap(x=>[
-            {type:"desk",x,y,w:104,h:44},
-            {type:"chair",x:x+35,y:y+48,w:34,h:24}
-        ]))
-    ],
+    /* 1 - the original room, no bugs: learn the controls */
+    {
+        name:"HOMEROOM",
+        start:{x:170,y:400},
+        pieces:[
+            {type:"rug",x:130,y:178,w:450,h:222,solid:false},
+            {type:"teacherdesk",x:330,y:104,w:150,h:46},
+            {type:"lockers",x:566,y:88,w:96,h:40},
+            {type:"bookshelf",x:690,y:96,w:58,h:112},
+            {type:"plant",x:118,y:96,w:36,h:40},
+            {type:"computertable",x:672,y:262,w:76,h:40},
+            {type:"bin",x:24,y:430,w:30,h:36},
+            ...desks(DESK_COLUMNS,DESK_ROWS)
+        ],
+        spots:{
+            teacher:{x:500,y:100}, alex:{x:84,y:318}, robo:{x:640,y:396},
+            computer:{x:688,y:226}, key:{x:600,y:200}, battery:{x:410,y:420},
+            book:{x:640,y:150}
+        },
+        bugs:[]
+    },
 
-    /* where the characters and items stand - each is a DOM
-       element already in the page */
-    spots:{
-        teacher:{x:500,y:100},
-        alex:{x:84,y:318},
-        robo:{x:640,y:396},
-        computer:{x:688,y:226},
-        key:{x:600,y:200},
-        battery:{x:410,y:420},
-        book:{x:640,y:150}
+    /* 2 - two columns of desks */
+    {
+        name:"STUDY HALL",
+        start:{x:150,y:410},
+        pieces:[
+            {type:"rug",x:180,y:130,w:400,h:320,solid:false},
+            {type:"teacherdesk",x:580,y:100,w:150,h:46},
+            {type:"bookshelf",x:698,y:190,w:50,h:112},
+            {type:"lockers",x:330,y:88,w:96,h:40},
+            {type:"plant",x:150,y:96,w:36,h:40},
+            pcTable(620,330),
+            {type:"bin",x:24,y:440,w:30,h:36},
+            ...desks([220,450],[150,260,370])
+        ],
+        spots:{
+            teacher:{x:620,y:160}, alex:{x:590,y:420}, robo:{x:80,y:300},
+            computer:{x:620,y:330}, key:{x:350,y:140}, battery:{x:690,y:430},
+            book:{x:590,y:250}
+        },
+        bugs:[
+            {path:[[350,150],[350,430]],speed:1.1}
+        ]
+    },
+
+    /* 3 - desks in a horseshoe round the rug */
+    {
+        name:"SEMINAR ROOM",
+        start:{x:380,y:300},
+        pieces:[
+            {type:"rug",x:300,y:230,w:220,h:160,solid:false},
+            {type:"teacherdesk",x:340,y:420,w:150,h:46},
+            {type:"lockers",x:640,y:88,w:96,h:40},
+            {type:"plant",x:700,y:440,w:36,h:40},
+            pcTable(160,400),
+            {type:"bin",x:24,y:300,w:30,h:36},
+            ...desks([220,370,520],[140]),
+            ...desk(170,260),
+            ...desk(570,260)
+        ],
+        spots:{
+            teacher:{x:520,y:400}, alex:{x:690,y:170}, robo:{x:260,y:400},
+            computer:{x:160,y:400}, key:{x:690,y:330}, battery:{x:400,y:220},
+            book:{x:50,y:400}
+        },
+        bugs:[
+            {path:[[160,220],[620,220]],speed:1.2}
+        ]
+    },
+
+    /* 4 - staggered desks */
+    {
+        name:"CHECKERBOARD",
+        start:{x:130,y:420},
+        pieces:[
+            {type:"teacherdesk",x:560,y:100,w:150,h:46},
+            {type:"bookshelf",x:150,y:96,w:58,h:70},
+            {type:"plant",x:720,y:440,w:36,h:40},
+            pcTable(700,230),
+            {type:"bin",x:24,y:300,w:30,h:36},
+            ...desk(180,175), ...desk(430,175),
+            ...desk(305,290), ...desk(555,290),
+            ...desk(180,395), ...desk(430,395)
+        ],
+        spots:{
+            teacher:{x:380,y:100}, alex:{x:600,y:410}, robo:{x:320,y:190},
+            computer:{x:700,y:230}, key:{x:200,y:300}, battery:{x:470,y:300},
+            book:{x:560,y:190}
+        },
+        bugs:[
+            {path:[[160,250],[660,250]],speed:1.2},
+            {path:[[300,455],[640,455]],speed:1.3}
+        ]
+    },
+
+    /* 5 - two long lab benches */
+    {
+        name:"COMPUTER LAB",
+        start:{x:120,y:420},
+        pieces:[
+            {type:"computertable",x:200,y:170,w:300,h:40},
+            {type:"computertable",x:300,y:300,w:300,h:40},
+            {type:"lockers",x:600,y:88,w:96,h:40},
+            {type:"bookshelf",x:698,y:330,w:50,h:112},
+            {type:"teacherdesk",x:330,y:430,w:150,h:46},
+            {type:"plant",x:150,y:96,w:36,h:40},
+            {type:"bin",x:24,y:300,w:30,h:36}
+        ],
+        spots:{
+            teacher:{x:500,y:410}, alex:{x:560,y:160}, robo:{x:200,y:280},
+            computer:{x:260,y:134}, key:{x:650,y:230}, battery:{x:420,y:230},
+            book:{x:700,y:140}
+        },
+        bugs:[
+            {path:[[180,240],[640,240]],speed:1.3},
+            {path:[[640,140],[640,400]],speed:1.2}
+        ]
+    },
+
+    /* 6 - library stacks; the hunter arrives */
+    {
+        name:"LIBRARY",
+        start:{x:120,y:420},
+        pieces:[
+            {type:"bookshelf",x:220,y:96,w:58,h:160},
+            {type:"bookshelf",x:380,y:230,w:58,h:160},
+            {type:"bookshelf",x:540,y:96,w:58,h:160},
+            {type:"desk",x:640,y:330,w:104,h:44},
+            {type:"chair",x:675,y:378,w:34,h:24},
+            {type:"teacherdesk",x:630,y:96,w:120,h:40},
+            {type:"plant",x:700,y:440,w:36,h:40},
+            {type:"bin",x:24,y:300,w:30,h:36}
+        ],
+        spots:{
+            teacher:{x:300,y:130}, alex:{x:470,y:330}, robo:{x:640,y:180},
+            computer:{x:700,y:250}, key:{x:470,y:420}, battery:{x:160,y:300},
+            book:{x:320,y:270}
+        },
+        bugs:[
+            {path:[[260,440],[620,440]],speed:1.3},
+            {path:[[460,120],[460,300]],speed:1.2}
+        ],
+        hunter:{x:700,y:290}
+    },
+
+    /* 7 - desks pushed together in pods */
+    {
+        name:"GROUP WORK",
+        start:{x:130,y:420},
+        pieces:[
+            {type:"rug",x:150,y:140,w:560,h:330,solid:false},
+            {type:"desk",x:180,y:160,w:104,h:44}, {type:"desk",x:180,y:204,w:104,h:44},
+            {type:"desk",x:470,y:160,w:104,h:44}, {type:"desk",x:470,y:204,w:104,h:44},
+            {type:"desk",x:320,y:330,w:104,h:44}, {type:"desk",x:320,y:374,w:104,h:44},
+            {type:"desk",x:600,y:330,w:104,h:44}, {type:"desk",x:600,y:374,w:104,h:44},
+            {type:"teacherdesk",x:330,y:100,w:110,h:40},
+            {type:"lockers",x:640,y:88,w:96,h:40},
+            pcTable(700,230)
+        ],
+        spots:{
+            teacher:{x:400,y:200}, alex:{x:220,y:290}, robo:{x:520,y:290},
+            computer:{x:700,y:230}, key:{x:340,y:440}, battery:{x:620,y:440},
+            book:{x:590,y:120}
+        },
+        bugs:[
+            {path:[[160,280],[620,280]],speed:1.4},
+            {path:[[310,130],[310,270]],speed:1.2},
+            {path:[[540,330],[540,450]],speed:1.3}
+        ],
+        hunter:{x:700,y:140}
+    },
+
+    /* 8 - exam hall, three rows of four */
+    {
+        name:"EXAM HALL",
+        start:{x:110,y:420},
+        pieces:[
+            {type:"teacherdesk",x:330,y:96,w:150,h:40},
+            {type:"plant",x:720,y:96,w:36,h:40},
+            {type:"bin",x:24,y:300,w:30,h:36},
+            pcTable(170,96),
+            ...desks([170,310,450,590],[160,270,380],84)
+        ],
+        spots:{
+            teacher:{x:500,y:92}, alex:{x:700,y:420}, robo:{x:700,y:226},
+            computer:{x:170,y:96}, key:{x:260,y:320}, battery:{x:540,y:430},
+            book:{x:690,y:160}
+        },
+        bugs:[
+            {path:[[150,236],[630,236]],speed:1.5},
+            {path:[[630,346],[150,346]],speed:1.5},
+            {path:[[536,150],[536,450]],speed:1.3}
+        ],
+        hunter:{x:700,y:320}
+    },
+
+    /* 9 - corridors of lockers */
+    {
+        name:"LOCKER MAZE",
+        start:{x:110,y:420},
+        pieces:[
+            {type:"lockers",x:170,y:200,w:200,h:40},
+            {type:"lockers",x:470,y:200,w:200,h:40},
+            {type:"lockers",x:300,y:340,w:200,h:40},
+            {type:"bookshelf",x:600,y:300,w:58,h:140},
+            {type:"teacherdesk",x:330,y:96,w:150,h:40},
+            {type:"plant",x:150,y:96,w:36,h:40},
+            pcTable(700,140),
+            {type:"bin",x:24,y:300,w:30,h:36}
+        ],
+        spots:{
+            teacher:{x:520,y:100}, alex:{x:690,y:260}, robo:{x:690,y:400},
+            computer:{x:700,y:140}, key:{x:400,y:420}, battery:{x:520,y:270},
+            book:{x:250,y:130}
+        },
+        bugs:[
+            {path:[[160,290],[560,290]],speed:1.5},
+            {path:[[420,130],[420,280]],speed:1.4},
+            {path:[[540,250],[540,440]],speed:1.5}
+        ],
+        hunter:{x:700,y:260}
+    },
+
+    /* 10 - the teacher's desk in the middle of the room */
+    {
+        name:"LOCKDOWN CORE",
+        start:{x:110,y:420},
+        pieces:[
+            {type:"rug",x:250,y:220,w:300,h:140,solid:false},
+            {type:"teacherdesk",x:330,y:260,w:150,h:46},
+            {type:"bookshelf",x:200,y:96,w:58,h:112},
+            {type:"bookshelf",x:560,y:96,w:58,h:112},
+            {type:"lockers",x:200,y:400,w:120,h:40},
+            {type:"lockers",x:500,y:400,w:120,h:40},
+            pcTable(700,300),
+            {type:"plant",x:720,y:96,w:36,h:40},
+            {type:"bin",x:24,y:300,w:30,h:36},
+            ...desk(170,250),
+            ...desk(560,250)
+        ],
+        spots:{
+            teacher:{x:380,y:196}, alex:{x:100,y:330}, robo:{x:400,y:420},
+            computer:{x:700,y:300}, key:{x:680,y:160}, battery:{x:120,y:120},
+            book:{x:660,y:430}
+        },
+        bugs:[
+            {path:[[160,360],[660,360]],speed:1.6},
+            {path:[[290,130],[290,360]],speed:1.4},
+            {path:[[500,360],[500,130]],speed:1.4},
+            {path:[[630,120],[630,200]],speed:1.5}
+        ],
+        hunter:{x:700,y:440}
     }
 
-};
+];
+
+/* the layout in play - loadLevel() switches it */
+let ROOM=ROOMS[0];
 
 /* Hacko collides by the feet, not the whole sprite, so the
    player can walk up close behind a desk the way people do. */
@@ -1601,19 +1916,27 @@ const FEET={x:10,y:48,w:32,h:22};
 /* characters block too, by their feet */
 const PEOPLE=["teacher","alex","robo"];
 
-const SOLIDS=[
-    ...ROOM.pieces.filter(piece=>piece.solid!==false),
-    ...PEOPLE.map(name=>({
-        x:ROOM.spots[name].x,
-        y:ROOM.spots[name].y+40,
-        w:48,
-        h:18
-    }))
-];
+function solidsFor(room){
+    return [
+        ...room.pieces.filter(piece=>piece.solid!==false),
+        ...PEOPLE.map(name=>({
+            x:room.spots[name].x,
+            y:room.spots[name].y+40,
+            w:48,
+            h:18
+        }))
+    ];
+}
+
+let SOLIDS=solidsFor(ROOM);
+
+/* end of room data - tools/check-classroom.js reads up to here */
 
 function renderRoom(){
 
     const box=$("furniture");
+
+    box.innerHTML="";
 
     ROOM.pieces.forEach(piece=>{
         const el=document.createElement("div");
@@ -1790,6 +2113,16 @@ function loadLevel(){
 
     /* Client rule: three lives per level, not per mission */
     game.lives=3;
+
+    /* each level has its own room - see ROOMS */
+    ROOM=ROOMS[game.level-1]||ROOMS[0];
+    SOLIDS=solidsFor(ROOM);
+    renderRoom();
+    resetBugs();
+
+    /* a new room - Hacko starts at its start spot, never
+       wherever he stood in the last one (inside a desk) */
+    placePlayerAtStart();
 
     $("levelTitle").textContent=
         level.title;
@@ -2498,6 +2831,305 @@ function showLifeLost(){
 }
 
 
+/* Client rule: out of lives drops back one level, rather than
+   silently topping the lives back up. Shared by wrong answers
+   and lockdown bugs. */
+function outOfLives(reason){
+
+    game.lives=3;
+
+    const wasLevel=game.level;
+
+    const back=
+        window.HackoStore
+        ?HackoStore.loseAllLives(8,game.level-1)
+        :Math.max(0,game.level-2);
+
+    game.level=back+1;
+
+    HackoAudio.play("gameover");
+    updateHUD();
+    loadLevel();
+    placePlayerAtStart();
+
+    /* loadLevel() leaves "Terminal ready." in the terminal,
+       which on its own read as if the third answer had
+       passed - say plainly what happened instead */
+    terminalOutput(
+        "error",
+
+        "💥 OUT OF LIVES!\n\n"+
+        reason+"\n"+
+        (
+            game.level===wasLevel
+            ?"Level "+wasLevel+" restarts"
+            :"Back to level "+game.level
+        )+
+        " with 3 new lives.\n\n"+
+        "💡 Read the objective again - names must match exactly."
+    );
+
+}
+
+
+/* =========================
+LOCKDOWN BUGS
+=========================
+
+Client request: enemies that challenge Hacko, so there is
+something intense going on while the player codes.
+
+Patrol bugs walk their line in ROOM.bugs and back. From level
+6 a hunter also creeps after Hacko the whole time - typing in
+the terminal included - so the player has to keep an eye on the
+room: ESC leaves the code box to dodge, then click back in.
+
+A touch costs a life and sends Hacko back to the start. They
+freeze while a dialogue is open, and shut down the moment the
+code is accepted - the lockdown is over, and a solved level
+must never be lost to a bug on the walk to the door. */
+
+const BUG_SIZE=34;
+const HUNTER_SPEED=[0,0,0,0,0,0.55,0.62,0.7,0.78,0.86];
+
+let bugs=[];
+let bugGraceUntil=0;
+let lastBugFrame=0;
+
+function bugSprite(kind){
+    const el=document.createElement("div");
+    el.className="bug "+kind;
+    el.textContent=kind==="hunter"?"👾":"🐞";
+    el.setAttribute("aria-hidden","true");
+    $("world").appendChild(el);
+    return el;
+}
+
+/* where a bug is after walking d pixels along its path (and
+   back again - a patrol, not a loop) */
+function pathPoint(path,d){
+
+    const legs=[];
+    let total=0;
+
+    for(let i=0;i+1<path.length;i++){
+        const len=Math.hypot(path[i+1][0]-path[i][0],path[i+1][1]-path[i][1]);
+        legs.push(len);
+        total+=len;
+    }
+
+    if(!total) return {x:path[0][0],y:path[0][1]};
+
+    let along=d%(total*2);
+    if(along>total) along=total*2-along;
+
+    for(let i=0;i<legs.length;i++){
+        if(along<=legs[i]){
+            const t=legs[i]?along/legs[i]:0;
+            return {
+                x:path[i][0]+(path[i+1][0]-path[i][0])*t,
+                y:path[i][1]+(path[i+1][1]-path[i][1])*t
+            };
+        }
+        along-=legs[i];
+    }
+
+    const last=path[path.length-1];
+    return {x:last[0],y:last[1]};
+}
+
+function resetBugs(){
+
+    bugs.forEach(bug=>bug.el.remove());
+
+    bugs=(ROOM.bugs||[]).map(def=>({
+        kind:"patrol",
+        def,
+        walked:0,
+        x:def.path[0][0],
+        y:def.path[0][1],
+        el:bugSprite("patrol")
+    }));
+
+    if(ROOM.hunter){
+        bugs.push({
+            kind:"hunter",
+            home:{...ROOM.hunter},
+            x:ROOM.hunter.x,
+            y:ROOM.hunter.y,
+            stuck:0,
+            sidestep:0,
+            el:bugSprite("hunter")
+        });
+    }
+
+    /* a moment to look around before anything moves */
+    bugGraceUntil=performance.now()+2500;
+
+    drawBugs();
+}
+
+function drawBugs(){
+
+    const off=$("door").classList.contains("open");
+
+    bugs.forEach(bug=>{
+        bug.el.style.left=bug.x+"px";
+        bug.el.style.top=bug.y+"px";
+        bug.el.classList.toggle("off",off);
+    });
+
+    $("player").classList.toggle(
+        "blink",
+        !off && bugs.length>0 && performance.now()<bugGraceUntil
+    );
+
+}
+
+/* the hunter's feet - it slides round furniture like Hacko */
+function hunterBlocked(x,y){
+    const fx=x+8, fy=y+22, fw=18, fh=12;
+    return SOLIDS.some(r=>
+        fx<r.x+r.w && fx+fw>r.x &&
+        fy<r.y+r.h && fy+fh>r.y
+    );
+}
+
+function moveHunter(bug,step,px,py){
+
+    const cx=bug.x+BUG_SIZE/2;
+    const cy=bug.y+BUG_SIZE/2;
+
+    let dx=px-cx;
+    let dy=py-cy;
+    const len=Math.hypot(dx,dy)||1;
+
+    dx=dx/len*step;
+    dy=dy/len*step;
+
+    /* stuck on a desk edge: walk sideways for a bit */
+    if(bug.sidestep>0){
+        bug.sidestep--;
+        if(Math.abs(px-cx)>Math.abs(py-cy)){
+            dx=0; dy=(bug.sideDir||1)*step;
+        }else{
+            dy=0; dx=(bug.sideDir||1)*step;
+        }
+    }
+
+    const fromX=bug.x, fromY=bug.y;
+    const maxX=$("world").clientWidth-BUG_SIZE;
+    const maxY=$("world").clientHeight-BUG_SIZE;
+
+    let x=Math.max(0,Math.min(maxX,bug.x+dx));
+    let y=Math.max(82,Math.min(maxY,bug.y+dy));
+
+    if(hunterBlocked(x,fromY)) x=fromX;
+    if(hunterBlocked(x,y)) y=fromY;
+
+    bug.x=x;
+    bug.y=y;
+
+    if(Math.abs(x-fromX)+Math.abs(y-fromY)<step*0.25){
+        bug.stuck++;
+        if(bug.stuck>20){
+            bug.stuck=0;
+            bug.sidestep=45;
+            bug.sideDir=Math.random()<0.5?-1:1;
+        }
+    }else{
+        bug.stuck=0;
+    }
+}
+
+function updateBugs(){
+
+    const now=performance.now();
+    const dt=Math.min(50,now-(lastBugFrame||now));
+    lastBugFrame=now;
+
+    if(!bugs.length) return;
+
+    if(!started || paused || $("door").classList.contains("open")){
+        drawBugs();
+        $("bugWarning").style.display="none";
+        return;
+    }
+
+    const frames=dt/16.67;
+    const player=$("player");
+    const px=player.offsetLeft+FEET.x+FEET.w/2;
+    const py=player.offsetTop+FEET.y+FEET.h/2;
+    const grace=now<bugGraceUntil;
+
+    let hunterNear=Infinity;
+
+    bugs.forEach(bug=>{
+
+        if(bug.kind==="patrol"){
+            bug.walked+=bug.def.speed*frames;
+            const at=pathPoint(bug.def.path,bug.walked);
+            bug.x=at.x;
+            bug.y=at.y;
+        }else if(!grace){
+            moveHunter(bug,HUNTER_SPEED[game.level-1]*frames,px,py);
+        }
+
+        const d=Math.hypot(bug.x+BUG_SIZE/2-px,bug.y+BUG_SIZE/2-py);
+
+        if(bug.kind==="hunter") hunterNear=Math.min(hunterNear,d);
+
+        if(!grace && d<26){
+            bugHit(bug);
+        }
+    });
+
+    drawBugs();
+
+    /* typing in the code box, with the hunter closing in */
+    const typing=document.activeElement===$("editor");
+    $("bugWarning").style.display=
+        typing && hunterNear<170
+        ?"block"
+        :"none";
+}
+
+function bugHit(bug){
+
+    HackoAudio.play("hit");
+
+    game.lives--;
+    game.combo=0;
+    keys={};
+
+    showLifeLost();
+
+    if(game.lives<=0){
+        outOfLives(
+            bug.kind==="hunter"
+            ?"The hunting bug caught you on your last life."
+            :"A lockdown bug caught you on your last life."
+        );
+        return;
+    }
+
+    placePlayerAtStart();
+
+    /* the hunter goes back to its corner */
+    bugs.forEach(other=>{
+        if(other.kind==="hunter"){
+            other.x=other.home.x;
+            other.y=other.home.y;
+        }
+    });
+
+    bugGraceUntil=performance.now()+1800;
+
+    updateHUD();
+    saveGame();
+}
+
+
 /* =========================
 RESTART LEVEL
 ========================= */
@@ -2722,46 +3354,13 @@ function runCode(){
 
                 showLifeLost();
 
-    /* Client rule: out of lives drops back one level, rather
-       than silently topping the lives back up. */
-    if(game.lives<=0){
+                /* Client rule: out of lives drops back one level,
+                   rather than silently topping the lives back up. */
+                if(game.lives<=0){
+                    outOfLives("That was your 3rd wrong answer.");
+                    return;
+                }
 
-        game.lives=3;
-
-        const wasLevel=game.level;
-
-        const back=
-            window.HackoStore
-            ?HackoStore.loseAllLives(8,game.level-1)
-            :Math.max(0,game.level-2);
-
-        game.level=back+1;
-
-        HackoAudio.play("gameover");
-        updateHUD();
-        loadLevel();
-        placePlayerAtStart();
-
-        /* loadLevel() leaves "Terminal ready." in the terminal,
-           which on its own read as if the third answer had
-           passed - say plainly what happened instead */
-        terminalOutput(
-            "error",
-
-            "💥 OUT OF LIVES!\n\n"+
-            "That was your 3rd wrong answer.\n"+
-            (
-                game.level===wasLevel
-                ?"Level "+wasLevel+" restarts"
-                :"Back to level "+game.level
-            )+
-            " with 3 new lives.\n\n"+
-            "💡 Read the objective again - names must match exactly."
-        );
-
-        return;
-
-    }
                 game.combo=0;
 
                 terminalOutput(
@@ -2989,6 +3588,12 @@ document.addEventListener(
                 runCode();
             }
 
+            /* ESC steps out of the code box, so WASD moves Hacko
+               again - the quick way to dodge a bug mid-code */
+            if(key==="escape"){
+                event.target.blur();
+            }
+
             return;
 
         }
@@ -3201,6 +3806,8 @@ function gameLoop(){
 
     movePlayer();
 
+    updateBugs();
+
     checkNearby();
 
     checkExit();
@@ -3216,12 +3823,11 @@ function gameLoop(){
 INITIALIZE
 ========================= */
 
-renderRoom();
-
 loadGame();
 
 updateHUD();
 
+/* builds the room for the saved level and puts Hacko in it */
 loadLevel();
 
 gameLoop();

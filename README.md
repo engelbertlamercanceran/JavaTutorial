@@ -17,6 +17,7 @@ hack/
     storage.js     accounts, progress, autosave, export/import
     hint.js        tiered hints + a guard against leaking answers
     javaloop.js    runs the Java the loop missions teach, and diffs output
+    loading.js     the start-up loading screen, shown once per session
   tools/           node checks, see Testing
   Badges/          the ten mission badges
   login.html       pick a player
@@ -111,15 +112,15 @@ node tools/test-all.js
 | `check-items.js` | every Array Adventure item is distinguishable, and every silhouette draws |
 | `check-java.js` | lesson content is Java; correct answers pass and starter skeletons do not |
 | `check-jumps.js` | every Escape Room pickup is reachable, flagging anything above 70% of a perfect double jump |
-| `check-escape.js` | plays every Escape Room level with the game's physics - solid furniture, live floor and all - and proves every pickup and the vault door can be reached |
-| `check-classroom.js` | walks Classroom Rescue's room around the solid desks and proves every character, item and the exit can be reached |
-| `check-labyrinth.js` | every Conditional Labyrinth maze: all gates reachable, nothing sealed off, hearts and sentries placed fairly, no two levels alike |
+| `check-escape.js` | plays every Escape Room level with the game's physics - solid furniture, live floor and all - and proves every pickup and the vault door can be reached without touching a corrupted chip (levels 8-10), and that each corrupted chip is close enough to the route to be a threat |
+| `check-classroom.js` | walks each of Classroom Rescue's ten rooms around the solid furniture and proves every character, item and the exit can be reached - from a spot off the lockdown bugs' patrol lines - that no bug walks through furniture, the start is clear of them, and no two rooms are alike |
+| `check-labyrinth.js` | every Conditional Labyrinth maze: all gates reachable, nothing sealed off, hearts and sentries placed fairly, bricks only on open floor away from the start, bombs reachable without bombing anything, drones starting far away, no two levels alike |
 | `check-secret.js` | The Secret Message's per-level spawn: on a floor, off clues and patrol lines, room to move before the first guard, every clue, the door and the exit reachable |
 | `check-challenge.js` | every Conditional Challenge maze: right size, walled in, nothing sealed off, clues and bomb reachable, birds nest away from the start, no two levels alike |
-| `check-arrays.js` | every Array Adventure map: items and portal reachable without stepping on spikes, each mission keeps its item/trap/glitch counts, glitches start away from Hacko |
+| `check-arrays.js` | every Array Adventure map: items and portal reachable without stepping on spikes, each mission keeps its item/trap/glitch counts, glitches start away from Hacko, no glitch lane without places to dodge, and no glitch patrolling the only tunnel into the portal |
 | `check-fortress.js` | every Function Fortress stage: each hop inside Hacko's jump (moving platforms and the jump pad included), sentries clear of the start, and the door ledge out of reach until the program runs |
 | `test-javaloop.js` | the Java interpreter: same output from different code must always pass |
-| `check-shields.js` | every Loop Master phase is beatable, a hardcoded count fails the while phases, and a while loop loses the do-while phase |
+| `check-shields.js` | every Loop Master phase and every round of the phase 10 finale is beatable, a hardcoded count fails the while phases and rounds, and a while loop loses the do-while ones |
 | `check-wiring.js` | games load the shared modules, report to the map, resume after boot, carry music, and every badge exists |
 
 Run `check-mazes.js` after editing any maze, `check-escape.js` after editing
@@ -175,10 +176,10 @@ after editing any lesson. Both catch classes of bug that shipped unnoticed befor
 
 ## Known gaps
 
-- Classroom Rescue is a single room (now furnished, with solid desks). The
-  client asked for a Pokémon-gym-style multi-room escape; the concept
-  conflicts with the spec's "Classes and Objects" brief for mission 8 and
-  needs a decision before building.
+- Classroom Rescue now has a different room on every level, with patrolling
+  bugs from level 2 and a hunting bug from level 6. The client's earlier
+  Pokémon-gym-style multi-room escape is still not built; it conflicts with
+  the spec's "Classes and Objects" brief for mission 8 and needs a decision.
 - `dashboard.html` still reads the old `hackoProgress` key and has not been
   moved onto the shared store.
 - `.removed/` holds six dead files — duplicates, a broken stub and two empty
