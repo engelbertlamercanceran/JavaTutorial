@@ -235,6 +235,25 @@ Object.keys(GAMES).concat(["aa/debugging.html"]).forEach(function (file) {
 
 
 /* ---------------------------------------------------
+   LEVEL 1 TUTORIAL
+   The panel asked for a Level 1 tutorial in every game.
+--------------------------------------------------- */
+
+console.log("tutorial");
+
+Object.keys(GAMES).concat(["aa/debugging.html", "conditionallabyrinth.html"]).forEach(function (file) {
+    var src = read(file);
+    /* the gym's game code lives in aa/script.js */
+    var code = file === "aa/debugging.html" ? read("aa/script.js") : src;
+    var briefing = src.indexOf("shared/briefing.js");
+
+    ok(file + " loads the tutorial after the briefing",
+        briefing !== -1 && src.indexOf("shared/tutorial.js") > briefing);
+    ok(file + " defines its Level 1 tutorial", code.indexOf("HackoTutorial.define(") !== -1);
+});
+
+
+/* ---------------------------------------------------
    CERTIFICATE
 --------------------------------------------------- */
 

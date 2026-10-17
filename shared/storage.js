@@ -96,6 +96,7 @@
     function blankMission() {
         return {
             levelsDone: [],
+            xpPaid: [],
             resumeLevel: 0,
             lives: DEFAULT_LIVES,
             bestXP: 0,
@@ -166,6 +167,11 @@
             dst.levelsDone = Array.isArray(src.levelsDone)
                 ? src.levelsDone.slice()
                 : [];
+
+            /* records from before xpPaid existed paid for what they cleared */
+            dst.xpPaid = Array.isArray(src.xpPaid)
+                ? src.xpPaid.slice()
+                : dst.levelsDone.slice();
 
             dst.resumeLevel = Number(src.resumeLevel) || 0;
             dst.lives = Number(src.lives) || DEFAULT_LIVES;
@@ -440,13 +446,28 @@
         var newBadge = false;
         var finished = false;
 
+        /* Test mode opens missions the student never earned, so
+           nothing played in it counts - no levels, XP, badges or
+           certificate. Only the resume point moves, so a tester
+           who reloads lands back where they were checking. */
+        if (isTestMode()) {
+            return setResumeLevel(id, Math.min(index + 1, totalLevels(id) - 1));
+        }
+
         var result = update(function (record) {
 
             var m = record.missions[key] || blankMission();
 
+            markPaid(m);
+
             if (m.levelsDone.indexOf(index) === -1) {
                 m.levelsDone.push(index);
                 m.levelsDone.sort(function (a, b) { return a - b; });
+            }
+
+            /* a level re-cleared after losing all lives pays nothing */
+            if (m.xpPaid.indexOf(index) === -1) {
+                m.xpPaid.push(index);
                 record.totalXP += gained;
             }
 
@@ -520,7 +541,13 @@
 
         var record = load();
 
-        return !!record && allCompleteIn(record);
+        return !!record && isCertifiedIn(record);
+    }
+
+    /* Once earned it is kept, even if losing all lives later
+       un-clears a level of a finished mission. */
+    function isCertifiedIn(record) {
+        return !!record.certifiedAt || allCompleteIn(record);
     }
 
     /* Details to print, or null if not earned yet. A player
@@ -530,7 +557,7 @@
 
         var record = load();
 
-        if (!record || !allCompleteIn(record)) {
+        if (!record || !isCertifiedIn(record)) {
             return null;
         }
 
@@ -677,15 +704,67 @@
     /* The client's rule: every mission has three lives, and
        running out drops the player back ONE level rather than
        restarting the mission or silently resetting.
+
+       The panel added: the level they drop back to has to be
+       cleared again before anything after it opens - die on
+       level 9 and level 9 stays locked until level 8 is beaten
+       again. So everything from that level on is un-cleared.
+       That can take a mission back under the 70% gate and lock
+       the next one again; that is intended. XP is not paid a
+       second time (xpPaid remembers), and a badge or
+       certificate already earned is kept.
+
        Returns the level they should land on. */
     function loseAllLives(id, currentLevel) {
 
+        var key = String(id);
         var back = Math.max(0, Number(currentLevel) - 1);
 
-        setLives(id, DEFAULT_LIVES);
-        setResumeLevel(id, back);
+        update(function (record) {
+
+            var m = record.missions[key] || blankMission();
+
+            /* test mode keeps its hands off a student's real record */
+            if (!isTestMode()) {
+                markPaid(m);
+                m.levelsDone = m.levelsDone.filter(function (i) { return i < back; });
+                m.completed = m.levelsDone.length >= m.totalLevels;
+            }
+
+            m.lives = DEFAULT_LIVES;
+            m.resumeLevel = back;
+
+            record.missions[key] = m;
+        });
 
         return back;
+    }
+
+    /* every level ever cleared has paid its XP */
+    function markPaid(m) {
+        m.levelsDone.forEach(function (i) {
+            if (m.xpPaid.indexOf(i) === -1) {
+                m.xpPaid.push(i);
+            }
+        });
+    }
+
+    /* Level N opens once level N-1 is cleared. Every game's level
+       select asks here, so a level locked by loseAllLives is
+       locked the same way in all ten games. */
+    function isLevelOpen(id, levelIndex) {
+
+        var index = Number(levelIndex);
+
+        if (index <= 0 || isTestMode()) {
+            return true;
+        }
+
+        return isLevelDone(id, index - 1);
+    }
+
+    function isLevelDone(id, levelIndex) {
+        return mission(id).levelsDone.indexOf(Number(levelIndex)) !== -1;
     }
 
     function getLives(id) {
@@ -1230,6 +1309,18 @@
        visible way to go and start it.
     --------------------------------------------------- */
 
+    /* aa/ sits one folder down, so links to the map have to climb out */
+    function mapHref() {
+        return (global.location && /\/aa\//.test(global.location.pathname))
+            ? "../map.html"
+            : "map.html";
+    }
+
+    function currentPage() {
+        return (global.location && global.location.pathname || "")
+            .split("/").pop().toLowerCase();
+    }
+
     function mountMapLink() {
 
         var doc = global.document;
@@ -1241,18 +1332,34 @@
         var link = doc.createElement("a");
 
         link.id = "hacko-map-link";
+        link.href = mapHref();
 
-        /* aa/ sits one folder down, so the link has to climb out */
-        link.href =
-            (global.location && /\/aa\//.test(global.location.pathname))
-                ? "../map.html"
-                : "map.html";
+        /* The panel asked for EXIT with an "are you sure" inside a
+           game, so a stray click does not end the run. Hub pages
+           (certificate, dashboard) have no run to lose and keep HOME. */
+        var inGame = HUB_PAGES.indexOf(currentPage()) === -1;
 
-        link.textContent = "◀ HOME";
+        link.textContent = inGame ? "✕ EXIT" : "◀ HOME";
 
-        link.addEventListener("click", function () {
+        link.addEventListener("click", function (e) {
+
             if (global.HackoAudio) {
                 global.HackoAudio.play("select");
+            }
+
+            if (!inGame) {
+                return;
+            }
+
+            e.preventDefault();
+
+            /* briefing.js draws the question in the game's style and
+               freezes the game while it is up; a game without a
+               briefing falls back to the browser's own */
+            if (global.HackoBriefing && global.HackoBriefing.confirmExit) {
+                global.HackoBriefing.confirmExit(link.href);
+            } else if (global.confirm("Are you sure you want to exit?")) {
+                global.location.href = link.href;
             }
         });
 
@@ -1265,6 +1372,7 @@
             doc.querySelector("#top .stats") ||
             doc.querySelector("header .hud-grid") ||
             doc.querySelector("header .hud") ||
+            doc.querySelector("header .top-actions") ||
             doc.querySelector(".stats") ||
             doc.querySelector("header");
 
@@ -1332,6 +1440,8 @@
         setLives: setLives,
         getLives: getLives,
         loseAllLives: loseAllLives,
+        isLevelOpen: isLevelOpen,
+        isLevelDone: isLevelDone,
 
         HINT_MISSIONS: HINT_MISSIONS,
         HINT_START: HINT_START,
@@ -1355,6 +1465,7 @@
         setMuted: setMuted,
 
         migrateLegacy: migrateLegacy,
+        mapHref: mapHref,
         mountMapLink: mountMapLink,
         isTestMode: isTestMode,
         setTestMode: setTestMode
@@ -1382,8 +1493,7 @@
             return;
         }
 
-        var page = (global.location && global.location.pathname || "")
-            .split("/").pop().toLowerCase();
+        var page = currentPage();
 
         /* every page but the hubs is a game, so play time counts */
         if (HUB_PAGES.indexOf(page) === -1) {

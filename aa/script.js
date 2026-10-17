@@ -97,6 +97,7 @@ function loseLife(){
   lives=3;
   const back=window.HackoStore?HackoStore.loseAllLives(7,current):Math.max(0,current-1);
   frontier=Math.min(frontier,back);
+  for(let i=back;i<completed.length;i++) completed[i]=false; /* re-beat them, as the store now says */
   HackoAudio.play('gameover');
   $('battle-message').textContent='Hacko is out of lives!';
   setTimeout(()=>{
@@ -127,6 +128,39 @@ render();
     }
     if (document.readyState === "complete") { begin(); }
     else { window.addEventListener("load", begin); }
+}());
+
+
+
+/* ===== LEVEL 1 TUTORIAL =====
+   shared/tutorial.js rings Hacko, the next trainer and Vex on the gym
+   map, then the lives chip, before the first duel. */
+(function () {
+    if (!window.HackoTutorial) { return; }
+
+    function tile(p) {
+        const T = Gym.TILE;
+        return p ? { canvas: $('gym-canvas'), x: p.x * T, y: p.y * T, w: T, h: T } : null;
+    }
+
+    HackoTutorial.define({ steps: [
+        { title: "THIS IS HACKO",
+          text: "This is you. Walk the gym with the arrow keys or W A S D.",
+          at: () => tile(Gym.heroAt()) },
+        { title: "BUG TRAINER",
+          text: "Bug trainers wait beside the path - the yellow ▼ marks the next one. " +
+                "Walk in front of a trainer to start a duel.",
+          at: () => tile(Gym.trainers[Math.min(frontier, 9)]) },
+        { title: "GYM LEADER VEX",
+          text: "Gym Leader Vex waits at the top. Beat the trainers in order to reach Vex.",
+          at: () => tile(Gym.trainers[9]) },
+        { title: "THE DUEL",
+          text: "In a duel, read the buggy code, pick the patch that fixes it, then press " +
+                "RUN PATCH. A wrong patch costs a life." },
+        { title: "THREE LIVES",
+          text: "Lose all 3 lives in a duel and you go back to face the trainer before.",
+          at: () => ({ el: document.querySelector('.hk-chip--lives') }) }
+    ] });
 }());
 
 

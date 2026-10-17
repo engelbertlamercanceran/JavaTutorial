@@ -426,12 +426,59 @@ footer {
         font-size: 0.8rem;
     }
 }
+
+/* Fit one screen. The panel asked for no scrolling while playing:
+   on a laptop the page is now exactly the window and the coding
+   panel scrolls on its own, so RUN PROGRAM never pushes the stage
+   away. The bottom padding keeps it clear of the HOW TO PLAY /
+   SOUND buttons. */
+@media (min-width: 981px) and (min-height: 560px) {
+    body {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    header,
+    footer {
+        flex-shrink: 0;
+    }
+
+    main {
+        flex: 1 1 auto;
+        grid-template-rows: minmax(0, 1fr);
+    }
+
+    .stage {
+        position: relative;
+        top: 0;
+    }
+
+    /* the footer's 40px is now on screen too */
+    .stage canvas {
+        width: min(100%, 960px, calc((100vh - 170px) * 16 / 9));
+    }
+
+    .side {
+        align-self: stretch;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-bottom: 50px;
+    }
+
+    /* keep the hint line clear of the corner buttons */
+    footer {
+        padding-right: 410px;
+    }
+}
 </style>
 <script src="shared/audio.js" data-track="fortress"></script>
 <script src="shared/storage.js"></script>
 <script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="6"></script>
+<script src="shared/tutorial.js"></script>
 </head>
 
 <body>
@@ -3672,15 +3719,19 @@ function renderLevels() {
                         ? " active"
                         : "";
 
+                /* the player's own record decides, so a level locked
+                   by running out of lives stays locked here too */
                 const completed =
-                    progress.done.includes(
-                        index
-                    )
+                    (window.HackoStore
+                        ? HackoStore.isLevelDone(6, index)
+                        : progress.done.includes(index))
                         ? " done"
                         : "";
 
                 const disabled =
-                    index >= progress.unlocked
+                    (window.HackoStore
+                        ? !HackoStore.isLevelOpen(6, index)
+                        : index >= progress.unlocked)
                         ? "disabled"
                         : "";
 
@@ -4212,6 +4263,75 @@ loadLevel(
 requestAnimationFrame(
     loop
 );
+
+/* Level 1 tutorial (shared/tutorial.js): the whole room fits on
+   screen, so each step rings a sprite or a coding panel. */
+;(function () {
+
+    if (!window.HackoTutorial) {
+        return;
+    }
+
+    function box(x, y, w, h) {
+        return { canvas: canvas, x: x, y: y, w: w, h: h };
+    }
+
+    function panel(n) {
+        return { el: document.querySelectorAll("#side .panel.gated")[n] };
+    }
+
+    HackoTutorial.define({
+        steps: [
+            {
+                title: "THIS IS HACKO",
+                text: "This is you. Run with A and D or the arrow keys, and press SPACE to jump.",
+                at: function () {
+                    var p = state.player;
+                    return box(p.x, p.y, p.w, p.h);
+                }
+            },
+            {
+                title: "FUNCTION STONE",
+                text: "Function Stones are scattered around the room. Jump up and touch one " +
+                    "to collect it.",
+                at: function () {
+                    var s = state.stones.find(function (k) { return !k.taken; });
+                    return s ? box(s.x - 4, s.y - 4, 30, 30) : null;
+                }
+            },
+            {
+                title: "BUG",
+                text: "Bugs patrol the floor. Touching one costs a life - jump over it.",
+                at: function () {
+                    var e = state.enemies[0];
+                    return e ? box(e.x, e.y, e.w, e.h) : null;
+                }
+            },
+            {
+                title: "THE CODE BUTTON",
+                text: "Stand on the glowing CODE button. While you are on it, the coding panels " +
+                    "on the right unlock.",
+                at: function () { return box(CODE_BUTTON.x, CODE_BUTTON.top - 16, CODE_BUTTON.w, 22); }
+            },
+            {
+                title: "FUNCTION GAUNTLET",
+                text: "Build a function here from the blocks - a name, an action - then press " +
+                    "SAVE FUNCTION. Saving is not calling!",
+                at: function () { return panel(0); }
+            },
+            {
+                title: "CALL CONSOLE",
+                text: "Now call it: pick your function, press ADD CALL, then RUN PROGRAM.",
+                at: function () { return panel(1); }
+            },
+            {
+                title: "THE DOOR",
+                text: "Your program wakes this door. When it opens, walk through to escape.",
+                at: function () { return box(DOOR.x, DOOR.y, DOOR.w, DOOR.h); }
+            }
+        ]
+    });
+}());
 
 /* =====================================================
    RESUME + AUTOSAVE

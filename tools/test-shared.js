@@ -381,6 +381,92 @@ section("certificate");
 }());
 
 
+section("test mode earns nothing");
+(function () {
+
+    var S = newStore();
+    S.login("t");
+    S.setTestMode(true);
+
+    for (var i = 0; i < 10; i++) {
+        S.completeLevel(1, i, 100);
+    }
+
+    ok("no levels are recorded", S.mission(1).levelsDone.length === 0);
+    ok("no badge is earned", S.load().badges.length === 0 && !S.mission(1).badge);
+    ok("no XP is earned", S.load().totalXP === 0);
+    ok("the resume point still moves", S.getResumeLevel(1) === 9);
+
+    S.setTestMode(false);
+    ok("the next mission stays locked once test mode is off", S.isUnlocked(2) === false);
+
+    S.completeLevel(1, 9, 100);
+    ok("replaying the last level afterwards does not hand out the badge",
+        S.load().badges.length === 0);
+}());
+
+
+section("out of lives locks the level again");
+(function () {
+
+    var S = newStore();
+    S.login("r");
+
+    for (var i = 0; i < 8; i++) {
+        S.completeLevel(1, i, 100);
+    }
+
+    var xp = S.load().totalXP;
+
+    ok("level 9 is open after level 8", S.isLevelOpen(1, 8) === true);
+    ok("mission 2 is open at 80%", S.isUnlocked(2) === true);
+
+    var back = S.loseAllLives(1, 8);
+
+    ok("dying on level 9 sends the player to level 8", back === 7);
+    ok("level 8 has to be cleared again", S.isLevelDone(1, 7) === false);
+    ok("level 9 is locked again", S.isLevelOpen(1, 8) === false);
+    ok("level 8 itself stays open", S.isLevelOpen(1, 7) === true);
+    ok("earlier levels stay cleared", S.isLevelDone(1, 6) === true);
+    ok("mission 2 stays open at exactly 70%", S.isUnlocked(2) === true);
+    ok("XP already earned is kept", S.load().totalXP === xp);
+
+    S.loseAllLives(1, 7);
+    ok("dropping under 70% locks mission 2 again", S.isUnlocked(2) === false);
+
+    S.completeLevel(1, 6, 100);
+    S.completeLevel(1, 7, 100);
+
+    ok("clearing level 8 again opens level 9", S.isLevelOpen(1, 8) === true);
+    ok("re-clearing pays no XP twice", S.load().totalXP === xp);
+    ok("mission 2 opens again", S.isUnlocked(2) === true);
+
+    S.loseAllLives(1, 0);
+    ok("dying on level 1 un-clears everything", S.mission(1).levelsDone.length === 0);
+    ok("level 1 is always open", S.isLevelOpen(1, 0) === true);
+
+    var T = newStore();
+    T.login("done");
+
+    for (var m = 1; m <= 10; m++) {
+        for (var k = 0; k < 10; k++) {
+            T.completeLevel(m, k, 10);
+        }
+    }
+
+    T.loseAllLives(3, 5);
+
+    ok("a finished mission is un-cleared too", T.isLevelOpen(3, 5) === false);
+    ok("its badge is kept", T.load().badges.length === 10);
+    ok("the certificate is kept", T.hasCertificate() === true && T.certificate() !== null);
+
+    T.setTestMode(true);
+    T.loseAllLives(4, 5);
+    ok("test mode does not un-clear a student's levels", T.isLevelDone(4, 9) === true);
+    ok("test mode opens every level", T.isLevelOpen(3, 9) === true);
+}());
+
+
 section("badge art");
 (function () {
 

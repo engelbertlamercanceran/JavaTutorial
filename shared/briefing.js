@@ -27,8 +27,8 @@
     var ownScript = global.document && global.document.currentScript;
     var MISSION = ownScript ? Number(ownScript.getAttribute("data-mission")) : 0;
 
-    var LIVES_RULE = "You have 3 lives on every level. Lose all 3 and you go back one level - " +
-        "so a mistake costs a little, never the whole mission.";
+    var LIVES_RULE = "You have 3 lives on every level. Lose all 3 and you go back one level, " +
+        "and you must clear that level again before the next one opens.";
 
     /* the games that sell hints - see HINT POINTS in storage.js */
     var HINT_GAMES = (global.HackoStore && global.HackoStore.HINT_MISSIONS) || [4, 8, 9, 10];
@@ -492,9 +492,32 @@
         "background:linear-gradient(90deg,#45f3ff,#91ff6f);color:#06111c;font:900 .95rem Orbitron,sans-serif;",
         "letter-spacing:.08em;box-shadow:0 0 22px rgba(69,243,255,.45)}",
         "#hk-brief .b-start:focus-visible{outline:3px solid #fff;outline-offset:3px}",
-        "#hk-help{position:fixed;right:126px;bottom:14px;z-index:9998;border:1px solid #367c9d;border-radius:999px;",
+        "#hk-brief .b-actions{display:flex;gap:10px;flex-wrap:wrap}",
+        "#hk-brief .b-exit{border:1px solid #ff496f;border-radius:12px;padding:13px 20px;cursor:pointer;",
+        "background:rgba(255,73,111,.12);color:#ffc2ce;font:900 .95rem Orbitron,sans-serif;letter-spacing:.08em}",
+        "#hk-brief .b-exit:focus-visible{outline:3px solid #fff;outline-offset:3px}",
+        "#hk-brief .b-tut{border:1px solid #ffd34e;border-radius:12px;padding:13px 20px;cursor:pointer;",
+        "background:rgba(255,211,78,.1);color:#ffd34e;font:900 .95rem Orbitron,sans-serif;letter-spacing:.08em}",
+        "#hk-brief .b-tut.hk-hidden{display:none}",
+        "#hk-brief .b-tut:focus-visible{outline:3px solid #fff;outline-offset:3px}",
+        "#hk-exit{position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;",
+        "padding:16px;background:rgba(3,9,18,.8);backdrop-filter:blur(4px);",
+        "font-family:Rajdhani,'Segoe UI',sans-serif;color:#eefaff}",
+        "#hk-exit.hk-hidden{display:none}",
+        "#hk-exit .x-card{width:min(420px,100%);border:2px solid #ff496f;border-radius:16px;text-align:center;",
+        "background:linear-gradient(160deg,#2a1020,#07111f 70%);padding:22px 24px;",
+        "box-shadow:0 0 40px rgba(255,73,111,.25),0 24px 60px #000}",
+        "#hk-exit h2{margin:0 0 8px;font:900 1.2rem Orbitron,sans-serif;letter-spacing:.06em;color:#ff6f8c}",
+        "#hk-exit p{margin:0 0 18px;font-size:1.05rem;line-height:1.45;color:#dff4ff}",
+        "#hk-exit .x-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}",
+        "#hk-exit button{border-radius:12px;padding:11px 20px;cursor:pointer;font:900 .85rem Orbitron,sans-serif;letter-spacing:.06em}",
+        "#hk-exit .x-no{border:0;background:linear-gradient(90deg,#45f3ff,#91ff6f);color:#06111c}",
+        "#hk-exit .x-yes{border:1px solid #ff496f;background:rgba(255,73,111,.12);color:#ffc2ce}",
+        "#hk-exit button:focus-visible{outline:3px solid #fff;outline-offset:3px}",
+        "#hk-corner{position:fixed;right:126px;bottom:14px;z-index:9998;display:flex;flex-direction:row-reverse;gap:8px}",
+        "#hk-help,#hk-full{border:1px solid #367c9d;border-radius:999px;",
         "background:#102742;color:#eefaff;cursor:pointer;padding:8px 14px;font:700 12px Orbitron,sans-serif;",
-        "box-shadow:0 4px 14px rgba(0,0,0,.45)}",
+        "box-shadow:0 4px 14px rgba(0,0,0,.45);white-space:nowrap}",
         "@media (max-width:700px){#hk-brief .b-grid{grid-template-columns:1fr}#hk-brief .b-card{padding:18px}}"
     ].join("");
 
@@ -552,13 +575,36 @@
                 "<div class='b-level' id='hk-brief-level'></div>" +
                 "<div class='b-foot'>" +
                     "<small>Press ENTER or click START. Open this again any time with ? HOW TO PLAY.</small>" +
-                    "<button type='button' class='b-start' id='hk-brief-start'>START MISSION &#9654;</button>" +
+                    "<div class='b-actions'>" +
+                        "<button type='button' class='b-exit' id='hk-brief-exit'>&#10005; EXIT</button>" +
+                        "<button type='button' class='b-tut hk-hidden' id='hk-brief-tut'>TUTORIAL</button>" +
+                        "<button type='button' class='b-start' id='hk-brief-start'>START MISSION &#9654;</button>" +
+                    "</div>" +
                 "</div>" +
             "</div>";
 
         doc.body.appendChild(root);
 
-        doc.getElementById("hk-brief-start").addEventListener("click", close);
+        doc.getElementById("hk-brief-start").addEventListener("click", function () {
+            autoFullscreen();
+            close();
+        });
+
+        /* nothing has been played yet, so no "are you sure" here */
+        doc.getElementById("hk-brief-exit").addEventListener("click", function () {
+            leave();
+        });
+
+        /* replays the Level 1 tour (shared/tutorial.js) on demand */
+        doc.getElementById("hk-brief-tut").addEventListener("click", function () {
+            autoFullscreen();
+            close();
+            if (global.HackoTutorial) {
+                global.HackoTutorial.start();
+            }
+        });
+
+        buildExit();
 
         var help = doc.createElement("button");
         help.id = "hk-help";
@@ -568,11 +614,35 @@
             help.blur();
             open();
         });
-        doc.body.appendChild(help);
+
+        var corner = doc.createElement("div");
+        corner.id = "hk-corner";
+        corner.appendChild(help);
+
+        if (canFullscreen()) {
+            corner.appendChild(buildFullscreenButton());
+        }
+
+        doc.body.appendChild(corner);
 
         /* the game must not see keys pressed while reading -
            capture on window runs before the game's own handlers */
         global.addEventListener("keydown", function (e) {
+
+            if (isExitOpen()) {
+
+                if (e.key === "Escape") {
+                    cancelExit();
+                }
+
+                /* Enter, Space and Tab work the buttons; the game sees nothing */
+                if (e.key !== "Enter" && e.key !== " " && e.key !== "Tab") {
+                    e.preventDefault();
+                }
+
+                e.stopImmediatePropagation();
+                return;
+            }
 
             if (!isOpen()) {
                 return;
@@ -580,6 +650,11 @@
 
             if (e.key === "Enter" || e.key === "Escape") {
                 e.preventDefault();
+                /* a browser only allows full screen from a click or
+                   a key like Enter - never from Escape */
+                if (e.key === "Enter") {
+                    autoFullscreen();
+                }
                 close();
             }
 
@@ -603,6 +678,11 @@
         }
 
         global.document.getElementById("hk-brief-level").innerHTML = levelHTML();
+
+        /* the tour points at Level 1's objects, so it is offered there only */
+        global.document.getElementById("hk-brief-tut").classList.toggle("hk-hidden",
+            !(global.HackoTutorial && global.HackoTutorial.has() && currentLevel() === 0));
+
         root.classList.remove("hk-hidden");
         hold();
 
@@ -631,12 +711,195 @@
         if (run) {
             try { run(); } catch (e) { /* never block the game */ }
         }
+
+        /* shared/tutorial.js starts the Level 1 tour from this */
+        try {
+            global.dispatchEvent(new global.CustomEvent("hacko:briefingclosed", {
+                detail: { level: currentLevel() }
+            }));
+        } catch (e) {
+            /* never block the game */
+        }
+    }
+
+
+    /* ---------------------------------------------------
+       FULL SCREEN
+
+       The panel asked for the games to be full screen: in a
+       browser window the tabs and address bar take the room the
+       answers need. START MISSION goes full screen (a click or
+       Enter is the only time a page may), and the button beside
+       ? HOW TO PLAY switches either way. A player who leaves full
+       screen is not pulled back into it on this page. Browsers
+       that cannot do it (iPhone Safari) never see the button.
+    --------------------------------------------------- */
+
+    var leftFullscreen = false;
+
+    function canFullscreen() {
+        var doc = global.document;
+        return !!(doc.fullscreenEnabled && doc.documentElement.requestFullscreen);
+    }
+
+    function isFullscreen() {
+        return !!global.document.fullscreenElement;
+    }
+
+    function quietly(promise) {
+        if (promise && promise.catch) {
+            promise.catch(function () { /* refused - stay windowed */ });
+        }
+    }
+
+    function enterFullscreen() {
+
+        if (!canFullscreen() || isFullscreen()) {
+            return;
+        }
+
+        try {
+            quietly(global.document.documentElement.requestFullscreen());
+        } catch (e) {
+            /* refused - stay windowed */
+        }
+    }
+
+    function autoFullscreen() {
+        if (!leftFullscreen) {
+            enterFullscreen();
+        }
+    }
+
+    function buildFullscreenButton() {
+
+        var doc = global.document;
+        var button = doc.createElement("button");
+
+        button.id = "hk-full";
+        button.type = "button";
+
+        function label() {
+            button.textContent = isFullscreen() ? "WINDOW MODE" : "FULL SCREEN";
+        }
+
+        button.addEventListener("click", function () {
+
+            button.blur();
+
+            if (isFullscreen()) {
+                quietly(doc.exitFullscreen());
+            } else {
+                enterFullscreen();
+            }
+        });
+
+        doc.addEventListener("fullscreenchange", function () {
+            if (!isFullscreen()) {
+                leftFullscreen = true;
+            }
+            label();
+        });
+
+        label();
+
+        return button;
+    }
+
+
+    /* ---------------------------------------------------
+       LEAVING
+
+       The panel asked for a way out of the briefing itself
+       (the only exit used to be starting the game and then
+       pressing HOME) and for an "are you sure" before leaving
+       a game. The game is frozen while the question is up, the
+       same way it is for the briefing, so nothing can hit
+       Hacko while the player decides.
+    --------------------------------------------------- */
+
+    var exitBox = null;
+    var exitHref = null;
+
+    function mapHref() {
+        return global.HackoStore && global.HackoStore.mapHref
+            ? global.HackoStore.mapHref()
+            : "map.html";
+    }
+
+    function leave(href) {
+        global.location.href = href || mapHref();
+    }
+
+    function buildExit() {
+
+        var doc = global.document;
+
+        exitBox = doc.createElement("div");
+        exitBox.id = "hk-exit";
+        exitBox.className = "hk-hidden";
+        exitBox.setAttribute("role", "alertdialog");
+        exitBox.setAttribute("aria-modal", "true");
+        exitBox.setAttribute("aria-labelledby", "hk-exit-title");
+
+        exitBox.innerHTML =
+            "<div class='x-card'>" +
+                "<h2 id='hk-exit-title'>EXIT THE MISSION?</h2>" +
+                "<p>Are you sure you want to exit? You will go back to the mission map.</p>" +
+                "<div class='x-row'>" +
+                    "<button type='button' class='x-no' id='hk-exit-no'>NO, KEEP PLAYING</button>" +
+                    "<button type='button' class='x-yes' id='hk-exit-yes'>YES, EXIT</button>" +
+                "</div>" +
+            "</div>";
+
+        doc.body.appendChild(exitBox);
+
+        doc.getElementById("hk-exit-no").addEventListener("click", cancelExit);
+        doc.getElementById("hk-exit-yes").addEventListener("click", function () {
+            leave(exitHref);
+        });
+    }
+
+    function isExitOpen() {
+        return !!exitBox && !exitBox.classList.contains("hk-hidden");
+    }
+
+    function confirmExit(href) {
+
+        if (!exitBox) {
+            leave(href);
+            return;
+        }
+
+        exitHref = href || mapHref();
+        exitBox.classList.remove("hk-hidden");
+        holding = true;
+
+        /* the safe answer has focus, so a stray Enter keeps playing */
+        global.document.getElementById("hk-exit-no").focus();
+    }
+
+    function cancelExit() {
+
+        if (!isExitOpen()) {
+            return;
+        }
+
+        exitBox.classList.add("hk-hidden");
+        release();
     }
 
     global.HackoBriefing = {
         open: open,
         close: close,
         isOpen: isOpen,
+        confirmExit: confirmExit,
+
+        /* freeze and unfreeze the game - shared/tutorial.js uses these */
+        pause: function () {
+            holding = true;
+        },
+        resume: release,
 
         /* a game with its own start button can hand it over,
            so the player presses START once, not twice */

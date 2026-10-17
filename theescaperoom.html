@@ -80,8 +80,13 @@
             transition: width 0.4s ease;
         }
 
+        /* the page never scrolls, so the canvas may shrink below
+           its 560px - otherwise a short window cut off the floor */
         #canvas {
-            flex: 1;
+            flex: 1 1 0;
+            min-height: 0;
+            max-width: 100%;
+            object-fit: contain;
             background: #0a0e27;
             display: block;
             margin: 0 auto;
@@ -371,6 +376,7 @@
 <script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="1"></script>
+<script src="shared/tutorial.js"></script>
 </head>
 
 <body>
@@ -3166,12 +3172,21 @@
             const completed =
                 progress.completedMissions || []
 
+            /* the player's own record decides, so a level locked
+               by running out of lives stays locked here too */
+            const store = window.HackoStore
+
             LEVELS.forEach((level, index) => {
-                const unlocked =
-                    index === 0 ||
-                    completed.includes(
-                        LEVELS[index - 1].id
-                    )
+                const unlocked = store
+                    ? store.isLevelOpen(1, index)
+                    : index === 0 ||
+                      completed.includes(
+                          LEVELS[index - 1].id
+                      )
+
+                const done = store
+                    ? store.isLevelDone(1, index)
+                    : completed.includes(level.id)
 
                 const card =
                     document.createElement('div')
@@ -3211,7 +3226,7 @@
                     </div>
 
                     ${
-                        completed.includes(level.id)
+                        done
                             ? '<div style="color:#00ff88;margin-top:6px">✓ COMPLETE</div>'
                             : ''
                     }
@@ -3255,6 +3270,78 @@
             )
         }
     
+/* Level 1 tutorial - for every player, logged in or not */
+;(function () {
+
+    /* Level 1 tutorial (shared/tutorial.js). The vault is wider
+       than the screen, so each step slides the camera to its
+       object and redraws the frozen frame; done() puts it back. */
+    if (window.HackoTutorial) {
+
+        var lookAt = function (x, w) {
+            if (x - cameraX < 40 || x + w - cameraX > WIDTH - 40) {
+                cameraX = Math.max(0, Math.min(x - WIDTH * 0.4, levelWidth - WIDTH));
+            }
+            draw();
+        };
+
+        HackoTutorial.define({
+            steps: [
+                {
+                    title: "THIS IS HACKO",
+                    text: "This is you. Run with the arrow keys or A and D. " +
+                        "Press SPACE to jump - press it twice for a double jump.",
+                    focus: function () { lookAt(player.x, player.width); },
+                    at: function () {
+                        return { canvas: canvas, x: player.x - cameraX, y: player.y,
+                            w: player.width, h: player.height };
+                    }
+                },
+                {
+                    title: "DATA CHIP",
+                    text: "This glowing chip is a piece of data. Its label shows its type - " +
+                        "this one is an int. Run into it to collect it. Collect every chip in the vault.",
+                    focus: function () { lookAt(levelCollectibles[0].x, 48); },
+                    at: function () {
+                        var c = levelCollectibles[0];
+                        return { canvas: canvas, x: c.x - 4 - cameraX, y: c.y - 14, w: 52, h: 72 };
+                    }
+                },
+                {
+                    title: "CLUES",
+                    text: "Furniture hides clues. Stand next to this bookshelf and press E " +
+                        "to read it - the clue tells you the value a variable needs.",
+                    focus: function () { lookAt(levelInteractives[0].x, levelInteractives[0].w); },
+                    at: function () {
+                        var o = levelInteractives[0];
+                        return { canvas: canvas, x: o.x - cameraX, y: o.y, w: o.w, h: o.h };
+                    }
+                },
+                {
+                    title: "THE VAULT DOOR",
+                    text: "The terminal is at the vault door. When every chip is collected, " +
+                        "walk here and drag each chip into the variable it matches.",
+                    focus: function () { lookAt(LEVELS[currentLevelIndex].terminalX, 96); },
+                    at: function () {
+                        return { canvas: canvas, x: LEVELS[currentLevelIndex].terminalX - 6 - cameraX,
+                            y: 172, w: 102, h: 296 };
+                    }
+                },
+                {
+                    title: "THREE LIVES",
+                    text: "You have 3 lives. In later vaults, lasers and security bots " +
+                        "cost a life each. Lose all 3 and you go back one level."
+                }
+            ],
+            done: function () {
+                cameraX = Math.max(0, Math.min(player.x - WIDTH * 0.4, levelWidth - WIDTH));
+                draw();
+            }
+        });
+    }
+
+}());
+
 /* =====================================================
    RESUME + AUTOSAVE
 

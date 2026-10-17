@@ -466,12 +466,58 @@ footer {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* Fit one screen. The panel asked for no scrolling while playing:
+   on a laptop the page is now exactly the window and the side panel
+   scrolls on its own, so CHECK ARRAY never pushes the map away. The
+   bottom padding keeps it clear of the HOW TO PLAY / SOUND buttons. */
+@media (min-width: 901px) and (min-height: 560px) {
+    body {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    header,
+    footer {
+        flex-shrink: 0;
+    }
+
+    main {
+        flex: 1 1 auto;
+        grid-template-rows: minmax(0, 1fr);
+    }
+
+    .game-wrap {
+        position: static;
+    }
+
+    /* the footer's 40px is now on screen too */
+    canvas {
+        width: min(100%, 900px, calc((100vh - 215px) * 1.5));
+    }
+
+    .side {
+        align-self: stretch;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-bottom: 50px;
+    }
+
+    /* keep the hint line clear of the corner buttons */
+    footer {
+        padding-right: 410px;
+    }
+}
 </style>
 <script src="shared/audio.js" data-track="adventure"></script>
 <script src="shared/storage.js"></script>
 <script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="5"></script>
+<script src="shared/tutorial.js"></script>
 </head>
 
 <body>
@@ -2564,7 +2610,9 @@ function renderLevels() {
                         : ""
                 ) +
                 (
-                    progress.done.includes(index)
+                    (window.HackoStore
+                        ? HackoStore.isLevelDone(5, index)
+                        : progress.done.includes(index))
                         ? " done"
                         : ""
                 );
@@ -2575,8 +2623,11 @@ function renderLevels() {
             button.title =
                 mission.title;
 
-            button.disabled =
-                index >= progress.unlocked;
+            /* the player's own record decides, so a level locked
+               by running out of lives stays locked here too */
+            button.disabled = window.HackoStore
+                ? !HackoStore.isLevelOpen(5, index)
+                : index >= progress.unlocked;
 
             button.onclick = () => {
                 loadMission(index);
@@ -3021,6 +3072,59 @@ loadMission(
 );
 
 draw();
+
+/* Level 1 tutorial (shared/tutorial.js): the whole map fits on
+   screen, so each step rings a tile or a side panel. */
+;(function () {
+
+    if (!window.HackoTutorial) {
+        return;
+    }
+
+    function tile(p) {
+        return p ? { canvas: canvas, x: p.x * TILE, y: p.y * TILE, w: TILE, h: TILE } : null;
+    }
+
+    HackoTutorial.define({
+        steps: [
+            {
+                title: "THIS IS HACKO",
+                text: "This is you. Move with W A S D or the arrow keys.",
+                at: function () { return tile(state && state.player); }
+            },
+            {
+                title: "ITEM",
+                text: "Every item is a value. Walk over one and it is added to the end of " +
+                    "Hacko's array.",
+                at: function () {
+                    return tile(state && state.world.find(function (i) { return !i.taken; }));
+                }
+            },
+            {
+                title: "HACKO'S ARRAY",
+                text: "This is Hacko's array. Each item lands in the next index - 0, 1, 2... " +
+                    "Click slots to select them, then SWAP, DISCARD or USE ON PEDESTAL.",
+                at: function () { return { el: document.getElementById("inventory") }; }
+            },
+            {
+                title: "GLITCHES AND SPIKES",
+                text: "Red glitches roam the map and violet spikes stay put. Touching either " +
+                    "costs a life.",
+                at: function () { return tile(state && (state.enemies[0] || state.hazards[0])); }
+            },
+            {
+                title: "CHECK ARRAY",
+                text: "When your array matches the mission goal, press CHECK ARRAY.",
+                at: function () { return { el: document.querySelector("button[onclick^='checkMission']") }; }
+            },
+            {
+                title: "THE PORTAL",
+                text: "A correct array opens this portal. Walk into it to finish the mission.",
+                at: function () { return tile(state && state.map.portal); }
+            }
+        ]
+    });
+}());
 
 /* =====================================================
    RESUME + AUTOSAVE

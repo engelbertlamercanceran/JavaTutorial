@@ -946,6 +946,7 @@ button{
 <script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="8"></script>
+<script src="shared/tutorial.js"></script>
 <script src="shared/hint.js"></script>
 </head>
 
@@ -3832,6 +3833,57 @@ loadLevel();
 
 gameLoop();
 
+
+/* Level 1 tutorial (shared/tutorial.js): the classroom is made of
+   page elements, so each step rings one of them. */
+;(function () {
+
+    if (!window.HackoTutorial) {
+        return;
+    }
+
+    function el(id) {
+        return function () { return { el: document.getElementById(id) }; };
+    }
+
+    HackoTutorial.define({
+        steps: [
+            {
+                title: "THIS IS HACKO",
+                text: "This is you. Walk with W A S D or the arrow keys, and press E to talk.",
+                at: el("player")
+            },
+            {
+                title: "PROFESSOR BYTE",
+                text: "Walk up to Professor Byte and press E - he explains the mission.",
+                at: el("teacher")
+            },
+            {
+                title: "ALEX AND ROBO",
+                text: "Alex and Robo are the objects in your code. Talk to them too - " +
+                    "each one explains their part.",
+                at: el("alex")
+            },
+            {
+                title: "OOP TERMINAL",
+                text: "The code here is almost right. Find and fix the mistakes - missing " +
+                    "semicolons, typos, lines in the wrong order.",
+                at: el("editor")
+            },
+            {
+                title: "RUN CODE",
+                text: "Press RUN CODE (or CTRL + ENTER) to test it. A wrong answer costs a life, " +
+                    "and the terminal lists everything still wrong.",
+                at: el("run")
+            },
+            {
+                title: "THE DOOR",
+                text: "Fix the code and the classroom door opens. Walk through it to escape.",
+                at: el("door")
+            }
+        ]
+    });
+}());
 
 /* =====================================================
    RESUME + AUTOSAVE

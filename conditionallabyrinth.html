@@ -11,6 +11,7 @@
 <script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="9"></script>
+<script src="shared/tutorial.js"></script>
 <script src="shared/hint.js"></script>
 
 <style>
@@ -140,6 +141,20 @@ footer {
 
 @media (max-width: 960px) {
     main { grid-template-columns: 1fr; }
+}
+
+/* Fit one screen. The panel asked for no scrolling while playing:
+   on a laptop the page is now exactly the window, the board shrinks
+   to the height left and the side panel scrolls on its own, clear
+   of the HOW TO PLAY / SOUND buttons. */
+@media (min-width: 961px) and (min-height: 520px) {
+    body { height: 100vh; min-height: 0; overflow: hidden; }
+    main { grid-template-rows: minmax(0, 1fr); }
+    .stage { min-height: 0; }
+    canvas { width: auto; max-width: min(100%, 880px); max-height: 100%; }
+    .side { overflow-y: auto; overflow-x: hidden; padding-bottom: 50px; }
+    /* keep the hint line clear of the corner buttons */
+    footer { padding-right: 410px; }
 }
 </style>
 </head>
@@ -1862,6 +1877,71 @@ footer {
     loadLevel(0);
     requestAnimationFrame(frame);
 
+
+    /* Level 1 tutorial (shared/tutorial.js): the whole maze fits on
+       screen, so each step rings a tile, the gates or the code. */
+    if (window.HackoTutorial) {
+
+        var tutTile = function (p) {
+            return p ? { canvas: canvas, x: p.x * TILE, y: p.y * TILE, w: TILE, h: TILE } : null;
+        };
+
+        HackoTutorial.define({
+            steps: [
+                {
+                    title: "THIS IS HACKO",
+                    text: "This is you. Move with W A S D or the arrow keys.",
+                    at: function () { return tutTile(state.player); }
+                },
+                {
+                    title: "THE CODE",
+                    text: "Read this code with the values shown above it, and work out what it prints.",
+                    at: function () { return { el: document.getElementById("code") }; }
+                },
+                {
+                    title: "THE GATES",
+                    text: "Each gate is labelled with an answer. Walk into the gate holding what " +
+                        "the code prints. The wrong gate costs a life.",
+                    at: function () {
+                        var g = state.gates;
+                        if (!g || !g.length) {
+                            return null;
+                        }
+                        var left = g[0].x * TILE - TILE;
+                        var right = g[g.length - 1].x * TILE + TILE * 2;
+                        return { canvas: canvas, x: left, y: g[0].y * TILE - 4,
+                            w: right - left, h: TILE + 8 };
+                    }
+                },
+                {
+                    title: "BOMBS",
+                    text: "Walk over a bomb to pick it up, then press SPACE to drop it. The blast " +
+                        "breaks bricks and stops enemies - just do not stand in it.",
+                    at: function () {
+                        return tutTile(state.bombSpots.find(function (s) { return !s.takenAt; }));
+                    }
+                },
+                {
+                    title: "BRICKS",
+                    text: "Brick walls block the way. Bomb them to clear a path.",
+                    at: function () {
+                        var key = Object.keys(state.bricks)[0];
+                        if (!key) {
+                            return null;
+                        }
+                        var p = key.split(",");
+                        return tutTile({ x: Number(p[0]), y: Number(p[1]) });
+                    }
+                },
+                {
+                    title: "SENTRIES",
+                    text: "Red sentries patrol the maze. Touching one costs a life - lose all 3 " +
+                        "and you go back one level.",
+                    at: function () { return tutTile(state.sentries[0]); }
+                }
+            ]
+        });
+    }
 
     /* ---------------------------------------------------
        RESUME + AUTOSAVE

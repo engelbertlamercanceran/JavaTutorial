@@ -860,12 +860,109 @@
                 margin-bottom: -8px;
             }
         }
+
+        /* Fit one screen. The panel asked for no scrolling while
+           playing: on a laptop the page is now exactly the window,
+           the maze shrinks to the height left, and the side column
+           scrolls on its own - with the console's log taking the
+           slack so its command line is always on screen. */
+        @media (min-width: 1121px) and (min-height: 560px) {
+            body {
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            .topbar {
+                flex-shrink: 0;
+                min-height: 0;
+                padding: 8px 24px;
+            }
+
+            .layout {
+                flex: 1 1 auto;
+                min-height: 0;
+                padding: 14px 20px;
+                grid-template-rows: minmax(0, 1fr);
+            }
+
+            .game-panel {
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .game-heading {
+                margin-bottom: 8px;
+            }
+
+            .canvas-frame {
+                flex: 1 1 0;
+                min-height: 0;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: visible;
+                background: none;
+                border: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            #gameCanvas {
+                width: auto;
+                max-height: 100%;
+                border: 4px solid var(--blue);
+                border-radius: 12px;
+                box-shadow:
+                    0 0 15px var(--blue),
+                    0 0 36px rgba(24, 92, 255, 0.42);
+            }
+
+            .objective {
+                margin-top: 10px;
+            }
+
+            /* a mouse and keyboard do not need the touch pad, and it
+               took the room the maze needs */
+            @media (hover: hover) and (pointer: fine) {
+                .mobile-controller {
+                    display: none;
+                }
+            }
+
+            /* the bottom padding keeps the command line clear of the
+               HOW TO PLAY / SOUND buttons in the corner */
+            .side {
+                min-height: 0;
+                overflow-y: auto;
+                overflow-x: hidden;
+                gap: 14px;
+                padding-bottom: 50px;
+            }
+
+            .console-panel {
+                flex: 1 0 auto;
+                display: flex;
+                flex-direction: column;
+                min-height: 220px;
+            }
+
+            .console {
+                flex: 1 1 0;
+                min-height: 80px;
+                max-height: none;
+            }
+        }
     </style>
 <script src="shared/audio.js" data-track="defuse"></script>
 <script src="shared/storage.js"></script>
 <script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="3"></script>
+<script src="shared/tutorial.js"></script>
 </head>
 
 <body>
@@ -4411,14 +4508,20 @@ ${selected}`
 
             grid.innerHTML = ''
 
+            /* the player's own record decides, so a level locked
+               by running out of lives stays locked here too */
+            const store = window.HackoStore
+
             LEVELS.forEach(
                 (level, index) => {
-                    const unlocked =
-                        level.id <=
-                        progress.unlockedLevel
+                    const unlocked = store
+                        ? store.isLevelOpen(3, index)
+                        : level.id <=
+                          progress.unlockedLevel
 
-                    const complete =
-                        progress
+                    const complete = store
+                        ? store.isLevelDone(3, index)
+                        : progress
                             .completedLevels
                             .includes(
                                 level.id
@@ -4911,6 +5014,68 @@ ${selected}`
             initializeGame
         )
     
+/* Level 1 tutorial - for every player, logged in or not */
+;(function () {
+
+    /* Level 1 tutorial (shared/tutorial.js): the whole maze fits on
+       screen, so each step just rings a tile or a sprite. */
+    if (window.HackoTutorial) {
+
+        var tile = function (x, y) {
+            return { canvas: canvas, x: x * TILE_SIZE, y: y * TILE_SIZE, w: TILE_SIZE, h: TILE_SIZE };
+        };
+
+        var around = function (x, y) {
+            return { canvas: canvas, x: x - TILE_SIZE / 2, y: y - TILE_SIZE / 2, w: TILE_SIZE, h: TILE_SIZE };
+        };
+
+        HackoTutorial.define({
+            steps: [
+                {
+                    title: "THIS IS HACKO",
+                    text: "This is you. Steer with W A S D or the arrow keys - " +
+                        "Hacko keeps moving in the last direction you chose.",
+                    at: function () { return around(state.player.x, state.player.y); }
+                },
+                {
+                    title: "CLUE",
+                    text: "This ? is a clue. Walk over it to collect it - it gives you a value " +
+                        "the bomb's code uses. Collect the clues the objective asks for.",
+                    at: function () {
+                        var c = clues.find(function (k) { return !k.collected; });
+                        return c ? tile(c.x, c.y) : null;
+                    }
+                },
+                {
+                    title: "SECURITY BIRD",
+                    text: "Security birds patrol the maze. Touching one costs a life, so keep away.",
+                    at: function () { return ghosts[0] ? around(ghosts[0].x, ghosts[0].y) : null; }
+                },
+                {
+                    title: "POWER CORE",
+                    text: "Grab a power core and, for a few seconds, you can catch the birds instead.",
+                    at: function () {
+                        var p = powerPellets.find(function (k) { return !k.collected; });
+                        return p ? tile(p.x, p.y) : null;
+                    }
+                },
+                {
+                    title: "THE BOMB",
+                    text: "Reach the bomb with your clues and the defuse puzzle opens. Read the " +
+                        "if statement and cut the wire it chooses.",
+                    at: function () { return tile(BOMB_POSITION.x, BOMB_POSITION.y); }
+                },
+                {
+                    title: "THE TIMER",
+                    text: "Watch the timer. Defuse the bomb before it reaches zero!",
+                    at: function () { return { el: document.getElementById("timerCard") }; }
+                }
+            ]
+        });
+    }
+
+}());
+
 /* =====================================================
    RESUME + AUTOSAVE
 

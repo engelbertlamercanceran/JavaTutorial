@@ -771,6 +771,13 @@
             bubble = null;
         },
 
+        /* the tile Hacko stands on - the Level 1 tutorial rings it */
+        heroAt: function () {
+            return { x: hero.x, y: hero.y };
+        },
+
+        TILE: T,
+
         /* for tools/ - the map is checked for a clean route */
         MAP: MAP,
         trainers: trainers,

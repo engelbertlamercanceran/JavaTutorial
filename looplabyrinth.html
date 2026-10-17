@@ -710,6 +710,7 @@ textarea:focus {
 <script src="shared/badgeart.js"></script>
 <script src="shared/badges.js"></script>
 <script src="shared/briefing.js" data-mission="4"></script>
+<script src="shared/tutorial.js"></script>
 <script src="shared/hint.js"></script>
 </head>
 
@@ -3266,12 +3267,16 @@ function openLevelSelect() {
         index < 10;
         index++
     ) {
-        const unlocked =
-            index <
-            progress.unlocked
+        /* the player's own record decides, so a level locked
+           by running out of lives stays locked here too */
+        const unlocked = window.HackoStore
+            ? HackoStore.isLevelOpen(4, index)
+            : index <
+              progress.unlocked
 
-        const completed =
-            progress.completed.includes(
+        const completed = window.HackoStore
+            ? HackoStore.isLevelDone(4, index)
+            : progress.completed.includes(
                 index + 1
             )
 
@@ -4789,6 +4794,59 @@ loadLevel(
 )
 
 animationLoop()
+
+/* Level 1 tutorial (shared/tutorial.js): the whole maze fits on
+   screen, so each step just rings a tile. */
+;(function () {
+
+    if (!window.HackoTutorial) {
+        return;
+    }
+
+    function tile(p) {
+        if (!p) {
+            return null;
+        }
+        var sx = canvas.width / (COLS * TILE);
+        var sy = canvas.height / (ROWS * TILE);
+        return { canvas: canvas, x: p.x * TILE * sx, y: p.y * TILE * sy, w: TILE * sx, h: TILE * sy };
+    }
+
+    HackoTutorial.define({
+        steps: [
+            {
+                title: "THIS IS HACKO",
+                text: "This is you. Move one tile at a time with W A S D or the arrow keys.",
+                at: function () { return tile(state && state.player); }
+            },
+            {
+                title: "DATA CORE",
+                text: "This glowing data core is what you collect. Walk onto it to pick it up. " +
+                    "Collect every core in the labyrinth.",
+                at: function () { return tile(state && state.cores[0]); }
+            },
+            {
+                title: "LOOP GATE",
+                text: "This is the loop gate. Stand beside it and press E, then put the scrambled " +
+                    "lines in order to build the loop. One line is a trap - leave it out.",
+                at: function () { return tile(state && state.gates[0]); }
+            },
+            {
+                title: "DANGER",
+                text: "Spikes, blades, acid and patrolling bugs cost a life. Step around them - " +
+                    "lose all 3 lives and you go back one level.",
+                at: function () {
+                    return tile(state && (state.enemies[0] || state.traps[0] || state.obstacles[0]));
+                }
+            },
+            {
+                title: "THE EXIT",
+                text: "With every core collected and the gate open, walk here to escape.",
+                at: function () { return tile(state && state.exit); }
+            }
+        ]
+    });
+}());
 
 /* =====================================================
    RESUME + AUTOSAVE
