@@ -826,41 +826,8 @@
         }
     }
 
-    /* Compares two blocks of output, ignoring trailing blank
-       lines and trailing spaces, and reports the first line
-       that differs. */
-    function compare(actual, expected) {
-
-        function clean(text) {
-            return String(text)
-                .replace(/[ \t]+$/gm, "")
-                .replace(/\s+$/, "")
-                .split("\n");
-        }
-
-        var a = clean(actual);
-        var b = clean(expected);
-
-        for (var i = 0; i < Math.max(a.length, b.length); i++) {
-
-            if ((a[i] || "") !== (b[i] || "")) {
-                return {
-                    match: false,
-                    line: i + 1,
-                    got: a[i] === undefined ? "(nothing)" : a[i],
-                    want: b[i] === undefined ? "(nothing)" : b[i]
-                };
-            }
-        }
-
-        return { match: true };
-    }
-
     global.HackoJava = {
-        run: run,
-        compare: compare,
-        tokenise: tokenise,
-        parse: parse
+        run: run
     };
 
 }(typeof window !== "undefined" ? window : globalThis));

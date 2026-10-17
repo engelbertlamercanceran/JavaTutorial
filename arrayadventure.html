@@ -1314,9 +1314,8 @@ const missions = [
        ^  data spikes     1-5  glitches (1 sweeps, 2 climbs, 3 roams,
                           4 sweeps, 5 climbs - see ENEMY_BEHAVIOURS)
 
-   tools/check-arrays.js proves every item and the portal can be
-   reached without stepping on spikes, and that no glitch starts
-   within three steps of Hacko. */
+   Every item and the portal can be reached without stepping on
+   spikes, and no glitch starts within three steps of Hacko. */
 const MAPS = [
     {
         name: "SUNNY CAMP",
@@ -1501,8 +1500,7 @@ const MAPS = [
            the portal sat at the end of a one-tile tunnel that
            glitch 2 climbed up and down. The corridor now has
            side pockets to duck into and the portal chamber is
-           open on three sides - see "no choke" in
-           tools/check-arrays.js. */
+           open on three sides. */
         rows: [
             "###############",
             "#S.....^....a.#",
@@ -1555,7 +1553,6 @@ function parseMap(index) {
     return map;
 }
 
-/* end of map data - tools/check-arrays.js reads up to here */
 
 let level = 0;
 

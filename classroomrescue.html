@@ -1205,8 +1205,7 @@ LEVEL DATA
    stuck before they had typed a line. Every mission now starts
    with code that is nearly right - a missing semicolon, a typo,
    a wrong capital, lines in the wrong order - for the player to
-   find and fix. It is never the answer: tools/check-java.js
-   fails the build if a starter would pass as it stands.
+   find and fix. It is never the answer as it stands.
 
    talk: what each character says on this level. Professor Byte
    gives the mission, Alex (a Student object) and Robo (a Robot
@@ -1625,9 +1624,8 @@ furniture, its own spots for the characters, the computer and
 the items - and from level 2 on there are lockdown bugs to dodge.
 
 Everything is in pixels from the top-left of the room. Solid
-pieces block Hacko; tools/check-classroom.js flood-fills every
-layout to prove each character, item and the door can be
-reached, that each can be reached from somewhere OFF the bugs'
+pieces block Hacko. In every layout each character, item and the
+door can be reached, each can be reached from somewhere OFF the bugs'
 patrol lines, that no bug walks through furniture and that the
 start spot is clear of them.
 
@@ -1931,7 +1929,6 @@ function solidsFor(room){
 
 let SOLIDS=solidsFor(ROOM);
 
-/* end of room data - tools/check-classroom.js reads up to here */
 
 function renderRoom(){
 

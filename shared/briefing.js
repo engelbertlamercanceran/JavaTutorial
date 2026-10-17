@@ -905,9 +905,7 @@
            so the player presses START once, not twice */
         onFirstStart: function (fn) {
             startCallback = fn;
-        },
-
-        BRIEFS: BRIEFS
+        }
     };
 
     function boot() {

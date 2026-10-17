@@ -8,7 +8,7 @@ desktop.ini
 .idea/
 *.swp
 
-# node (only used for the test tools)
+# node
 node_modules/
 npm-debug.log*
 

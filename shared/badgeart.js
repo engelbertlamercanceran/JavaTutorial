@@ -431,9 +431,7 @@
 
     global.HackoBadgeArt = {
         svg: svg,
-        tierOf: tierOf,
-        NAMES: NAMES,
-        TIERS: TIERS.map(function (t) { return t.name; })
+        tierOf: tierOf
     };
 
 }(window));

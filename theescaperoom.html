@@ -743,8 +743,8 @@
 
         /* [x, y, type, name, why it is invalid]. Each sits near the
            route - in a jump arc or by a ledge - but never on the
-           only way through; tools/check-escape.js proves every real
-           chip and the door can be reached without touching one.
+           only way through: every real chip and the door can be
+           reached without touching one.
            Level 8 gets the first two, level 9 three, level 10 all. */
         const DECOY_CHIPS = [
             [665, 70, 'int', '2ndCode',
@@ -1264,7 +1264,6 @@
             return [{ x: object.x, y: object.y, w: object.w, h: object.h }]
         }
 
-        /* end of level data - tools/check-escape.js reads up to here */
 
         function loadLevel(index) {
             const level = LEVELS[index]

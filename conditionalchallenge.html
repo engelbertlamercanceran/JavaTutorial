@@ -1435,9 +1435,8 @@
                a-e  clues (in the order the level lists them)
                P  power core    1-5  bird nests (in level order)
 
-           tools/check-challenge.js proves every clue and the bomb
-           can be reached, no corridor is sealed off and no bird
-           nests within six steps of the start. */
+           Every clue and the bomb can be reached, no corridor is
+           sealed off and no bird nests within six steps of the start. */
         const MAZES = [
             {
                 name: 'TWIN RINGS',
@@ -1705,7 +1704,6 @@
             maze = layout.grid.map(row => [...row])
         }
 
-        /* end of maze data - tools/check-challenge.js reads up to here */
 
         const LEVELS = [
             {

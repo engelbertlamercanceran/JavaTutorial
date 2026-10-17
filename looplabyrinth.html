@@ -1663,8 +1663,7 @@ const rawLevels = [
  * deleted a walkable floor tile off the end, so the level
  * rendered differently from how it was authored. Anything
  * other than padding wall is now reported instead of being
- * thrown away quietly. Run tools/check-mazes.js to verify
- * every maze is still solvable after editing one.
+ * thrown away quietly.
  */
 function cleanMap(map) {
     return map.map((row, y) => {
@@ -3114,8 +3113,8 @@ function submitAnswer() {
  *
  * Hints now go nudge -> structure -> worked example, and the
  * worked example always uses different numbers from the
- * answer. tools/audit-hints.js fails the build if one ever
- * contains its own answer again.
+ * answer, and shared/hint.js blocks any hint that contains its
+ * own answer.
  */
 let hint = null
 

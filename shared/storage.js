@@ -347,24 +347,6 @@
         });
     }
 
-    function requiredToUnlock(id) {
-        return Math.ceil(totalLevels(id) * UNLOCK_THRESHOLD);
-    }
-
-    function completion(id) {
-
-        var m = mission(id);
-        var total = m.totalLevels || DEFAULT_TOTAL_LEVELS;
-        var done = m.levelsDone.length;
-
-        return {
-            done: done,
-            total: total,
-            percent: total ? Math.round((done / total) * 100) : 0,
-            badge: m.badge
-        };
-    }
-
     /* Unlock check against an in-memory record. Used inside
        update(), where load() would read stale data. */
     function isUnlockedIn(record, id) {
@@ -691,16 +673,6 @@
         return mission(id).resumeLevel || 0;
     }
 
-    function setLives(id, lives) {
-
-        var key = String(id);
-
-        return update(function (record) {
-            record.missions[key] = record.missions[key] || blankMission();
-            record.missions[key].lives = Number(lives);
-        });
-    }
-
     /* The client's rule: every mission has three lives, and
        running out drops the player back ONE level rather than
        restarting the mission or silently resetting.
@@ -765,13 +737,6 @@
 
     function isLevelDone(id, levelIndex) {
         return mission(id).levelsDone.indexOf(Number(levelIndex)) !== -1;
-    }
-
-    function getLives(id) {
-
-        var m = mission(id);
-
-        return typeof m.lives === "number" ? m.lives : DEFAULT_LIVES;
     }
 
 
@@ -841,7 +806,7 @@
 
     var HUB_PAGES = [
         "", "index.html", "login.html", "map.html",
-        "certificate.html", "dashboard.html", "soundcheck.html"
+        "certificate.html"
     ];
 
     function playSeconds() {
@@ -1336,7 +1301,7 @@
 
         /* The panel asked for EXIT with an "are you sure" inside a
            game, so a stray click does not end the run. Hub pages
-           (certificate, dashboard) have no run to lose and keep HOME. */
+           (certificate) has no run to lose and keeps HOME. */
         var inGame = HUB_PAGES.indexOf(currentPage()) === -1;
 
         link.textContent = inGame ? "✕ EXIT" : "◀ HOME";
@@ -1413,8 +1378,6 @@
 
     global.HackoStore = {
 
-        UNLOCK_THRESHOLD: UNLOCK_THRESHOLD,
-        DEFAULT_LIVES: DEFAULT_LIVES,
         MISSIONS: MISSIONS,
 
         listUsers: listUsers,
@@ -1425,27 +1388,17 @@
         deleteUser: deleteUser,
 
         load: load,
-        save: save,
-        update: update,
 
         mission: mission,
-        totalLevels: totalLevels,
         registerTotalLevels: registerTotalLevels,
-        requiredToUnlock: requiredToUnlock,
-        completion: completion,
         isUnlocked: isUnlocked,
         completeLevel: completeLevel,
-        setResumeLevel: setResumeLevel,
         getResumeLevel: getResumeLevel,
-        setLives: setLives,
-        getLives: getLives,
         loseAllLives: loseAllLives,
         isLevelOpen: isLevelOpen,
         isLevelDone: isLevelDone,
 
         HINT_MISSIONS: HINT_MISSIONS,
-        HINT_START: HINT_START,
-        HINT_COST: HINT_COST,
         hintBalance: hintBalance,
         hintsOwned: hintsOwned,
         buyHint: buyHint,
@@ -1464,7 +1417,6 @@
         isMuted: isMuted,
         setMuted: setMuted,
 
-        migrateLegacy: migrateLegacy,
         mapHref: mapHref,
         mountMapLink: mountMapLink,
         isTestMode: isTestMode,

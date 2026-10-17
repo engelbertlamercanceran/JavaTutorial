@@ -778,10 +778,7 @@
 
         TILE: T,
 
-        /* for tools/ - the map is checked for a clean route */
-        MAP: MAP,
-        trainers: trainers,
-        SPAWN: SPAWN
+        trainers: trainers
     };
 
 }(window));

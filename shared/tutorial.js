@@ -396,8 +396,7 @@
             return !!tour;
         },
 
-        start: start,
-        isOpen: isOpen
+        start: start
     };
 
 }(window));

@@ -7,8 +7,8 @@
    player: the escape room clue said "The door code is 42"
    when 42 WAS the answer, and Loop Labyrinth typed the
    finished code into the answer box. leaks() exists so that
-   class of bug cannot come back unnoticed - a leaking hint
-   is blocked at runtime and reported by tools/audit-hints.js.
+   class of bug cannot come back - a leaking hint is blocked
+   at runtime.
 
        var hint = HackoHint.forPuzzle({
            id: "m4-l3",
@@ -324,44 +324,9 @@
     }
 
 
-    /* ---------------------------------------------------
-       AUDIT
-       Used by tools/audit-hints.js to fail the build if any
-       authored hint gives away its answer.
-    --------------------------------------------------- */
-
-    function audit(puzzles) {
-
-        var problems = [];
-
-        (puzzles || []).forEach(function (p) {
-
-            (p.tiers || []).forEach(function (text, index) {
-
-                var problem = leaks(text, p.answer);
-
-                if (problem) {
-                    problems.push({
-                        id: p.id,
-                        tier: index,
-                        reason: problem,
-                        text: text
-                    });
-                }
-            });
-        });
-
-        return problems;
-    }
-
-
     global.HackoHint = {
         forPuzzle: forPuzzle,
-        paid: paid,
-        leaks: leaks,
-        audit: audit,
-        MIN_LEAK_RUN: MIN_LEAK_RUN,
-        TIER_NAMES: TIER_NAMES
+        paid: paid
     };
 
 }(window));

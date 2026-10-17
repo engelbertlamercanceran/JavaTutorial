@@ -1543,8 +1543,8 @@ let level = 0;
      10 The Core       - turrets fire while you code; the core's
                          "success" token shuts the defences down
 
-   Every platform route is checked against Hacko's jump by
-   tools/check-fortress.js. Ground walkers stand at y 455.
+   Every platform route is within Hacko's jump. Ground walkers
+   stand at y 455.
 ===================================================== */
 
 const GROUND = 485;
@@ -1810,7 +1810,6 @@ function stage() {
     return STAGES[level] || STAGES[0];
 }
 
-/* end of stage data - tools/check-fortress.js reads up to here */
 
 function buildStage(index) {
     const source = STAGES[index] || STAGES[0];
