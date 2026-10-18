@@ -156,34 +156,61 @@
             }
         }
 
+        /* the gate terminal fits the screen without scrolling:
+           data types, slots and code sit side by side */
+        #terminal-modal .modal {
+            max-width: 1180px;
+            width: 96%;
+            max-height: 96vh;
+            padding: 18px 24px;
+        }
+
+        #terminal-modal .modal h2 {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .terminal-intro {
+            text-align: center;
+            opacity: 0.8;
+            margin: 0 0 14px;
+        }
+
         .terminal-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
+            grid-template-columns:
+                minmax(0, 0.9fr) minmax(0, 1.15fr) minmax(0, 1fr);
+            gap: 16px;
+            align-items: start;
         }
 
         .inventory {
             background: rgba(0, 0, 0, 0.4);
             border: 2px solid var(--green);
             border-radius: 12px;
-            padding: 20px;
-            min-height: 240px;
+            padding: 14px;
         }
 
-        .inventory h3 {
-            margin-top: 0;
+        .inventory h3,
+        .slots h3 {
+            margin: 0 0 10px;
+            font-size: 1.05rem;
             color: var(--green);
+        }
+
+        .slots h3 {
+            color: var(--orange);
         }
 
         .items {
             display: flex;
             flex-wrap: wrap;
-            gap: 14px;
+            gap: 10px;
         }
 
         .data-item {
-            width: 88px;
-            height: 88px;
+            width: 72px;
+            height: 72px;
             background: #1e2937;
             border: 3px solid var(--neon);
             border-radius: 12px;
@@ -216,15 +243,34 @@
             background: rgba(0, 0, 0, 0.4);
             border: 2px solid var(--orange);
             border-radius: 12px;
-            padding: 20px;
+            padding: 14px;
         }
 
         .slot {
-            margin-bottom: 14px;
-            padding: 12px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(110px, 1fr);
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            padding: 8px 10px;
             background: #111827;
             border-radius: 10px;
             border: 2px dashed #666;
+        }
+
+        .slot:last-child {
+            margin-bottom: 0;
+        }
+
+        @media (max-height: 640px) {
+            #terminal-modal .modal {
+                padding: 12px 20px;
+            }
+
+            .slot {
+                margin-bottom: 6px;
+                padding: 6px 10px;
+            }
         }
 
         .slot.filled {
@@ -233,19 +279,19 @@
         }
 
         .slot-label {
-            font-size: 1.05rem;
-            margin-bottom: 6px;
-            display: flex;
-            justify-content: space-between;
+            font-size: 1rem;
+            line-height: 1.2;
+            overflow-wrap: anywhere;
         }
 
         .dropzone {
-            min-height: 54px;
+            min-height: 40px;
+            text-align: center;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 12px;
             font-family: 'Orbitron', sans-serif;
             color: #555;
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -254,11 +300,11 @@
         .code-preview {
             background: #1e1e1e;
             border-radius: 10px;
-            padding: 20px;
+            padding: 12px 14px;
             font-family: 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            margin: 20px 0;
+            font-size: 13px;
+            line-height: 1.4;
+            margin: 0 0 12px;
             white-space: pre-wrap;
             color: #d4d4d4;
         }
@@ -464,7 +510,7 @@
         <div class="modal">
             <h2>🖥️ TERMINAL v1.0 • UNLOCK GATE</h2>
 
-            <p style="text-align:center;opacity:0.8;margin-bottom:20px">
+            <p class="terminal-intro">
                 Drag each collected data type into a matching terminal slot.
                 Use the hallway clues to understand the variables.
             </p>
@@ -479,13 +525,13 @@
 
                 <div>
                     <div class="slots">
-                        <h3 style="margin-top:0;color:#ff6b00">
-                            🔑 ASSIGN TO TERMINAL
-                        </h3>
+                        <h3>🔑 ASSIGN TO TERMINAL</h3>
 
                         <div id="slots-container"></div>
                     </div>
+                </div>
 
+                <div>
                     <div id="code-preview" class="code-preview"></div>
 
                     <div
@@ -2731,17 +2777,14 @@
 
                 slot.innerHTML = `
                     <div class="slot-label">
-                        <span>
-                            <strong>${requirement.name}</strong>
-                            <span style="color:#00d4ff">
-                                (which type?)
-                            </span>
+                        <strong>${requirement.name}</strong>
+                        <span style="color:#00d4ff">
+                            (which type?)
                         </span>
-                        <span style="color:#ffcc00">?</span>
                     </div>
 
                     <div class="dropzone">
-                        DROP A VALUE HERE
+                        DROP HERE
                     </div>
                 `
 
@@ -2782,7 +2825,7 @@
 
                             setTimeout(() => {
                                 dropzone.textContent =
-                                    'DROP A VALUE HERE'
+                                    'DROP HERE'
                             }, 800)
 
                             return
