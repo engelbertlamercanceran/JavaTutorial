@@ -142,6 +142,10 @@
             safe.certifiedAt = record.certifiedAt;
         }
 
+        if (typeof record.certifiedPlaySeconds === "number") {
+            safe.certifiedPlaySeconds = Math.max(0, Math.floor(record.certifiedPlaySeconds));
+        }
+
         safe.hintsBought = {};
 
         if (record.hintsBought && typeof record.hintsBought === "object") {
@@ -478,10 +482,12 @@
 
             record.missions[key] = m;
 
-            /* the day the whole course was finished goes on
-               the certificate */
+            /* the day the whole course was finished, and how long
+               it took, go on the certificate - the time is frozen
+               here so replaying afterwards does not add to it */
             if (!record.certifiedAt && allCompleteIn(record)) {
                 record.certifiedAt = new Date().toISOString();
+                record.certifiedPlaySeconds = record.playSeconds;
             }
 
             var next = Number(id) + 1;
@@ -533,8 +539,9 @@
     }
 
     /* Details to print, or null if not earned yet. A player
-       who finished before certificates existed gets today's
-       date the first time they open it, and keeps it. */
+       who finished before certificates (or the finishing time)
+       existed gets today's date and play time the first time
+       they open it, and keeps them. */
     function certificate() {
 
         var record = load();
@@ -543,15 +550,26 @@
             return null;
         }
 
+        var missing = false;
+
         if (!record.certifiedAt) {
             record.certifiedAt = new Date().toISOString();
+            missing = true;
+        }
+
+        if (typeof record.certifiedPlaySeconds !== "number") {
+            record.certifiedPlaySeconds = record.playSeconds;
+            missing = true;
+        }
+
+        if (missing) {
             save(record);
         }
 
         return {
             username: record.username,
             date: record.certifiedAt,
-            totalXP: record.totalXP,
+            playSeconds: record.certifiedPlaySeconds,
             badges: record.badges.slice()
         };
     }
