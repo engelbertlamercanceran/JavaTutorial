@@ -24,7 +24,7 @@ function render(){
   const chip=$('round-chip'); if(chip) chip.textContent=Math.min(10,frontier+1);
 
   const m=missions[current], progress=completed.filter(Boolean).length*10;
-  $('lives').textContent=lives; $('xp').textContent=completed.filter(Boolean).length*100;
+  $('lives').textContent=lives;
   $('progress-bar').style.width=progress+'%'; $('progress-text').textContent=progress+'%';
   $('mission-no').textContent=`MISSION ${String(current+1).padStart(2,'0')} / 10`;
   $('avatar-letter').textContent=current===9?'V':m.trainer.charAt(0);

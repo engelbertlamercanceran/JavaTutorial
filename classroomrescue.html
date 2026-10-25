@@ -962,10 +962,6 @@ button{
 
     <div class="stats">
 
-        <div class="stat">
-            ⭐ XP <span id="xp">0</span>
-        </div>
-
         <div class="stat" id="livesStat" title="Lives left on this level">
             <span id="lives">❤️❤️❤️</span>
         </div>
@@ -2090,7 +2086,6 @@ HUD
 
 function updateHUD(){
 
-    $("xp").textContent=game.xp;
     $("lives").textContent=
         "❤️".repeat(Math.max(0,game.lives))+
         "🖤".repeat(Math.max(0,3-game.lives));
@@ -2540,7 +2535,7 @@ function interact(){
 
             terminalOutput(
                 "success",
-                "🔑 KEY COLLECTED!\n\n+25 XP"
+                "🔑 KEY COLLECTED!"
             );
 
         break;
@@ -2557,7 +2552,7 @@ function interact(){
 
             terminalOutput(
                 "success",
-                "🔋 BATTERY COLLECTED!\n\n+20 XP"
+                "🔋 BATTERY COLLECTED!"
             );
 
         break;
@@ -2574,7 +2569,7 @@ function interact(){
 
             terminalOutput(
                 "success",
-                "📘 OOP BOOK COLLECTED!\n\n+30 XP"
+                "📘 OOP BOOK COLLECTED!"
             );
 
         break;
@@ -3332,14 +3327,7 @@ function runCode(){
                     "success",
 
                     "✅ CODE ACCEPTED!\n\n"+
-                    "⭐ XP +"+
-                    level.xp+
-                    (
-                        bonus
-                        ?"\n🔥 COMBO BONUS +50 XP"
-                        :""
-                    )+
-                    "\n\n🚪 THE EXIT IS OPEN!\n"+
+                    "🚪 THE EXIT IS OPEN!\n"+
                     "Walk through the door to finish the level."
                 );
 
@@ -3475,8 +3463,7 @@ function showMissionComplete(){
 
         $("completeText").textContent=
             "You completed all 10 OOP missions!\n\n"+
-            "⭐ Final XP: "+game.xp+
-            "\n🔥 Final Combo: "+game.combo;
+            "🔥 Final Combo: "+game.combo;
 
         $("nextBtn").textContent=
             "PLAY AGAIN";
@@ -3489,8 +3476,7 @@ function showMissionComplete(){
         $("completeText").textContent=
             levels[game.level-1].title+
             "\n\n"+
-            "⭐ XP: "+game.xp+
-            "\n🔥 Combo: "+game.combo;
+            "🔥 Combo: "+game.combo;
 
         $("nextBtn").textContent=
             "NEXT LEVEL →";

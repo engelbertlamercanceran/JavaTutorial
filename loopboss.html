@@ -203,7 +203,6 @@ footer {
         <span class="hk-chip">PHASE <b id="hudPhase">1</b>/10</span>
         <span class="hk-chip">DIFFICULTY <b id="hudTier" class="tier tier-medium">MEDIUM</b></span>
         <span class="hk-chip hk-chip--lives">LIVES <b id="hudLives">3</b></span>
-        <span class="hk-chip">XP <b id="hudXP">0</b></span>
     </div>
 </header>
 
@@ -615,7 +614,6 @@ footer {
     function updateHUD() {
         $("hudPhase").textContent = state.phase + 1;
         $("hudLives").textContent = state.lives;
-        $("hudXP").textContent = state.xp;
     }
 
     function clearedPhases() {

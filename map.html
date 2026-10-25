@@ -2187,22 +2187,6 @@ window.addEventListener("load", function () {
             <div class="stat-card">
 
                 <span class="stat-label">
-                    POINTS
-                </span>
-
-                <span
-                    class="stat-value points"
-                    id="pointsDisplay"
-                >
-                    0
-                </span>
-
-            </div>
-
-
-            <div class="stat-card">
-
-                <span class="stat-label">
                     TIME PLAYED
                 </span>
 
@@ -3237,12 +3221,6 @@ function updateUI() {
         "usernameDisplay"
     ).textContent =
         gameState.username || "Player";
-
-
-    document.getElementById(
-        "pointsDisplay"
-    ).textContent =
-        gameState.points;
 
 
     document.getElementById(

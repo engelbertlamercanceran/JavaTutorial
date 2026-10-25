@@ -168,7 +168,6 @@ footer {
         <span class="hk-chip">LEVEL <b id="hudLevel">1</b>/10</span>
         <span class="hk-chip hk-chip--lives">LIVES <b id="hudLives">3</b></span>
         <span class="hk-chip">ROUND <b id="hudTier" class="tier tier-easy">EASY</b></span>
-        <span class="hk-chip">XP <b id="hudXP">0</b></span>
         <span class="hk-chip" title="Bombs carried - SPACE drops one">💣 <b id="hudBombs">1</b></span>
     </div>
 </header>
@@ -1009,7 +1008,6 @@ footer {
     function updateHUD() {
         $("hudLevel").textContent = state.level + 1;
         $("hudLives").textContent = state.lives;
-        $("hudXP").textContent = state.xp;
         $("hudBombs").textContent = state.carried;
         $("hudTier").textContent = tierOf(state.level).name;
         $("hudTier").className = "tier tier-" + tierOf(state.level).name.toLowerCase();
@@ -1596,7 +1594,7 @@ footer {
         if (wrecked) {
             state.xp += 20 * wrecked;
             log("💥 Blasted " + wrecked + (wrecked > 1 ? " enemies" : " enemy") +
-                "! +" + (20 * wrecked) + " XP", "ok");
+                "!", "ok");
             updateHUD();
         }
 
