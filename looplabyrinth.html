@@ -1037,7 +1037,7 @@ const hackoImage = new Image()
 
 let hackoImageReady = false
 
-hackoImage.src = 'hacko.png'
+hackoImage.src = (window.HackoStore ? HackoStore.hackoSrc() : 'hacko.png')
 
 hackoImage.onload = () => {
     hackoImageReady = true

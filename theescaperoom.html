@@ -674,7 +674,7 @@
             img: new Image()
         }
 
-        player.img.src = 'hacko.png'
+        player.img.src = (window.HackoStore ? HackoStore.hackoSrc() : 'hacko.png')
 
         const TYPE_COLORS = {
             int: '#00d4ff',

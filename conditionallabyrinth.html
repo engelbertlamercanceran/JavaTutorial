@@ -913,7 +913,7 @@ footer {
     hackoImage.onload = function () {
         hackoReady = true;
     };
-    hackoImage.src = "hacko.png";
+    hackoImage.src = (window.HackoStore ? HackoStore.hackoSrc() : 'hacko.png');
 
     function $(id) { return document.getElementById(id); }
 

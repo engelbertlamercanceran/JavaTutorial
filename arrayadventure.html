@@ -685,7 +685,7 @@ const MAX_SLOTS = 6;
 const hackoImage = new Image();
 let hackoReady = false;
 
-hackoImage.src = "hacko.png";
+hackoImage.src = (window.HackoStore ? HackoStore.hackoSrc() : 'hacko.png');
 hackoImage.onload = () => {
     hackoReady = true;
 };

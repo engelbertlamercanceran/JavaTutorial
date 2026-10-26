@@ -738,7 +738,7 @@ const hacko =
 
 let hackoReady = false;
 
-hacko.src = "hacko.png";
+hacko.src = (window.HackoStore ? HackoStore.hackoSrc() : 'hacko.png');
 
 hacko.onload = () => {
     hackoReady = true;

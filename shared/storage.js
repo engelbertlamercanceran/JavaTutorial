@@ -29,6 +29,38 @@
     var DEFAULT_TOTAL_LEVELS = 10;
     var DEFAULT_LIVES = 3;
 
+    /* Where the site root is, worked out from this script's own
+       address ("shared/storage.js" or "../shared/storage.js"),
+       so pages in a sub-folder such as aa/ find skins/ too. */
+    var SITE_ROOT = (function () {
+        var own = global.document && global.document.currentScript;
+        var src = own ? own.getAttribute("src") || "" : "";
+        var cut = src.indexOf("shared/storage.js");
+        return cut > 0 ? src.slice(0, cut) : "";
+    }());
+
+    /* the coin shop catalogue - see COIN SHOP below */
+    var SHOP_SLOTS = {
+        hacko: { title: "Hacko colours", note: "Hacko wears this in every game." },
+        theme: { title: "Map themes", note: "Changes the mission map's sky." }
+    };
+
+    var SHOP_ITEMS = [
+        { id: "hacko-classic", slot: "hacko", name: "Classic Blue", price: 0,    file: "hacko.png" },
+        { id: "hacko-crimson", slot: "hacko", name: "Crimson",      price: 300,  file: "skins/hacko-crimson.png" },
+        { id: "hacko-emerald", slot: "hacko", name: "Emerald",      price: 300,  file: "skins/hacko-emerald.png" },
+        { id: "hacko-violet",  slot: "hacko", name: "Violet",       price: 500,  file: "skins/hacko-violet.png" },
+        { id: "hacko-frost",   slot: "hacko", name: "Frost",        price: 800,  file: "skins/hacko-frost.png" },
+        { id: "hacko-shadow",  slot: "hacko", name: "Shadow",       price: 1200, file: "skins/hacko-shadow.png" },
+        { id: "hacko-gold",    slot: "hacko", name: "Legend Gold",  price: 2000, file: "skins/hacko-gold.png" },
+
+        { id: "theme-classic",  slot: "theme", name: "Mountain Day",   price: 0,    swatch: ["#7fa8c4", "#728c72"] },
+        { id: "theme-midnight", slot: "theme", name: "Midnight",       price: 400,  swatch: ["#0b1a3a", "#1d3557"] },
+        { id: "theme-sunset",   slot: "theme", name: "Sunset",         price: 600,  swatch: ["#f4a261", "#7b3f61"] },
+        { id: "theme-sakura",   slot: "theme", name: "Cherry Blossom", price: 800,  swatch: ["#ffc8dd", "#a26b8f"] },
+        { id: "theme-neon",     slot: "theme", name: "Neon Grid",      price: 1200, swatch: ["#2b0a4a", "#00e5ff"] }
+    ];
+
     var MISSIONS = {
         1:  { title: "The Escape Room",          file: "theescaperoom.html",        badge: "VARIABLE HERO", image: "variablehero.png" },
         2:  { title: "The Secret Message",       file: "thesecretmessage.html",     badge: "CODE MESSENGER", image: "codemessenger.png" },
@@ -116,6 +148,9 @@
             badges: [],
             hintSpent: 0,
             hintsBought: {},
+            coinsSpent: 0,
+            owned: [],
+            equipped: { hacko: "hacko-classic", theme: "theme-classic" },
             playSeconds: 0,
             settings: { muted: false }
         };
@@ -160,6 +195,22 @@
         safe.settings = {
             muted: !!(record.settings && record.settings.muted)
         };
+
+        /* shop: only items that still exist in the catalogue */
+        safe.coinsSpent = Math.max(0, Number(record.coinsSpent) || 0);
+        safe.owned = (Array.isArray(record.owned) ? record.owned : [])
+            .filter(function (id, i, all) {
+                return shopItem(id) && all.indexOf(id) === i;
+            });
+
+        var eq = record.equipped || {};
+
+        Object.keys(SHOP_SLOTS).forEach(function (slot) {
+            var it = shopItem(eq[slot]);
+            if (it && it.slot === slot) {
+                safe.equipped[slot] = it.id;
+            }
+        });
 
         var missions = record.missions || {};
 
@@ -675,6 +726,163 @@
         }
 
         return outcome;
+    }
+
+    /* ---------------------------------------------------
+       COIN SHOP
+
+       The client wanted the points to be worth something
+       without letting a student buy their way past the Java.
+       So coins buy LOOKS ONLY - a colour for Hacko in every
+       game and a theme for the mission map. Nothing here
+       changes lives, hints, unlocking, badges or the
+       certificate.
+
+         - coins earned = totalXP (what clearing levels pays:
+           100 a level, more in Classroom Rescue), so players
+           who already had progress start with coins
+         - coins spent are tracked apart, so spending never
+           lowers anything else
+         - test mode lets a tester try every item for free and
+           keeps the try-on out of the student's record
+    --------------------------------------------------- */
+
+    var TRYON_KEY = "hacko:tryon";
+
+    function shopItem(id) {
+        for (var i = 0; i < SHOP_ITEMS.length; i++) {
+            if (SHOP_ITEMS[i].id === id) {
+                return SHOP_ITEMS[i];
+            }
+        }
+        return null;
+    }
+
+    function coinBalanceIn(record) {
+        return Math.max(0, (Number(record.totalXP) || 0) - record.coinsSpent);
+    }
+
+    function coinBalance() {
+        var record = load();
+        return record ? coinBalanceIn(record) : 0;
+    }
+
+    function ownsIn(record, it) {
+        return it.price === 0 || record.owned.indexOf(it.id) !== -1;
+    }
+
+    function ownsItem(id) {
+        var it = shopItem(id);
+        var record = load();
+        if (!it) {
+            return false;
+        }
+        if (isTestMode()) {
+            return true;
+        }
+        return record ? ownsIn(record, it) : it.price === 0;
+    }
+
+    /* Returns { ok, reason, balance }. reason: "owned",
+       "coins" (not enough), "missing" (no such item or no
+       player signed in). Buying also puts the item on. */
+    function buyItem(id) {
+
+        var it = shopItem(id);
+        var outcome = { ok: false, reason: "missing", balance: 0 };
+
+        if (!it) {
+            return outcome;
+        }
+
+        if (isTestMode()) {
+            equipItem(id);
+            return { ok: true, reason: "test", balance: coinBalance() };
+        }
+
+        update(function (record) {
+
+            if (ownsIn(record, it)) {
+                outcome.reason = "owned";
+            } else if (coinBalanceIn(record) < it.price) {
+                outcome.reason = "coins";
+            } else {
+                record.coinsSpent += it.price;
+                record.owned.push(it.id);
+                record.equipped[it.slot] = it.id;
+                outcome.ok = true;
+                outcome.reason = "bought";
+            }
+
+            outcome.balance = coinBalanceIn(record);
+        });
+
+        if (outcome.ok) {
+            announce("hacko:shop", { item: it.id, balance: outcome.balance });
+        }
+
+        return outcome;
+    }
+
+    function equipItem(id) {
+
+        var it = shopItem(id);
+
+        if (!it) {
+            return false;
+        }
+
+        if (isTestMode()) {
+            var tryon = readJSON(TRYON_KEY, {}) || {};
+            tryon[it.slot] = it.id;
+            write(TRYON_KEY, JSON.stringify(tryon));
+            announce("hacko:shop", { item: it.id });
+            return true;
+        }
+
+        var done = false;
+
+        update(function (record) {
+            if (ownsIn(record, it)) {
+                record.equipped[it.slot] = it.id;
+                done = true;
+            }
+        });
+
+        if (done) {
+            announce("hacko:shop", { item: it.id });
+        }
+
+        return done;
+    }
+
+    /* the item id worn in a slot ("hacko" or "theme") */
+    function equipped(slot) {
+
+        var fallback = slot === "theme" ? "theme-classic" : "hacko-classic";
+
+        if (isTestMode()) {
+            var tryon = readJSON(TRYON_KEY, {}) || {};
+            var t = shopItem(tryon[slot]);
+            if (t && t.slot === slot) {
+                return t.id;
+            }
+        }
+
+        var record = load();
+
+        return (record && record.equipped[slot]) || fallback;
+    }
+
+    /* The picture every game should draw Hacko with. */
+    function hackoSrc() {
+        var it = shopItem(equipped("hacko")) || shopItem("hacko-classic");
+        return SITE_ROOT + it.file;
+    }
+
+    function shopFileUrl(id) {
+        var it = shopItem(id);
+        return it && it.file ? SITE_ROOT + it.file : "";
     }
 
     function setResumeLevel(id, levelIndex) {
@@ -1421,6 +1629,17 @@
         hintsOwned: hintsOwned,
         buyHint: buyHint,
 
+        SHOP_SLOTS: SHOP_SLOTS,
+        SHOP_ITEMS: SHOP_ITEMS,
+        shopItem: shopItem,
+        shopFileUrl: shopFileUrl,
+        coinBalance: coinBalance,
+        ownsItem: ownsItem,
+        buyItem: buyItem,
+        equipItem: equipItem,
+        equipped: equipped,
+        hackoSrc: hackoSrc,
+
         hasCertificate: hasCertificate,
         certificate: certificate,
 
@@ -1440,6 +1659,38 @@
         isTestMode: isTestMode,
         setTestMode: setTestMode
     };
+
+
+    /* Pages that show Hacko as an <img> (Classroom Rescue,
+       the Debugging Gym) get the equipped colour without any
+       game code of their own. Canvas games ask hackoSrc(). */
+    (function dressHackoImages() {
+
+        var doc = global.document;
+
+        if (!doc) {
+            return;
+        }
+
+        function dress() {
+            var src = hackoSrc();
+            if (/(^|\/)hacko\.png$/.test(src)) {
+                return;
+            }
+            var imgs = doc.querySelectorAll("img");
+            for (var i = 0; i < imgs.length; i++) {
+                if (/(^|\/)hacko\.png$/.test(imgs[i].getAttribute("src") || "")) {
+                    imgs[i].setAttribute("src", src);
+                }
+            }
+        }
+
+        if (doc.readyState === "loading") {
+            doc.addEventListener("DOMContentLoaded", dress);
+        } else {
+            dress();
+        }
+    }());
 
 
     /* ---------------------------------------------------

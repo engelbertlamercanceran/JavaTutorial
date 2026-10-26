@@ -752,7 +752,7 @@ footer {
     var ctx = canvas.getContext("2d");
 
     var heroImg = new Image();
-    heroImg.src = "hacko.png";
+    heroImg.src = (window.HackoStore ? HackoStore.hackoSrc() : 'hacko.png');
 
     var sky = {
         mode: "ready",

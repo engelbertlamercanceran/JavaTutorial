@@ -91,7 +91,7 @@
     var ctx = null;
     var board = null;           /* pre-rendered static tiles */
     var heroImg = new Image();
-    heroImg.src = "hacko.png";
+    heroImg.src = (window.HackoStore ? HackoStore.hackoSrc() : 'hacko.png');
 
     var hero = {
         x: 10, y: 13, fx: 10, fy: 13, t: 1,

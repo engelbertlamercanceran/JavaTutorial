@@ -2068,7 +2068,7 @@
         ]
 
         const playerImage = new Image()
-        playerImage.src = 'hacko.png'
+        playerImage.src = (window.HackoStore ? HackoStore.hackoSrc() : 'hacko.png')
 
         let currentLevelIndex = 0
         let maze = []
